@@ -1,5 +1,5 @@
 import { hash, verify } from 'argon2';
-import { frontendHost } from './index.js';
+import { frontendHost, frontendPort } from './index.js';
 import type { StringSetting } from './model';
 import { getSettingsCollection, getUsersCollection } from './data.js';
 import { makeId } from './id.js';
@@ -206,7 +206,7 @@ export const createLoginLink = async (email: string, stay = false) => {
   const passwordHashed = await hashPassword(passwordNew);
 
   const link = `${
-    frontendProtocol + frontendHost + frontendPath
+    frontendProtocol + frontendHost + (frontendPort ? (':' + frontendPort) : '') + frontendPath
   }/link?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}`;
 
   await usersCollection.updateOne(
@@ -256,7 +256,8 @@ export const registerOrEmailLogin = async (
       await usersCollection.deleteMany({
         email,
         verifyExpiration: { $lte: new Date() },
-        $exists: { verifyHash: true, hashPassword: false },
+        verifyHash: { $exists: true },
+        hashPassword: { $exists: true }
       });
     } else {
       await usersCollection.updateOne(
@@ -276,7 +277,7 @@ export const registerOrEmailLogin = async (
       ? `Welcome to the Food Waste app.
 
   To confirm your account just press the following link within the next 24 hours: ${
-    frontendProtocol + frontendHost + frontendPath
+    frontendProtocol + frontendHost + (frontendPort ? (':' + frontendPort) : '') + frontendPath
   }/login?register=true&email=${base64Encode(email)}&code=${base64Encode(
           passwordNew
         )}
@@ -285,7 +286,7 @@ export const registerOrEmailLogin = async (
       : `Welcome back to the Food Waste App.
 
   To log in just press the following link within the next hour: ${
-    frontendProtocol + frontendHost + frontendPath
+    frontendProtocol + frontendHost + (frontendPort ? (':' + frontendPort) : '') + frontendPath
   }/login?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}
 
   If you did not request this email, simply ignore it.`;

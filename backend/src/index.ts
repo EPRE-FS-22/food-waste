@@ -41,6 +41,7 @@ server.register(fp(fastifyTRPCPlugin), {
 });
 
 export const frontendHost = process.env.FOOD_WASTE_FRONTEND_HOST ?? 'localhost';
+export const frontendPort = process.env.FOOD_WASTE_FRONTEND_PORT ?? '4000';
 
 server.register(fastifyCors, () => (req, callback) => {
   let corsOptions;
