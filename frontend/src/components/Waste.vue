@@ -15,7 +15,7 @@
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
-  let houseAnimations = ref(false);
+  let dishAnimations = ref(false);
   let firstNonZero = true;
 
   let updated = false;
@@ -55,7 +55,7 @@
       actualData.currentPercentage = actualData.relativePercentage;
       actualData.currentColor = actualData.color;
     });
-    setTimeout(() => (houseAnimations.value = false), 300);
+    setTimeout(() => (dishAnimations.value = false), 300);
   };
 
   const waitDisplayData = () => {
@@ -66,7 +66,7 @@
           actualData.currentColor = actualData.color;
         });
       } else {
-        houseAnimations.value = true;
+        dishAnimations.value = true;
       }
     });
     setTimeout(fullyDisplayData, 10);
@@ -178,13 +178,13 @@
     <div
       v-for="(data, index) in displayActualData"
       :key="data.color"
-      class="house"
+      class="dish"
       :class="{
         [data.previousColor]: true,
         [data.currentColor + '-force']: true,
-        animation: houseAnimations,
+        animation: dishAnimations,
         clickable: !!allowEdit,
-        ['house-' + (index + 1)]: true,
+        ['dish-' + (index + 1)]: true,
       }"
       @click="addPointToColor(data.color)"
       @focusin="colorFocus(data.color, true)"
@@ -299,7 +299,7 @@
     }
   }
 
-  .house {
+  .dish {
     position: relative;
     background-color: rgb(238, 238, 238);
     height: auto;
@@ -314,9 +314,9 @@
     transition: transform 0.2s ease-in-out;
     overflow: visible;
 
-    &.house-1,
-    &.house-2,
-    &.house-3 {
+    &.dish-1,
+    &.dish-2,
+    &.dish-3 {
       .categories-wrapper .categories-inner-wrapper {
         max-height: 5.5rem;
       }
@@ -390,7 +390,7 @@
       grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
       grid-template-areas: 'a b c d e f';
 
-      .house {
+      .dish {
         .categories-wrapper .categories-inner-wrapper {
           max-height: 2.25rem;
         }
@@ -404,13 +404,13 @@
       grid-template-columns: 1fr 1fr;
       grid-template-areas: 'a b' 'c d' 'e f';
 
-      .house {
+      .dish {
         .categories-wrapper .categories-inner-wrapper {
           max-height: 6rem;
         }
 
-        &.house-1,
-        &.house-2 {
+        &.dish-1,
+        &.dish-2 {
           .categories-wrapper .categories-inner-wrapper {
             max-height: 4rem;
           }
@@ -425,7 +425,7 @@
       grid-template-columns: 1fr;
       grid-template-areas: 'a' 'b' 'c' 'd' 'e' 'f';
 
-      .house {
+      .dish {
         .categories-wrapper .categories-inner-wrapper {
           max-height: 6rem;
         }

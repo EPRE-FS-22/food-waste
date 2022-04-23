@@ -5,9 +5,9 @@ import { COLORS } from './constants';
 import type { PointsCategory, PointsWithStats } from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
 
-const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws';
-const host = import.meta.env.VITE_STAIR_HOUSES_BACKEND_HOST ?? 'localhost';
-const port = import.meta.env.VITE_STAIR_HOUSES_BACKEND_PORT ?? '3033';
+const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
+const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
+const port = import.meta.env.VITE_FOOD_WASTE_BACKEND_PORT ?? '3330';
 
 const wsClient = createWSClient({
   url: protocol + '://' + host + ':' + port + '/',

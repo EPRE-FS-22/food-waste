@@ -4,13 +4,13 @@ import { makeId } from './id.js';
 import type { PointEvent, Points, Setting, StringSetting, User } from './model';
 import { hashPassword } from './users.js';
 
-const rawHost = process.env.STAIR_HOUSES_DATABASE_HOST;
+const rawHost = process.env.FOOD_WASTE_DATABASE_HOST;
 const host = rawHost ? encodeURIComponent(rawHost) : 'localhost';
-const rawPort = process.env.STAIR_HOUSES_DATABASE_PORT;
+const rawPort = process.env.FOOD_WASTE_DATABASE_PORT;
 const port = rawPort ? encodeURIComponent(rawPort) : '27017';
-const rawUser = process.env.STAIR_HOUSES_DATABASE_USER;
+const rawUser = process.env.FOOD_WASTE_DATABASE_USER;
 const user = rawUser ? encodeURIComponent(rawUser) : '';
-const rawPassword = process.env.STAIR_HOUSES_DATABASE_PASSWORD;
+const rawPassword = process.env.FOOD_WASTE_DATABASE_PASSWORD;
 const password = rawPassword ? encodeURIComponent(rawPassword) : '';
 const authMechanism = user && password ? 'DEFAULT' : '';
 
@@ -31,7 +31,7 @@ const url =
 const client = new MongoClient(url);
 
 // Database Name
-const dbName = 'stairHouses';
+const dbName = 'foodWaste';
 
 const pointsCollectionName = 'points';
 const pointEventsCollectionName = 'pointEvents';
@@ -108,7 +108,7 @@ const ensureDBConnection = () => {
         if (passwordObject) {
           password = passwordObject.value;
         } else {
-          password = process.env.STAIR_HOUSES_DEFAULT_PASSWORD;
+          password = process.env.FOOD_WASTE_DEFAULT_PASSWORD;
           if (!password) {
             password = makeId(15);
             console.log('Generated password: ' + password);

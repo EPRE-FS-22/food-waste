@@ -5,8 +5,8 @@
 <template>
   <div class="header">
     <router-link to="/" class="header-container">
-      <img src="../assets/stairwhite.png" class="logo" />
-      <div class="title">Houses</div>
+      <img src="../assets/mllonelogo.png" class="logo" />
+      <div class="title">Waste</div>
     </router-link>
     <button v-if="secret" class="view-toggle" @click="ranking = !ranking">
       {{ ranking ? 'Ranking' : 'Overview' }}

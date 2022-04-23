@@ -25,13 +25,13 @@
         <div
           v-for="(data, index) in displayActualData"
           :key="data.color"
-          class="house"
+          class="dish"
         >
           <div class="index-container">
             <span class="index"> {{ index + 1 }}. </span>
           </div>
           <span class="name" :class="{ [data.color]: showColors }">
-            {{ (data.colorString + ' House').toUpperCase() }}
+            {{ (data.colorString + ' Dish').toUpperCase() }}
           </span>
           <span class="number">
             {{ data.points }}
@@ -69,7 +69,7 @@
     width: 0;
     padding-right: calc(100% - 2rem);
     border: none;
-    background-image: url('../assets/stairscoreboard.png');
+    background-image: url('../assets/polebackground.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: 50% 50%;
@@ -100,7 +100,7 @@
     width: 100%;
   }
 
-  .house {
+  .dish {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -173,7 +173,7 @@
       line-height: 3.875vw * $vw-scaling-factor;
     }
 
-    .house {
+    .dish {
       padding: 1.25vw * $vw-scaling-factor;
       margin: 0 1.5vw * $vw-scaling-factor;
       letter-spacing: 0.4vw * $vw-scaling-factor;

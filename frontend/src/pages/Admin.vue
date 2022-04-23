@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import Panel from '../components/Panel.vue';
-  import Houses from '../components/Houses.vue';
+  import Waste from '../components/Waste.vue';
   import Ranking from '../components/Ranking.vue';
   import { ranking } from '../settings';
   import { useRouter } from 'vue-router';
@@ -18,6 +18,6 @@
   <div class="page">
     <Panel v-if="!ranking"> </Panel>
     <Ranking v-if="ranking" :allow-edit="!ranking"> </Ranking>
-    <Houses v-else :allow-edit="!ranking"> </Houses>
+    <Waste v-else :allow-edit="!ranking"> </Waste>
   </div>
 </template>

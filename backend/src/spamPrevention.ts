@@ -1,6 +1,6 @@
 import hCaptcha from 'hcaptcha';
 
-const captchaSecret = process.env.STAIR_HOUSES_CAPTCHA_SECRET ?? '';
+const captchaSecret = process.env.FOOD_WASTE_CAPTCHA_SECRET ?? '';
 
 console.log('starting');
 

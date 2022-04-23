@@ -1,14 +1,14 @@
 {
-  "name": "stair-houses",
+  "name": "food-waste",
   "private": true,
   "version": "0.0.0",
   "browserslist": [
     "defaults"
   ],
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --port 4000",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --port 4000",
     "lint:ec": "eclint check",
     "lint:ts": "eslint --ext .ts,vue --ignore-path .gitignore .",
     "lint:style": "stylelint src/**/*.{css,scss,vue}",

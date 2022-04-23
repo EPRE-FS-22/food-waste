@@ -46,7 +46,7 @@
   };
 
   const captchaSitekey =
-    import.meta.env.VITE_STAIR_HOUSES_CAPTCHA_SITEKEY?.toString() ?? '';
+    import.meta.env.VITE_FOOD_WASTE_CAPTCHA_SITEKEY?.toString() ?? '';
 
   const router = useRouter();
 

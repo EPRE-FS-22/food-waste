@@ -10,15 +10,13 @@
   };
 
   const mailToUs = () => {
-    location.href = 'mailto:info@stair.ch?&subject=STAIR Houses Website';
+    location.href = 'mailto:info@mll.one?&subject=Food Waste Website';
   };
 </script>
 
 <template>
   <div class="footer">
-    <a href="https://stair.ch/" class="subtitle footer-item"
-      >Organised by STAIR</a
-    >
+    <a href="https://mll.one/" class="subtitle footer-item">Hosted by MllOne</a>
     <router-link
       v-if="
         $router.currentRoute.value.path !== '/admin' &&

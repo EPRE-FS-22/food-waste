@@ -8,9 +8,8 @@ import { sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import { EMAIL_ENDING } from './constants.js';
 
-const frontendPath = process.env.STAIR_HOUSES_FRONTEND_PATH ?? '/#';
-const frontendProtocol =
-  process.env.STAIR_HOUSES_FRONTEND_PROTOCOL ?? 'http://';
+const frontendPath = process.env.FOOD_WASTE_FRONTEND_PATH ?? '/#';
+const frontendProtocol = process.env.FOOD_WASTE_FRONTEND_PROTOCOL ?? 'http://';
 
 export const checkEmail = (email?: string): boolean =>
   !!email && email.endsWith(EMAIL_ENDING);
@@ -274,7 +273,7 @@ export const registerOrEmailLogin = async (
     }
 
     const body = isRegister
-      ? `Welcome to the STAIR Houses website.
+      ? `Welcome to the Food Waste app.
 
   To confirm your account just press the following link within the next 24 hours: ${
     frontendProtocol + frontendHost + frontendPath
@@ -283,7 +282,7 @@ export const registerOrEmailLogin = async (
         )}
 
   If you did not request this email, simply ignore it.`
-      : `Welcome back to the STAIR Houses website.
+      : `Welcome back to the Food Waste App.
 
   To log in just press the following link within the next hour: ${
     frontendProtocol + frontendHost + frontendPath
@@ -293,7 +292,7 @@ export const registerOrEmailLogin = async (
 
     await sendMail(
       email,
-      'STAIR Houses ' + (isRegister ? 'Verification' : 'Login'),
+      'Food Waste ' + (isRegister ? 'Verification' : 'Login'),
       body
     );
     return { success: true };
