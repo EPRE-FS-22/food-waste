@@ -5,7 +5,7 @@
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
   import { EMAIL_ENDING } from '../../../backend/src/constants';
-  import { base64Decode } from '../../../backend/src/base64';
+  import { base64Decode } from '../helpers';
 
   enum LoginType {
     logIn,
