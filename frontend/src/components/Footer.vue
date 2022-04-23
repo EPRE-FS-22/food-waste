@@ -1,38 +1,42 @@
 <script setup lang="ts">
-  import { logOut } from '../data';
+  import { logOut, hasSession } from '../data';
 
   const logOutOnclick = async () => {
     try {
       await logOut();
     } catch (e) {
-      console.error(e);
       throw e;
     }
   };
 
   const mailToUs = () => {
-    location.href = 'mailto:info@stair.ch?&subject=STAIR Houses Website';
+    location.href = 'mailto:info@mll.one?&subject=Food Waste Website';
   };
 </script>
 
 <template>
   <div class="footer">
-    <a href="https://stair.ch/" class="subtitle footer-item"
-      >Organised by STAIR</a
-    >
+    <a href="https://mll.one/" class="subtitle footer-item">Hosted by MllOne</a>
     <router-link
       v-if="
         $router.currentRoute.value.path !== '/admin' &&
+        $router.currentRoute.value.path !== '/user' &&
         $router.currentRoute.value.path !== '/login'
       "
-      to="/admin"
-      class="admin-link footer-item"
-      >Admin-Panel</router-link
+      :to="hasSession() ? (hasSession(true) ? '/admin' : '/user') : '/login'"
+      class="action-link footer-item"
+      >{{
+        hasSession()
+          ? hasSession(true)
+            ? 'Admin panel'
+            : 'User panel'
+          : 'Log in'
+      }}</router-link
     >
     <router-link
-      v-if="$router.currentRoute.value.path === '/admin'"
+      v-else-if="$router.currentRoute.value.path !== '/login'"
       to="/"
-      class="admin-link footer-item"
+      class="action-link footer-item"
       @click="logOutOnclick()"
       >Log out</router-link
     >
@@ -46,7 +50,7 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-end;
-    height: 3%;
+    height: 3vh;
   }
 
   .footer-item {
@@ -68,7 +72,7 @@
     text-align: left;
   }
 
-  .admin-link {
+  .action-link {
     text-align: center;
   }
 

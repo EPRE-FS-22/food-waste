@@ -1,44 +1,153 @@
 <script setup lang="ts">
-  import { useRouter } from 'vue-router';
-  import { authFailure, logIn } from '../data';
+  import { useRouter, useRoute } from 'vue-router';
+  import { emailLogIn, hasSession, logIn, register } from '../data';
   import { ref } from 'vue';
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
+  import { EMAIL_ENDING } from '../../../backend/src/constants';
+  import { base64Decode } from '../../../backend/src/base64';
+
+  enum LoginType {
+    logIn,
+    emailLogIn,
+    register,
+    confirm,
+    change,
+    set,
+    setAgain,
+  }
+
+  const route = useRoute();
+
+  const loggedIn = hasSession();
+
+  const type = ref(loggedIn ? LoginType.change : LoginType.logIn);
+
+  const queryEmail =
+    route.query.email && typeof route.query.email === 'string'
+      ? base64Decode(route.query.email)
+      : '';
+  const queryCode =
+    route.query.code && typeof route.query.code === 'string'
+      ? base64Decode(route.query.code)
+      : '';
+  const queryIsRegister = !!route.query.register;
+
+  if (queryEmail && queryCode) {
+    type.value = LoginType.confirm;
+  }
+
+  const confirmAction = () => {
+    if (queryIsRegister) {
+      console.log('register verify');
+    } else {
+      console.log('login verify');
+    }
+  };
 
   const captchaSitekey =
-    import.meta.env.VITE_STAIR_HOUSES_CAPTCHA_SITEKEY?.toString() ?? '';
+    import.meta.env.VITE_FOOD_WASTE_CAPTCHA_SITEKEY?.toString() ?? '';
 
   const router = useRouter();
 
+  const email = ref('');
   const password = ref('');
 
   const message = ref('');
+  const emailMessage = ref('');
+  const passwordMessage = ref('');
+  const captchaMessage = ref('');
 
   const showCaptcha = ref(false);
 
   let captchaToken = '';
 
-  const logInAction = async () => {
+  const emailLogInAction = async (isRegister = false) => {
     try {
-      if (!password.value) {
-        message.value = 'Password cannot be empty';
-        return;
+      let fail = false;
+      if (!email.value || !email.value.endsWith(EMAIL_ENDING)) {
+        emailMessage.value = 'E-Mail needs to be a valid student address';
+        fail = true;
       }
       if (showCaptcha.value && captchaSitekey && !captchaToken) {
-        message.value = 'Captcha invalid';
+        captchaMessage.value = 'Captcha invalid';
+        fail = true;
+      }
+      message.value = '';
+      if (fail) {
         return;
       }
+      captchaMessage.value = '';
+      emailMessage.value = '';
+      passwordMessage.value = '';
+      const result = isRegister
+        ? await register(
+            email.value,
+            showCaptcha.value && captchaSitekey ? captchaToken : undefined
+          )
+        : await emailLogIn(
+            email.value,
+            showCaptcha.value && captchaSitekey ? captchaToken : undefined
+          );
+      captchaExpired();
+      if (result.success) {
+        message.value =
+          (isRegister ? 'Verification' : 'Log-in') +
+          'E-Mail sent, please also check your spam folder';
+      } else {
+        const difference = result.nextTry.getTime() - Date.now();
+        emailMessage.value =
+          (isRegister
+            ? 'Duplicate E-Mail address (maybe log in instead?)'
+            : 'Incorrect E-Mail address') +
+          (difference > 0
+            ? ': try again in ' + moment.duration(difference).humanize()
+            : '');
+        showCaptcha.value = result.showCaptcha;
+      }
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  const logInAction = async () => {
+    try {
+      let fail = false;
+      if (!password.value) {
+        passwordMessage.value = 'Password cannot be empty';
+        fail = true;
+      }
+      if (email.value && !email.value.endsWith(EMAIL_ENDING)) {
+        emailMessage.value =
+          'E-Mail needs to either be a valid student address or empty';
+        fail = true;
+      }
+      if (showCaptcha.value && captchaSitekey && !captchaToken) {
+        captchaMessage.value = 'Captcha invalid';
+        fail = true;
+      }
+      message.value = '';
+      if (fail) {
+        return;
+      }
+      captchaMessage.value = '';
+      emailMessage.value = '';
+      passwordMessage.value = '';
       const result = await logIn(
         password.value,
+        email.value || undefined,
         showCaptcha.value && captchaSitekey ? captchaToken : undefined
       );
       captchaExpired();
       if (result.success) {
-        message.value = '';
-        router.push('/admin');
+        if (result.admin) {
+          router.push('/admin');
+        } else {
+          router.push('/user');
+        }
       } else {
         const difference = result.nextTry.getTime() - Date.now();
-        message.value =
+        passwordMessage.value =
           'Incorrect password' +
           (difference > 0
             ? ': try again in ' + moment.duration(difference).humanize()
@@ -46,7 +155,33 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
-      console.error(e);
+      throw e;
+    }
+  };
+
+  const triggerAction = async () => {
+    switch (type.value) {
+      case LoginType.logIn:
+        logInAction();
+        break;
+      case LoginType.emailLogIn:
+        emailLogInAction();
+        break;
+      case LoginType.register:
+        emailLogInAction(true);
+        break;
+      case LoginType.change:
+        logInAction();
+        break;
+      case LoginType.setAgain:
+        logInAction();
+        break;
+      case LoginType.set:
+        logInAction();
+        break;
+      case LoginType.confirm:
+        confirmAction();
+        break;
     }
   };
 
@@ -57,26 +192,68 @@
   const captchaExpired = () => {
     captchaToken = '';
   };
-
-  authFailure.subscribe(() => {
-    router.push('/login');
-  });
 </script>
 
 <template>
   <div class="login">
-    <label class="password-label login-item" for="password"
-      >Please enter your password{{ message ? ': ' + message : '' }}</label
+    <label v-if="message" class="label general-label login-item">{{
+      message
+    }}</label>
+    <label class="label email-label login-item" for="email"
+      >Please enter your student E-Mail address{{
+        emailMessage ? ': ' + emailMessage : ''
+      }}<template v-if="type === LoginType.emailLogIn">
+        <br />
+        <div
+          class="label-button"
+          tabindex="0"
+          @click="type = LoginType.logIn"
+          @keyup.enter="type = LoginType.logIn"
+        >
+          Log in with password instead
+        </div>
+      </template></label
     >
     <input
-      id="password"
-      v-model="password"
-      type="password"
-      class="password login-item"
-      name="password"
-      maxlength="20"
-      @keyup.enter="logInAction()"
+      id="email"
+      v-model="email"
+      type="email"
+      class="field email login-item"
+      name="email"
+      :placeholder="
+        'x.y@stud.hslu.ch' + (type === LoginType.logIn ? ' (optional)' : '')
+      "
+      maxlength="200"
+      @keyup.enter="triggerAction()"
     />
+    <template v-if="type === LoginType.logIn">
+      <label class="label password-label login-item" for="password"
+        >Please enter your password{{
+          passwordMessage ? ': ' + passwordMessage : ''
+        }}<br />
+        <div
+          class="label-button"
+          tabindex="0"
+          @click="type = LoginType.emailLogIn"
+          @keyup.enter="type = LoginType.emailLogIn"
+        >
+          Log in without password (E-Mail) instead / reset password
+        </div></label
+      >
+      <input
+        id="password"
+        v-model="password"
+        type="password"
+        class="field password login-item"
+        name="password"
+        placeholder="password"
+        maxlength="20"
+        @keyup.enter="triggerAction()"
+      />
+    </template>
+    <label v-if="captchaMessage" class="label captcha-label login-item">{{
+      captchaMessage
+    }}</label>
     <Captcha
       v-if="showCaptcha && captchaSitekey"
       :sitekey="captchaSitekey"
@@ -85,11 +262,47 @@
     ></Captcha>
     <button
       class="login-item login-button"
-      @keyup.enter="logInAction()"
-      @click="logInAction()"
+      @keyup.enter="triggerAction()"
+      @click="triggerAction()"
     >
-      Log in
+      {{
+        type === LoginType.logIn
+          ? 'Log in'
+          : type === LoginType.emailLogIn
+          ? 'Send'
+          : type === LoginType.register
+          ? 'Register'
+          : type === LoginType.set
+          ? 'Set'
+          : type === LoginType.confirm
+          ? 'Confirm'
+          : 'Change'
+      }}
     </button>
+    <label
+      v-if="type === LoginType.logIn || type === LoginType.emailLogIn"
+      class="label change-label login-item"
+      ><div
+        class="label-button label-button-solo"
+        tabindex="0"
+        @click="type = LoginType.register"
+        @keyup.enter="type = LoginType.register"
+      >
+        No account yet? Register here
+      </div></label
+    >
+    <label
+      v-if="type === LoginType.register"
+      class="label change-label login-item"
+      ><div
+        class="label-button label-button-solo"
+        tabindex="0"
+        @click="type = LoginType.logIn"
+        @keyup.enter="type = LoginType.logIn"
+      >
+        Already registered? Log in here
+      </div></label
+    >
   </div>
 </template>
 
@@ -100,7 +313,7 @@
     justify-content: center;
     align-items: center;
     width: calc(100% - 1rem);
-    height: calc(85% - 1rem);
+    height: calc(85vh - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
@@ -110,15 +323,31 @@
     margin: 0.5rem;
   }
 
-  .password-label {
+  .label {
     font-size: 1.2rem;
     line-height: 1.2rem;
     padding: 0;
     text-align: center;
     font-weight: bold;
+
+    .label-button {
+      font-size: 1.1rem;
+      font-weight: normal;
+      line-height: 1.2rem;
+      color: rgb(226, 226, 226);
+      text-decoration: underline;
+      padding: 0;
+      margin: 0;
+      margin-top: 0.5rem;
+      cursor: pointer;
+
+      &.label-button-solo {
+        margin: 0;
+      }
+    }
   }
 
-  .password {
+  .field {
     height: 1rem;
     font-size: 1rem;
     line-height: 1rem;

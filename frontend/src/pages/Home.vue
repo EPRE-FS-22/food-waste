@@ -1,10 +1,12 @@
 <script setup lang="ts">
-  import Houses from '../components/Houses.vue';
+  import Waste from '../components/Waste.vue';
   import Ranking from '../components/Ranking.vue';
   import { ranking } from '../settings';
 </script>
 
 <template>
-  <Ranking v-if="ranking" :allow-edit="false"> </Ranking>
-  <Houses v-else :allow-edit="false"> </Houses>
+  <div class="page">
+    <Ranking v-if="ranking" :allow-edit="false"> </Ranking>
+    <Waste v-else :allow-edit="false"> </Waste>
+  </div>
 </template>

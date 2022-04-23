@@ -2,12 +2,12 @@ import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
 import { COLORS } from './constants';
-import type { PointsCategory, PointsWithStats } from '../../backend/src/data';
+import type { PointsCategory, PointsWithStats } from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
 
-const protocol = import.meta.env.VITE_STAIR_HOUSES_PROTOCOL ?? 'ws';
-const host = import.meta.env.VITE_STAIR_HOUSES_BACKEND_HOST ?? 'localhost';
-const port = import.meta.env.VITE_STAIR_HOUSES_BACKEND_PORT ?? '3033';
+const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
+const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
+const port = import.meta.env.VITE_FOOD_WASTE_BACKEND_PORT ?? '3330';
 
 const wsClient = createWSClient({
   url: protocol + '://' + host + ':' + port + '/',
@@ -31,6 +31,8 @@ let points: PointsWithStats[] = Object.keys(COLORS).map((item) => ({
 export interface DisplayColor {
   color: string;
   colorString: string;
+  currentColor: string;
+  previousColor: string;
   points: number;
   relativePercentage: number;
   currentPercentage: number;
@@ -56,9 +58,12 @@ let sessionExpires =
   parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
 
 let sessionId = localStorage.getItem('session') ?? '';
+let isAdmin = localStorage.getItem('admin') === 'true';
 
-export const hasSessionId = () => {
-  return !!sessionId && sessionExpires > new Date().getTime();
+export const hasSession = (admin = false) => {
+  return (
+    !!sessionId && sessionExpires > new Date().getTime() && (!admin || isAdmin)
+  );
 };
 
 const processData = (data: PointsWithStats[], zero = false): DisplayData => {
@@ -149,9 +154,15 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
     } else if (lastString && lastString === previousPlaceString) {
       badgeClass = 'last';
     }
+
+    const previousColor = zero
+      ? item.color
+      : dataSubject.value[index]?.color ?? item.color;
     const returnObject: DisplayColor = {
       color: item.color,
       colorString: item.color.charAt(0).toUpperCase() + item.color.slice(1),
+      currentColor: previousColor,
+      previousColor,
       points: item.points,
       relativePercentage: item.relative * 100,
       currentPercentage: zero
@@ -207,9 +218,8 @@ export const addPoints = async (
   reason?: string
 ) => {
   try {
-    if (!sessionId) {
+    if (!hasSession(true)) {
       authFailure.next();
-      throw new Error('no sessionId');
     }
     const data = await client.mutation('addPoints', {
       color,
@@ -219,6 +229,10 @@ export const addPoints = async (
       owner: owner || undefined,
       reason: reason || undefined,
     });
+    if (!data) {
+      authFailure.next();
+      return;
+    }
     if (isDataNewer(data)) {
       points = data;
       const displayData = processData(points);
@@ -226,14 +240,29 @@ export const addPoints = async (
     }
     return dataSubject.value;
   } catch (e: unknown) {
-    if (e instanceof Error && e.message === 'Incorrect sessionId') {
-      authFailure.next();
-      throw e;
-    } else {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const checkSession = (admin = false) => {
+  (async () => {
+    try {
+      if (!hasSession(admin)) {
+        authFailure.next();
+      }
+      const data = await client.mutation('checkSession', {
+        sessionId: sessionId,
+        admin: admin || undefined,
+      });
+      if (!data) {
+        authFailure.next();
+      }
+    } catch (e: unknown) {
       console.error(e);
       throw e;
     }
-  }
+  })();
 };
 
 export const subscribePoints = () => {
@@ -259,29 +288,79 @@ export const subscribePoints = () => {
   return dataSubject;
 };
 
-export const logIn = async (password: string, captchaToken?: string) => {
-  const result = await client.mutation('login', { password, captchaToken });
-  if (result.sessionId) {
-    sessionId = result.sessionId;
-  } else {
-    sessionId = '';
+export const register = async (email: string, captchaToken?: string) => {
+  try {
+    const result = await client.mutation('register', { email, captchaToken });
+    return {
+      success: result.success,
+      showCaptcha: result.showCaptcha,
+      nextTry: new Date(result.nextTry),
+    };
+  } catch (e) {
+    console.error(e);
+    throw e;
   }
-  sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
-  if (sessionId) {
-    localStorage.setItem('session', sessionId);
-    localStorage.setItem('sessionExpires', sessionExpires.toString());
+};
+
+export const emailLogIn = async (email: string, captchaToken?: string) => {
+  try {
+    const result = await client.mutation('emailLogin', { email, captchaToken });
+    return {
+      success: result.success,
+      showCaptcha: result.showCaptcha,
+      nextTry: new Date(result.nextTry),
+    };
+  } catch (e) {
+    console.error(e);
+    throw e;
   }
-  return {
-    success: !!sessionId,
-    showCaptcha: result.showCaptcha,
-    nextTry: new Date(result.nextTry),
-  };
+};
+
+export const logIn = async (
+  password: string,
+  email?: string,
+  captchaToken?: string
+) => {
+  try {
+    const result = await client.mutation('login', {
+      password,
+      email,
+      captchaToken,
+    });
+    if (result.success && result.sessionId) {
+      sessionId = result.sessionId;
+      isAdmin = !!result.admin;
+    } else {
+      sessionId = '';
+      isAdmin = false;
+    }
+    sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
+    if (sessionId) {
+      localStorage.setItem('session', sessionId);
+      localStorage.setItem('sessionExpires', sessionExpires.toString());
+    }
+    return {
+      success: result.success,
+      admin: result.admin,
+      showCaptcha: result.showCaptcha,
+      nextTry: new Date(result.nextTry),
+    };
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 };
 
 export const logOut = async () => {
-  await client.mutation('logout', { sessionId });
-  sessionId = '';
-  sessionExpires = 0;
-  localStorage.setItem('session', '');
-  localStorage.setItem('sessionExpires', '');
+  try {
+    await client.mutation('logout', { sessionId });
+    sessionId = '';
+    isAdmin = false;
+    sessionExpires = 0;
+    localStorage.setItem('session', '');
+    localStorage.setItem('sessionExpires', '');
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
 };

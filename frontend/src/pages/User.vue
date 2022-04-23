@@ -11,13 +11,13 @@
     router.push('/login');
   });
 
-  checkSession(true);
+  checkSession();
 </script>
 
 <template>
   <div class="page">
     <Panel v-if="!ranking"> </Panel>
-    <Ranking v-if="ranking" :allow-edit="!ranking"> </Ranking>
-    <Waste v-else :allow-edit="!ranking"> </Waste>
+    <Ranking v-if="ranking"> </Ranking>
+    <Waste v-else> </Waste>
   </div>
 </template>

@@ -1,17 +1,16 @@
 import { Collection, Db, MongoClient } from 'mongodb';
 import { COLORS } from './constants.js';
-import { hash, verify } from 'argon2';
-import hCaptcha from 'hcaptcha';
-import cryptoRandomString from 'crypto-random-string';
-import { captchaSecret } from './index.js';
+import { makeId } from './id.js';
+import type { PointEvent, Points, Setting, StringSetting, User } from './model';
+import { hashPassword } from './users.js';
 
-const rawHost = process.env.STAIR_HOUSES_DATABASE_HOST;
+const rawHost = process.env.FOOD_WASTE_DATABASE_HOST;
 const host = rawHost ? encodeURIComponent(rawHost) : 'localhost';
-const rawPort = process.env.STAIR_HOUSES_DATABASE_PORT;
+const rawPort = process.env.FOOD_WASTE_DATABASE_PORT;
 const port = rawPort ? encodeURIComponent(rawPort) : '27017';
-const rawUser = process.env.STAIR_HOUSES_DATABASE_USER;
+const rawUser = process.env.FOOD_WASTE_DATABASE_USER;
 const user = rawUser ? encodeURIComponent(rawUser) : '';
-const rawPassword = process.env.STAIR_HOUSES_DATABASE_PASSWORD;
+const rawPassword = process.env.FOOD_WASTE_DATABASE_PASSWORD;
 const password = rawPassword ? encodeURIComponent(rawPassword) : '';
 const authMechanism = user && password ? 'DEFAULT' : '';
 
@@ -32,68 +31,12 @@ const url =
 const client = new MongoClient(url);
 
 // Database Name
-const dbName = 'stairHouses';
+const dbName = 'foodWaste';
 
 const pointsCollectionName = 'points';
 const pointEventsCollectionName = 'pointEvents';
 const settingsCollectionName = 'settings';
-
-export interface Points {
-  color: keyof typeof COLORS;
-  points: number;
-  lastChanged: Date;
-}
-
-export interface PointsCategory {
-  name: string;
-  amount: number;
-}
-
-export interface PointsWithStats extends Points {
-  categories: PointsCategory[];
-}
-
-export interface PointEvent {
-  color: string;
-  pointsDiff: number;
-  date: Date;
-  addedDate: Date;
-  addedBy?: string;
-  owner?: string;
-  reason?: string;
-}
-
-interface BaseSetting {
-  key: string;
-  value: unknown;
-  type: string;
-}
-
-interface StringSetting extends BaseSetting {
-  key: string;
-  value: string;
-  type: 'string';
-}
-
-interface NumberSetting extends BaseSetting {
-  key: string;
-  value: number;
-  type: 'string';
-}
-
-interface DateSetting extends BaseSetting {
-  key: string;
-  value: Date;
-  type: 'date';
-}
-
-interface SubSetting extends BaseSetting {
-  key: string;
-  value: Setting;
-  type: 'sub';
-}
-
-type Setting = StringSetting | NumberSetting | DateSetting | SubSetting;
+const usersCollectionName = 'users';
 
 let connected = false;
 let connecting = false;
@@ -108,17 +51,9 @@ let db: Db | undefined = undefined;
 let pointsCollection: Collection<Points> | undefined = undefined;
 let pointEventsCollection: Collection<PointEvent> | undefined = undefined;
 let settingsCollection: Collection<Setting> | undefined = undefined;
+let usersCollection: Collection<User> | undefined = undefined;
 
-const passwordTries: Record<string, number> = {};
-const passwordPreviousTimeOuts: Record<string, Date[]> = {};
-const passwordTimeOuts: Record<string, Date> = {};
-const passwordFailedCaptcha: Record<string, number> = {};
-
-export const makeId = (length: number) => {
-  return cryptoRandomString({ length, type: 'alphanumeric' });
-};
-
-export const ensureDBConnection = () => {
+const ensureDBConnection = () => {
   if (connected) {
     return Promise.resolve();
   }
@@ -136,68 +71,70 @@ export const ensureDBConnection = () => {
     });
     return promise;
   }
-  // eslint-disable-next-line no-async-promise-executor
-  return new Promise<void>(async (resolve) => {
-    try {
-      if (closing) {
-        await ensureNoDBConnection();
-      }
-      closed = false;
-      connecting = true;
-      await client.connect();
-      console.log('Connected successfully to database server');
-      db = client.db(dbName);
-      pointsCollection = db.collection<Points>(pointsCollectionName);
-      if ((await pointsCollection.countDocuments()) === 0) {
-        await pointsCollection.insertMany(
-          Object.keys(COLORS).map(
-            (color): Points => ({
-              color: color as keyof typeof COLORS,
-              points: 0,
-              lastChanged: new Date(),
-            })
-          )
-        );
-      }
-      pointEventsCollection = db.collection<PointEvent>(
-        pointEventsCollectionName
-      );
-      settingsCollection = db.collection<Setting>(settingsCollectionName);
-
-      const passwordObject = (await settingsCollection.findOne({
-        key: 'password',
-        type: 'string',
-      })) as StringSetting;
-      let password: string | undefined;
-      if (passwordObject) {
-        password = passwordObject.value;
-      } else {
-        password = process.env.STAIR_HOUSES_DEFAULT_PASSWORD;
-        if (!password) {
-          password = makeId(15);
-          console.log('Generated password: ' + password);
+  return new Promise<void>((resolve) => {
+    (async () => {
+      try {
+        if (closing) {
+          await ensureNoDBConnection();
         }
-        const passwordHashed = await hash(password);
-        await settingsCollection.insertOne({
+        closed = false;
+        connecting = true;
+        await client.connect();
+        console.log('Connected successfully to database server');
+        db = client.db(dbName);
+        pointsCollection = db.collection<Points>(pointsCollectionName);
+        if ((await pointsCollection.countDocuments()) === 0) {
+          await pointsCollection.insertMany(
+            Object.keys(COLORS).map(
+              (color): Points => ({
+                color: color as keyof typeof COLORS,
+                points: 0,
+                lastChanged: new Date(),
+              })
+            )
+          );
+        }
+        pointEventsCollection = db.collection<PointEvent>(
+          pointEventsCollectionName
+        );
+        settingsCollection = db.collection<Setting>(settingsCollectionName);
+        usersCollection = db.collection<User>(usersCollectionName);
+
+        const passwordObject = (await settingsCollection.findOne({
           key: 'password',
-          value: passwordHashed,
           type: 'string',
+        })) as StringSetting | null;
+        let password: string | undefined;
+        if (passwordObject) {
+          password = passwordObject.value;
+        } else {
+          password = process.env.FOOD_WASTE_DEFAULT_PASSWORD;
+          if (!password) {
+            password = makeId(15);
+            console.log('Generated password: ' + password);
+          }
+          const passwordHashed = await hashPassword(password);
+          await settingsCollection.insertOne({
+            key: 'password',
+            value: passwordHashed,
+            type: 'string',
+          });
+        }
+        Promise.resolve().then(() => {
+          connectingWaitPromises.forEach((promiseFunc) => promiseFunc());
+          connected = true;
+          connecting = false;
         });
+        resolve();
+      } catch (e: unknown) {
+        console.error(e);
+        process.exitCode = 1;
       }
-      Promise.resolve().then(() => {
-        connectingWaitPromises.forEach((promiseFunc) => promiseFunc());
-        connected = true;
-        connecting = false;
-      });
-      resolve();
-    } catch (e: unknown) {
-      console.error(e);
-      process.exitCode = 1;
-    }
+    })();
   });
 };
 
-export const ensureNoDBConnection = (forGood = false) => {
+const ensureNoDBConnection = (forGood = false) => {
   if (closed && (!forGood || closedForGood)) {
     return Promise.resolve();
   }
@@ -211,233 +148,54 @@ export const ensureNoDBConnection = (forGood = false) => {
     });
     return promise;
   }
-  // eslint-disable-next-line no-async-promise-executor
-  return new Promise<void>(async (resolve) => {
-    try {
-      if (connecting) {
-        await ensureDBConnection();
-      }
-      db = undefined;
-      connected = false;
-      closing = true;
-      if (forGood) {
-        closingForGood = true;
-      }
-      await client.close();
-      console.log('Successfully closed connection to server');
-      Promise.resolve().then(() => {
-        closingWaitPromises.forEach((promiseFunc) => promiseFunc());
-        closed = true;
-        closing = false;
-        if (closingForGood) {
-          closedForGood = true;
-          closingForGood = false;
+  return new Promise<void>((resolve) => {
+    (async () => {
+      try {
+        if (connecting) {
+          await ensureDBConnection();
         }
-      });
-      resolve();
-    } catch (e: unknown) {
-      console.error(e);
-      process.exitCode = 1;
-    }
-  });
-};
-
-export const verifyPassword = async (
-  password: string,
-  ip: string,
-  captchaToken?: string
-): Promise<{ success: boolean; showCaptcha: boolean; nextTry: Date }> => {
-  const timeOut = passwordTimeOuts[ip];
-  let needsCaptcha = false;
-  let previous = passwordPreviousTimeOuts[ip];
-  let previousCount = 0;
-  if (previous) {
-    if (previous.length) {
-      passwordPreviousTimeOuts[ip] = previous.filter(
-        (item) => item > new Date(Date.now() - 1000 * 60 * 60 * 24)
-      );
-      if (!passwordPreviousTimeOuts[ip].length) {
-        delete passwordPreviousTimeOuts[ip];
-      }
-      previous = passwordPreviousTimeOuts[ip];
-      previousCount = previous?.length ?? 0;
-    }
-  }
-  if (timeOut) {
-    if (timeOut > new Date()) {
-      return {
-        success: false,
-        showCaptcha: previousCount > 3,
-        nextTry: timeOut,
-      };
-    } else {
-      delete passwordTimeOuts[ip];
-      if (previousCount > 2) {
-        needsCaptcha = true;
-      }
-    }
-  }
-  if (!passwordTries[ip]) {
-    passwordTries[ip] = 0;
-  }
-  passwordTries[ip]++;
-  if (passwordTries[ip] > 10) {
-    if (!previous) {
-      passwordPreviousTimeOuts[ip] = [];
-      previous = passwordPreviousTimeOuts[ip];
-    }
-    let lengthInMin = 0;
-    switch (previousCount) {
-      case 0:
-        lengthInMin = 1;
-        break;
-      case 1:
-        lengthInMin = 5;
-        break;
-      case 2:
-        lengthInMin = 20;
-        break;
-      case 3:
-        lengthInMin = 60;
-        break;
-      case 4:
-        lengthInMin = 180;
-        break;
-      case 5:
-        lengthInMin = 540;
-        break;
-      default:
-        lengthInMin = 1440;
-        break;
-    }
-    const nextTry = new Date(new Date().getTime() + lengthInMin * 60 * 1000);
-    passwordTimeOuts[ip] = nextTry;
-    delete passwordTries[ip];
-    previous.push(new Date());
-    return { success: false, showCaptcha: previousCount > 2, nextTry };
-  } else if (
-    passwordTries[ip] === 4 ||
-    passwordTries[ip] === 7 ||
-    passwordTries[ip] === 9
-  ) {
-    needsCaptcha = true;
-  }
-  if (passwordFailedCaptcha[ip]) {
-    needsCaptcha = true;
-  }
-  if (needsCaptcha && captchaSecret) {
-    const captcha =
-      captchaToken && (await hCaptcha.verify(captchaSecret, captchaToken));
-    if (!captcha) {
-      if (passwordFailedCaptcha[ip]) {
-        passwordFailedCaptcha[ip]++;
-      } else {
-        passwordFailedCaptcha[ip] = 1;
-      }
-      return { success: false, showCaptcha: true, nextTry: new Date() };
-    } else {
-      delete passwordFailedCaptcha[ip];
-    }
-  }
-
-  await ensureDBConnection();
-  settingsCollection = settingsCollection as Collection<Setting>;
-
-  const hashedPasswordObject = (await settingsCollection.findOne({
-    key: 'password',
-    type: 'string',
-  })) as StringSetting;
-  if (hashedPasswordObject) {
-    const result = await verify(hashedPasswordObject.value, password);
-    if (result) {
-      delete passwordTries[ip];
-      delete passwordFailedCaptcha[ip];
-      return {
-        success: true,
-        showCaptcha:
-          passwordTries[ip] === 3 ||
-          passwordTries[ip] === 6 ||
-          passwordTries[ip] === 8,
-        nextTry: new Date(),
-      };
-    }
-  }
-  return {
-    success: false,
-    showCaptcha:
-      passwordTries[ip] === 3 ||
-      passwordTries[ip] === 6 ||
-      passwordTries[ip] === 8,
-    nextTry: new Date(),
-  };
-};
-
-export const getPoints = async () => {
-  await ensureDBConnection();
-  pointsCollection = pointsCollection as Collection<Points>;
-
-  return (await pointsCollection.find({}).toArray()) as Points[];
-};
-
-export const getPointsWithStats = async () => {
-  await ensureDBConnection();
-  pointsCollection = pointsCollection as Collection<Points>;
-  pointEventsCollection = pointEventsCollection as Collection<PointEvent>;
-
-  const points = (await pointsCollection.find({}).toArray()) as Points[];
-  const events = (await pointEventsCollection
-    .find({})
-    .toArray()) as PointEvent[];
-
-  const pointsWithStats: PointsWithStats[] = points.map((item) => {
-    const pointsCategories: Record<string, number> = {};
-    events
-      .filter((event) => event.color === item.color)
-      .forEach((event) => {
-        if (pointsCategories[event.reason || 'General']) {
-          pointsCategories[event.reason || 'General'] += event.pointsDiff;
-        } else {
-          pointsCategories[event.reason || 'General'] = event.pointsDiff;
+        db = undefined;
+        connected = false;
+        closing = true;
+        if (forGood) {
+          closingForGood = true;
         }
-      });
-    const categoriesArray: PointsCategory[] = Object.keys(pointsCategories).map(
-      (key) => {
-        return { name: key, amount: pointsCategories[key] };
+        await client.close();
+        console.log('Successfully closed connection to server');
+        Promise.resolve().then(() => {
+          closingWaitPromises.forEach((promiseFunc) => promiseFunc());
+          closed = true;
+          closing = false;
+          if (closingForGood) {
+            closedForGood = true;
+            closingForGood = false;
+          }
+        });
+        resolve();
+      } catch (e: unknown) {
+        console.error(e);
+        process.exitCode = 1;
       }
-    );
-    return { ...item, categories: categoriesArray };
+    })();
   });
-  return pointsWithStats;
 };
 
-export const addPoints = async (
-  color: string,
-  number: number,
-  date?: Date,
-  owner?: string,
-  reason?: string
-) => {
+export const getPointsCollection = async () => {
   await ensureDBConnection();
-  pointsCollection = pointsCollection as Collection<Points>;
-  pointEventsCollection = pointEventsCollection as Collection<PointEvent>;
+  return pointsCollection as Collection<Points>;
+};
 
-  await pointsCollection.updateOne(
-    { color: color as keyof typeof COLORS },
-    {
-      $inc: { points: number },
-      $currentDate: { lastChanged: true },
-    }
-  );
+export const getPointEventsCollection = async () => {
+  await ensureDBConnection();
+  return pointEventsCollection as Collection<PointEvent>;
+};
 
-  await pointEventsCollection.insertOne({
-    color: color as keyof typeof COLORS,
-    pointsDiff: number,
-    date: date ?? new Date(),
-    addedDate: new Date(),
-    addedBy: 'Web',
-    owner,
-    reason,
-  });
+export const getSettingsCollection = async () => {
+  await ensureDBConnection();
+  return settingsCollection as Collection<Setting>;
+};
 
-  return await getPointsWithStats();
+export const getUsersCollection = async () => {
+  await ensureDBConnection();
+  return usersCollection as Collection<User>;
 };

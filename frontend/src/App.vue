@@ -1,22 +1,7 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
-  import { subscribePoints, zeroData } from './data';
   import HeaderBar from './components/HeaderBar.vue';
   import Footer from './components/Footer.vue';
-
-  subscribePoints().subscribe((data) => {
-    if (data !== zeroData) {
-      loading.value = false;
-    }
-  });
-
-  subscribePoints().subscribe((data) => {
-    if (data !== zeroData) {
-      loading.value = false;
-    }
-  });
-
-  let loading = ref(true);
+  import { loading } from './settings';
 </script>
 
 <template>
@@ -30,7 +15,11 @@
   </div>
   <div class="container">
     <HeaderBar> </HeaderBar>
-    <router-view></router-view>
+    <router-view v-slot="{ Component }">
+      <transition name="fade">
+        <component :is="Component" :key="$route.name" />
+      </transition>
+    </router-view>
     <Footer> </Footer>
   </div>
 </template>

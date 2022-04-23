@@ -1,16 +1,10 @@
-# STAIR Houses
+# Food waste
 
-Displaying and editing STAIR Houses points on the web.
+Food waste sharing app
 
 ## About The Project
 
-This project is used to display and edit the current points total of the STAIR "houses".
-
-It provides a public website to view the scores as well as a password protected admin panel to add and remove points.
-
-The project consists of a frontend as well as a backend which the frontend connects with and where the points are stored.
-
-The frontend is deployed [here](https://stair.ch/houses).
+The project consists of a frontend as well as a backend which the frontend connects with and where the users are store.
 
 ### Built With
 
@@ -76,19 +70,19 @@ To install and run the project you will need the following:
 1. Clone the repo
 
    ```sh
-   git clone git@github.com:stairch/stair-houses.git
+   git clone git@github.com:EPRE-FS-22/food-waste.git
    ```
 
    or
 
    ```sh
-   git clone https://github.com/stairch/stair-houses.git
+   git clone https://github.com/EPRE-FS-22/food-waste.git
    ```
 
 2. Enter the directory
 
    ```sh
-   cd stair-houses
+   cd food-waste
    ```
 
 3. Install NPM packages at root level (This will install husky for commitlint.)
@@ -237,10 +231,10 @@ To configure and build it for production, set the following environment variable
 #### Frontend
 
 ```sh
-VITE_STAIR_HOUSES_PROTOCOL="wss"
-VITE_STAIR_HOUSES_BACKEND_HOST="<domain>"
-VITE_STAIR_HOUSES_BACKEND_PORT="3033"
-VITE_STAIR_HOUSES_CAPTCHA_SITEKEY="<hCaptcha sitekey (can be omitted to disable captcha)>"
+VITE_FOOD_WASTE_PROTOCOL="wss"
+VITE_FOOD_WASTE_BACKEND_HOST="<domain>"
+VITE_FOOD_WASTE_BACKEND_PORT="3330"
+VITE_FOOD_WASTE_CAPTCHA_SITEKEY="<hCaptcha sitekey (can be omitted to disable captcha)>"
 ```
 
 These can be set in a `.env.production.local` file in the `frontend` directory so they will be used for every full build (using `yarn build`), but not for testing and development.
@@ -251,17 +245,17 @@ In the frontend the environment variables will be loaded in at compile/build tim
 #### Backend
 
 ```sh
-STAIR_HOUSES_PORT="3033"
-STAIR_HOUSES_IP="<server IP address, NOT DOMAIN!!!>"
-STAIR_HOUSES_SSL_CERT="<file path to ssl certificate (can be omitted, then http/ws will be used)>"
-STAIR_HOUSES_SSL_KEY="<file path to ssl private key (can be omitted together with the certificate)>"
-STAIR_HOUSES_FRONTEND_HOST="stair.ch"
-STAIR_HOUSES_DEFAULT_PASSWORD="<default password to be set on first connection to database, if not set already, SHOULD BE REMOVED/OMITTED LATER!!!>"
-STAIR_HOUSES_DATABASE_HOST="localhost"
-STAIR_HOUSES_DATABASE_PORT="27017"
-STAIR_HOUSES_DATABASE_USER="<MongoDB user (can be omitted)>"
-STAIR_HOUSES_DATABASE_PASSWORD="<MongoDB password (can be omitted)"
-STAIR_HOUSES_CAPTCHA_SECRET="<hCaptcha secret (can be omitted to disable captcha)>"
+FOOD_WASTE_PORT="3330"
+FOOD_WASTE_IP="<server IP address, NOT DOMAIN!!!>"
+FOOD_WASTE_SSL_CERT="<file path to ssl certificate (can be omitted, then http/ws will be used)>"
+FOOD_WASTE_SSL_KEY="<file path to ssl private key (can be omitted together with the certificate)>"
+FOOD_WASTE_FRONTEND_HOST="mll.one"
+FOOD_WASTE_DEFAULT_PASSWORD="<default password to be set on first connection to database, if not set already, SHOULD BE REMOVED/OMITTED LATER!!!>"
+FOOD_WASTE_DATABASE_HOST="localhost"
+FOOD_WASTE_DATABASE_PORT="27017"
+FOOD_WASTE_DATABASE_USER="<MongoDB user (can be omitted)>"
+FOOD_WASTE_DATABASE_PASSWORD="<MongoDB password (can be omitted)"
+FOOD_WASTE_CAPTCHA_SECRET="<hCaptcha secret (can be omitted to disable captcha)>"
 ```
 
 These can also be set in a `.env` file in the directory it's run from. WARNING: Unlike in the frontend, they will be used for every run (including testing and development). They are not needed at compile time and can be omitted for most testing and development setups.

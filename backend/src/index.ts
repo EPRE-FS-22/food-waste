@@ -8,16 +8,8 @@ import { createContext } from './context.js';
 import { appRouter } from './router.js';
 import 'dotenv/config';
 
-export const captchaSecret = process.env.STAIR_HOUSES_CAPTCHA_SECRET ?? '';
-
-console.log('starting');
-
-if (!captchaSecret) {
-  console.log('Captcha not configured, allowing requests without captcha.');
-}
-
-const cert = process.env.STAIR_HOUSES_SSL_CERT ?? '';
-const key = process.env.STAIR_HOUSES_SSL_KEY ?? '';
+const cert = process.env.FOOD_WASTE_SSL_CERT ?? '';
+const key = process.env.FOOD_WASTE_SSL_KEY ?? '';
 
 const makeHTTPSFastify = () => {
   return fastify({
@@ -48,7 +40,7 @@ server.register(fp(fastifyTRPCPlugin), {
   trpcOptions: { router: appRouter, createContext },
 });
 
-const frontendHost = process.env.STAIR_HOUSES_FRONTEND_HOST ?? 'localhost';
+export const frontendHost = process.env.FOOD_WASTE_FRONTEND_HOST ?? 'localhost';
 
 server.register(fastifyCors, () => (req, callback) => {
   let corsOptions;
@@ -62,10 +54,10 @@ server.register(fastifyCors, () => (req, callback) => {
 (async () => {
   try {
     await server.listen(
-      process.env.STAIR_HOUSES_PORT ?? 3033,
-      process.env.STAIR_HOUSES_IP ?? undefined
+      process.env.FOOD_WASTE_PORT ?? 3330,
+      process.env.FOOD_WASTE_IP ?? undefined
     );
-    console.log('Listening on port 3033');
+    console.log('Listening on port 3330');
   } catch (err) {
     console.error(err);
     process.exit(1);

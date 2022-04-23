@@ -5,6 +5,8 @@ export const ranking = ref(false);
 
 export const secret = ref(false);
 
+export const loading = ref(true);
+
 const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
 
 export const settings = ref({

@@ -2,7 +2,7 @@
   import { BehaviorSubject, ReplaySubject } from 'rxjs';
   import { onUpdated, ref } from 'vue';
   import moment from 'moment';
-  import { secret, settings } from '../settings';
+  import { loading, secret, settings } from '../settings';
   import {
     addPoints,
     DisplayData,
@@ -15,7 +15,8 @@
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
-  const showColors = ref(true);
+  let dishAnimations = ref(false);
+  let firstNonZero = true;
 
   let updated = false;
   const updatedSubject = new ReplaySubject<void>();
@@ -49,53 +50,43 @@
     }
   });
 
-  let first = true;
+  const fullyDisplayData = () => {
+    displayActualData.value.forEach((actualData) => {
+      actualData.currentPercentage = actualData.relativePercentage;
+      actualData.currentColor = actualData.color;
+    });
+    setTimeout(() => (dishAnimations.value = false), 300);
+  };
+
+  const waitDisplayData = () => {
+    setTimeout(() => {
+      if (firstNonZero) {
+        firstNonZero = false;
+        displayActualData.value.forEach((actualData) => {
+          actualData.currentColor = actualData.color;
+        });
+      } else {
+        dishAnimations.value = true;
+      }
+    });
+    setTimeout(fullyDisplayData, 10);
+  };
+
+  const animateDisplayData = () => {
+    if (updated) {
+      waitDisplayData();
+    } else {
+      updatedSubject.subscribe(() => waitDisplayData());
+    }
+  };
 
   const displayActualData = ref(displayData.value);
-  if (displayActualData.value !== zeroData) {
-    if (updated) {
-      setTimeout(() => {
-        displayActualData.value.forEach(
-          (actualData) =>
-            (actualData.currentPercentage = actualData.relativePercentage)
-        );
-      });
-    } else {
-      updatedSubject.subscribe(() => {
-        setTimeout(() => {
-          displayActualData.value.forEach(
-            (actualData) =>
-              (actualData.currentPercentage = actualData.relativePercentage)
-          );
-        });
-      });
-    }
-  }
 
   displayData.subscribe((data) => {
+    loading.value = false;
     displayActualData.value = data;
-    if (updated) {
-      if (!first) {
-        showColors.value = false;
-      }
-      setTimeout(() => {
-        showColors.value = true;
-        displayActualData.value.forEach(
-          (actualData) =>
-            (actualData.currentPercentage = actualData.relativePercentage)
-        );
-      });
-    } else {
-      updatedSubject.subscribe(() => {
-        setTimeout(() => {
-          showColors.value = true;
-          displayActualData.value.forEach(
-            (actualData) =>
-              (actualData.currentPercentage = actualData.relativePercentage)
-          );
-        });
-      });
-      first = false;
+    if (data !== zeroData) {
+      animateDisplayData();
     }
   });
 
@@ -117,7 +108,7 @@
           typeof settings.value.amount !== 'number'
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true));
+            setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value = 'Please enter a valid amount.';
         } else if (
@@ -125,7 +116,7 @@
           isNaN(moment(settings.value.date).toDate().getTime())
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true));
+            setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value = 'Please enter a valid date.';
         } else if (
@@ -135,14 +126,14 @@
             pressedColor.value !== color)
         ) {
           if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true));
+            setTimeout(() => (displayErrorMessage.value = true), 10);
           }
           errorMessage.value =
             'Please enter a reason. Press again to send anyway.';
         } else {
           if (displayErrorMessage.value) {
             displayErrorMessage.value = false;
-            setTimeout(() => (errorMessage.value = ''));
+            setTimeout(() => (errorMessage.value = ''), 300);
           }
           await addPoints(
             color,
@@ -177,7 +168,7 @@
         }
       }
     } catch (e) {
-      console.error(e);
+      throw e;
     }
   };
 </script>
@@ -187,11 +178,13 @@
     <div
       v-for="(data, index) in displayActualData"
       :key="data.color"
-      class="house"
+      class="dish"
       :class="{
-        [data.color]: showColors,
+        [data.previousColor]: true,
+        [data.currentColor + '-force']: true,
+        animation: dishAnimations,
         clickable: !!allowEdit,
-        ['house-' + (index + 1)]: true,
+        ['dish-' + (index + 1)]: true,
       }"
       @click="addPointToColor(data.color)"
       @focusin="colorFocus(data.color, true)"
@@ -260,7 +253,7 @@
     grid-template-rows: 1fr 1fr;
     grid-template-columns: 1fr 1fr 1fr;
     width: calc(100% - 1rem);
-    height: calc(85% - 1rem);
+    height: calc(85vh - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
@@ -302,11 +295,11 @@
     }
 
     &.small {
-      height: calc(70% - 1rem);
+      height: calc(70vh - 1rem);
     }
   }
 
-  .house {
+  .dish {
     position: relative;
     background-color: rgb(238, 238, 238);
     height: auto;
@@ -318,15 +311,43 @@
     border: 0.025rem solid rgba(0, 0, 0, 0.5);
     border-radius: 1rem;
     box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    transition: transform 0.2s ease-in-out;
     overflow: visible;
 
-    &.house-1,
-    &.house-2,
-    &.house-3 {
+    &.dish-1,
+    &.dish-2,
+    &.dish-3 {
       .categories-wrapper .categories-inner-wrapper {
         max-height: 5.5rem;
       }
+    }
+
+    &.animation {
+      transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    }
+
+    &.red-force {
+      background-color: #ab0200;
+    }
+
+    &.blue-force {
+      background-color: #166cc2;
+    }
+
+    &.purple-force {
+      background-color: #420082;
+    }
+
+    &.grey-force {
+      background-color: #808184;
+    }
+
+    &.orange-force {
+      background-color: #ff6228;
+    }
+
+    &.yellow-force {
+      background-color: #f6aa00;
     }
 
     &.clickable {
@@ -355,10 +376,10 @@
 
   @media (max-aspect-ratio: 1/1) {
     .content {
-      height: calc(100% - 15vw - 1rem);
+      height: calc(100vh - 15vw - 1rem);
 
       &.small {
-        height: calc(100% - 28vw - 1rem);
+        height: calc(100vh - 28vw - 1rem);
       }
     }
   }
@@ -369,7 +390,7 @@
       grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
       grid-template-areas: 'a b c d e f';
 
-      .house {
+      .dish {
         .categories-wrapper .categories-inner-wrapper {
           max-height: 2.25rem;
         }
@@ -383,13 +404,13 @@
       grid-template-columns: 1fr 1fr;
       grid-template-areas: 'a b' 'c d' 'e f';
 
-      .house {
+      .dish {
         .categories-wrapper .categories-inner-wrapper {
           max-height: 6rem;
         }
 
-        &.house-1,
-        &.house-2 {
+        &.dish-1,
+        &.dish-2 {
           .categories-wrapper .categories-inner-wrapper {
             max-height: 4rem;
           }
@@ -404,7 +425,7 @@
       grid-template-columns: 1fr;
       grid-template-areas: 'a' 'b' 'c' 'd' 'e' 'f';
 
-      .house {
+      .dish {
         .categories-wrapper .categories-inner-wrapper {
           max-height: 6rem;
         }

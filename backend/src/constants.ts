@@ -8,3 +8,5 @@ export const COLORS = {
 };
 
 export const REFRESH_INTERVAL = 500;
+
+export const EMAIL_ENDING = '@stud.hslu.ch';

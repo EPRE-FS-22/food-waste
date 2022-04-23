@@ -95,7 +95,7 @@
     display: flex;
     flex-direction: row;
     width: calc(100% - 1rem);
-    height: calc(15% - 1rem);
+    height: calc(15vh - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
