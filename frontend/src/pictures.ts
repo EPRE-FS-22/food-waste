@@ -25,7 +25,7 @@ export const getPicture = (search: string) =>
             params: {
               query: search,
               size: 'medium',
-              per_page: 1,
+              per_page: 10,
             },
             headers: {
               Authorization: picturesKey,
@@ -37,8 +37,12 @@ export const getPicture = (search: string) =>
             result.data.photos &&
             result.data.photos.length
           ) {
-            previousPictures[search].next(result.data.photos[0].src.medium);
-            resolve(result.data.photos[0].src.medium);
+            const photo =
+              result.data.photos[
+                Math.floor(Math.random() * result.data.photos.length)
+              ];
+            previousPictures[search].next(photo.src.medium);
+            resolve(photo.src.medium);
             return;
           }
           resolve('');
