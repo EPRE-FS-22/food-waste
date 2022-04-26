@@ -24,7 +24,7 @@ export const getPicture = (search: string) =>
           const result = await axios.get('https://api.pexels.com/v1/search', {
             params: {
               query: search,
-              size: 'medium',
+              size: 'large',
               per_page: 10,
             },
             headers: {
@@ -41,8 +41,8 @@ export const getPicture = (search: string) =>
               result.data.photos[
                 Math.floor(Math.random() * result.data.photos.length)
               ];
-            previousPictures[search].next(photo.src.medium);
-            resolve(photo.src.medium);
+            previousPictures[search].next(photo.src.large);
+            resolve(photo.src.large);
             return;
           }
           resolve('');
