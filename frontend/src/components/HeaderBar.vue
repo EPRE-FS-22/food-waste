@@ -68,6 +68,29 @@
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
   }
 
+  @media (min-aspect-ratio: 3/1) {
+    .header {
+      height: 16vh;
+      height: calc((16 * (100vh - var(--vh-offset, 0px)) / 100));
+    }
+
+    .logo {
+      margin-left: 2.333vh;
+      margin-left: calc((2.333 * (100vh - var(--vh-offset, 0px)) / 100));
+      margin-right: 2.333vh;
+      margin-right: calc((2.333 * (100vh - var(--vh-offset, 0px)) / 100));
+      height: 13.333vh;
+      height: calc((13.333 * (100vh - var(--vh-offset, 0px)) / 100));
+    }
+
+    .title {
+      font-size: 12vh;
+      font-size: calc((12 * (100vh - var(--vh-offset, 0px)) / 100));
+      line-height: 13.333vh;
+      line-height: calc((13.333 * (100vh - var(--vh-offset, 0px)) / 100));
+    }
+  }
+
   @media (max-aspect-ratio: 1/1) {
     .header {
       height: 12vw;
@@ -80,7 +103,6 @@
     }
 
     .title {
-      font-weight: bold;
       font-size: 9vw;
       line-height: 10vw;
     }
@@ -90,6 +112,23 @@
       font-size: 0.8rem;
       line-height: 0.8rem;
       padding: 0.35rem;
+    }
+  }
+
+  @media (max-aspect-ratio: 9/16) {
+    .header {
+      height: 16vw;
+    }
+
+    .logo {
+      margin-left: 2.333vw;
+      margin-right: 2.333vw;
+      height: 13.333vw;
+    }
+
+    .title {
+      font-size: 12vw;
+      line-height: 13.333vw;
     }
   }
 </style>

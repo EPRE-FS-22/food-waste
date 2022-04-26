@@ -398,6 +398,18 @@
     }
   }
 
+  @media (min-aspect-ratio: 3/1) {
+    .content {
+      height: calc(78vh - 1rem);
+      height: calc((78 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
+
+      &.small {
+        height: calc(63vh - 1rem);
+        height: calc((63 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
+      }
+    }
+  }
+
   @media (max-aspect-ratio: 1/1) {
     .content {
       height: calc(100vh - 15vw - 1rem);
@@ -407,6 +419,20 @@
         height: calc(100vh - 28vw - 1rem);
         height: calc(
           (100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 28vw
+        );
+      }
+    }
+  }
+
+  @media (max-aspect-ratio: 9/16) {
+    .content {
+      height: calc(100vh - 22vw - 1rem);
+      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 22vw);
+
+      &.small {
+        height: calc(100vh - 35vw - 1rem);
+        height: calc(
+          (100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 35vw
         );
       }
     }
