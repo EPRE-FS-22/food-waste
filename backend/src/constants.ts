@@ -1,10 +1,10 @@
-export const COLORS = {
-  red: 'Red',
-  blue: 'Blue',
-  purple: 'Purple',
-  grey: 'Grey',
-  orange: 'Orange',
-  yellow: 'Yellow',
+export const DISHES = {
+  spaghetti: 'Spaghetti',
+  lasagna: 'Lasagna',
+  sushi: 'Sushi',
+  ramen: 'Ramen',
+  steak: 'Steak',
+  burger: 'Burger',
 };
 
 export const REFRESH_INTERVAL = 500;

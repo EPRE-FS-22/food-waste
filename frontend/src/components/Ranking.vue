@@ -5,7 +5,7 @@
 
   const displayData: BehaviorSubject<DisplayData> = subscribePoints();
 
-  const showColors = ref(true);
+  const showDishes = ref(true);
 
   const displayActualData = ref(displayData.value);
 
@@ -24,14 +24,14 @@
       <div v-if="displayActualData" class="content">
         <div
           v-for="(data, index) in displayActualData"
-          :key="data.color"
+          :key="data.dish"
           class="dish"
         >
           <div class="index-container">
             <span class="index"> {{ index + 1 }}. </span>
           </div>
-          <span class="name" :class="{ [data.color]: showColors }">
-            {{ (data.colorString + ' Dish').toUpperCase() }}
+          <span class="name" :class="{ [data.dish]: showDishes }">
+            {{ (data.dishString + ' Dish').toUpperCase() }}
           </span>
           <span class="number">
             {{ data.points }}

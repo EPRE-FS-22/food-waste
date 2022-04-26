@@ -1,2 +1,2 @@
-import { COLORS as COLORS_IMPORT } from '../../backend/src/constants';
-export const COLORS = COLORS_IMPORT;
+import { DISHES as DISHES_IMPORT } from '../../backend/src/constants';
+export const DISHES = DISHES_IMPORT;

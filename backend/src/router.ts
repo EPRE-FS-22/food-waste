@@ -1,6 +1,6 @@
 import * as trpc from '@trpc/server';
 import { z } from 'zod';
-import { COLORS, REFRESH_INTERVAL } from './constants.js';
+import { DISHES, REFRESH_INTERVAL } from './constants.js';
 import { Subject } from 'rxjs';
 import type { PointsWithStats } from './model';
 import { makeId } from './id.js';
@@ -370,7 +370,7 @@ export const appRouter = trpc
   })
   .mutation('addPoints', {
     input: z.object({
-      color: z.string().nonempty().max(20),
+      dish: z.string().nonempty().max(20),
       number: z.number().min(-1000).max(1000).int(),
       sessionId: z.string().length(20),
       date: z.number().nonnegative().optional(),
@@ -381,7 +381,7 @@ export const appRouter = trpc
       try {
         const ip = getIp(ctx as Context);
         if (
-          Object.keys(COLORS).includes(input.color) &&
+          Object.keys(DISHES).includes(input.dish) &&
           verifySession(input.sessionId, ip, undefined, true)
         ) {
           let date = input.date ? new Date(input.date) : undefined;
@@ -390,7 +390,7 @@ export const appRouter = trpc
           }
 
           const points = await addPoints(
-            input.color as keyof typeof COLORS,
+            input.dish as keyof typeof DISHES,
             input.number,
             date,
             input.owner,

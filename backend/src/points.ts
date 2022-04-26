@@ -1,5 +1,5 @@
 import { WithId } from 'mongodb';
-import { COLORS } from './constants.js';
+import { DISHES } from './constants.js';
 import { getPointEventsCollection, getPointsCollection } from './data.js';
 import type { Points, PointsCategory, PointsWithStats } from './model';
 
@@ -22,7 +22,7 @@ export const getPointsWithStats = async () => {
   const pointsWithStats: PointsWithStats[] = points.map((item) => {
     const pointsCategories: Record<string, number> = {};
     events
-      .filter((event) => event.color === item.color)
+      .filter((event) => event.dish === item.dish)
       .forEach((event) => {
         if (pointsCategories[event.reason || 'General']) {
           pointsCategories[event.reason || 'General'] += event.pointsDiff;
@@ -41,7 +41,7 @@ export const getPointsWithStats = async () => {
 };
 
 export const addPoints = async (
-  color: keyof typeof COLORS,
+  dish: keyof typeof DISHES,
   number: number,
   date?: Date,
   owner?: string,
@@ -51,7 +51,7 @@ export const addPoints = async (
   const pointEventsCollection = await getPointEventsCollection();
 
   await pointsCollection.updateOne(
-    { color: color },
+    { dish: dish },
     {
       $inc: { points: number },
       $currentDate: { lastChanged: true },
@@ -59,7 +59,7 @@ export const addPoints = async (
   );
 
   await pointEventsCollection.insertOne({
-    color: color,
+    dish: dish,
     pointsDiff: number,
     date: date ?? new Date(),
     addedDate: new Date(),

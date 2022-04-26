@@ -1,7 +1,7 @@
-import { COLORS } from './constants.js';
+import { DISHES } from './constants.js';
 
 export interface Points {
-  color: keyof typeof COLORS;
+  dish: keyof typeof DISHES;
   points: number;
   lastChanged: Date;
 }
@@ -16,7 +16,7 @@ export interface PointsWithStats extends Points {
 }
 
 export interface PointEvent {
-  color: string;
+  dish: string;
   pointsDiff: number;
   date: Date;
   addedDate: Date;

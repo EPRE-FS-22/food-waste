@@ -1,7 +1,7 @@
 import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
-import { COLORS } from './constants';
+import { DISHES } from './constants';
 import type { PointsCategory, PointsWithStats } from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
 
@@ -21,18 +21,18 @@ const client = createTRPCClient<AppRouter>({
   ],
 });
 
-let points: PointsWithStats[] = Object.keys(COLORS).map((item) => ({
-  color: item as keyof typeof COLORS,
+let points: PointsWithStats[] = Object.keys(DISHES).map((item) => ({
+  dish: item as keyof typeof DISHES,
   points: 0,
   lastChanged: new Date(0),
   categories: [],
 }));
 
-export interface DisplayColor {
-  color: string;
-  colorString: string;
-  currentColor: string;
-  previousColor: string;
+export interface DisplayDish {
+  dish: string;
+  dishString: string;
+  currentDish: string;
+  previousDish: string;
   points: number;
   relativePercentage: number;
   currentPercentage: number;
@@ -42,7 +42,7 @@ export interface DisplayColor {
   image?: string;
 }
 
-export type DisplayData = DisplayColor[];
+export type DisplayData = DisplayDish[];
 
 const placesStrings = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
 
@@ -90,12 +90,12 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
   }
 
   const dataNormalizedArray: {
-    color: string;
+    dish: string;
     relative: number;
     points: number;
     categories: PointsCategory[];
   }[] = data.map((item) => ({
-    color: item.color,
+    dish: item.dish,
     relative: item.points / pointsMaxIndex,
     points: item.points,
     categories: item.categories,
@@ -108,16 +108,16 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
     if (a.points > b.points) {
       return -1;
     }
-    const previousRandom = randomOrder[a.color + '-' + b.color];
+    const previousRandom = randomOrder[a.dish + '-' + b.dish];
     if (previousRandom) {
       return 0;
     }
-    const previousReverseRandom = randomOrder[b.color + '-' + a.color];
+    const previousReverseRandom = randomOrder[b.dish + '-' + a.dish];
     if (previousReverseRandom) {
       return 0;
     }
     const random = Math.random();
-    randomOrder[a.color + '-' + b.color] = random;
+    randomOrder[a.dish + '-' + b.dish] = random;
     if (random < 0.5) {
       return 0;
     } else {
@@ -160,19 +160,19 @@ const processData = (data: PointsWithStats[], zero = false): DisplayData => {
       badgeClass = 'last';
     }
 
-    const previousColor = zero
-      ? item.color
-      : dataSubject.value[index]?.color ?? item.color;
-    const returnObject: DisplayColor = {
-      color: item.color,
-      colorString: item.color.charAt(0).toUpperCase() + item.color.slice(1),
-      currentColor: previousColor,
-      previousColor,
+    const previousDish = zero
+      ? item.dish
+      : dataSubject.value[index]?.dish ?? item.dish;
+    const returnObject: DisplayDish = {
+      dish: item.dish,
+      dishString: item.dish.charAt(0).toUpperCase() + item.dish.slice(1),
+      currentDish: previousDish,
+      previousDish,
       points: item.points,
       relativePercentage: item.relative * 100,
       currentPercentage: zero
         ? 0
-        : dataSubject.value.find((prevItem) => prevItem.color === item.color)
+        : dataSubject.value.find((prevItem) => prevItem.dish === item.dish)
             ?.currentPercentage ?? 0,
       badgeString,
       badgeClass,
@@ -216,7 +216,7 @@ export const getPoints = async () => {
 };
 
 export const addPoints = async (
-  color: string,
+  dish: string,
   number: number,
   date?: Date,
   owner?: string,
@@ -227,7 +227,7 @@ export const addPoints = async (
       authFailure.next();
     }
     const data = await client.mutation('addPoints', {
-      color,
+      dish,
       number,
       sessionId: sessionId,
       date: date ? date.getTime() : undefined,

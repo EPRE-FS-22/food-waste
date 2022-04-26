@@ -22,24 +22,24 @@
   let updated = false;
   const updatedSubject = new ReplaySubject<void>();
 
-  const currentActiveColor = ref('');
+  const currentActiveDish = ref('');
 
-  const currentActiveColorDelayed = ref('');
+  const currentActiveDishDelayed = ref('');
 
-  const currentActiveColorAnimation = ref('');
+  const currentActiveDishAnimation = ref('');
 
-  const colorFocus = (color: string, active: boolean) => {
+  const dishFocus = (dish: string, active: boolean) => {
     if (active) {
-      if (currentActiveColor.value !== color) {
-        currentActiveColor.value = color;
-        setTimeout(() => (currentActiveColorDelayed.value = color), 100);
-        setTimeout(() => (currentActiveColorAnimation.value = color), 400);
+      if (currentActiveDish.value !== dish) {
+        currentActiveDish.value = dish;
+        setTimeout(() => (currentActiveDishDelayed.value = dish), 100);
+        setTimeout(() => (currentActiveDishAnimation.value = dish), 400);
       }
     } else {
-      if (currentActiveColor.value === color) {
-        currentActiveColor.value = '';
-        setTimeout(() => (currentActiveColorDelayed.value = ''), 100);
-        setTimeout(() => (currentActiveColorAnimation.value = ''), 400);
+      if (currentActiveDish.value === dish) {
+        currentActiveDish.value = '';
+        setTimeout(() => (currentActiveDishDelayed.value = ''), 100);
+        setTimeout(() => (currentActiveDishAnimation.value = ''), 400);
       }
     }
   };
@@ -54,7 +54,7 @@
   const fullyDisplayData = () => {
     displayActualData.value.forEach((actualData) => {
       actualData.currentPercentage = actualData.relativePercentage;
-      actualData.currentColor = actualData.color;
+      actualData.currentDish = actualData.dish;
     });
     setTimeout(() => (dishAnimations.value = false), 300);
   };
@@ -64,7 +64,7 @@
       if (firstNonZero) {
         firstNonZero = false;
         displayActualData.value.forEach((actualData) => {
-          actualData.currentColor = actualData.color;
+          actualData.currentDish = actualData.dish;
         });
       } else {
         dishAnimations.value = true;
@@ -90,7 +90,7 @@
           displayActualData.value.map(async (item) => {
             return {
               ...item,
-              image: await getPicture(item.color),
+              image: await getPicture(item.dish),
             };
           })
         );
@@ -111,7 +111,7 @@
     }
   });
 
-  const pressedColor = ref('red');
+  const pressedDish = ref('red');
 
   const errorMessage = ref('');
   const displayErrorMessage = ref(false);
@@ -120,7 +120,7 @@
 
   let secretCounter = 0;
 
-  const addPointToColor = async (color: string) => {
+  const addPointToDish = async (dish: string) => {
     try {
       if (!!props.allowEdit) {
         if (
@@ -144,7 +144,7 @@
           !settings.value.reason &&
           (errorMessage.value !==
             'Please enter a reason. Press again to send anyway.' ||
-            pressedColor.value !== color)
+            pressedDish.value !== dish)
         ) {
           if (!displayErrorMessage.value) {
             setTimeout(() => (displayErrorMessage.value = true), 10);
@@ -157,7 +157,7 @@
             setTimeout(() => (errorMessage.value = ''), 300);
           }
           await addPoints(
-            color,
+            dish,
             settings.value.amount || 0,
             settings.value.date
               ? moment(settings.value.date).toDate()
@@ -179,9 +179,9 @@
             settings.value.reason = '';
           }
         }
-        pressedColor.value = color;
+        pressedDish.value = dish;
       } else {
-        if (color === 'orange') {
+        if (dish === 'ramen') {
           secretCounter++;
           if (secretCounter >= 10) {
             secret.value = true;
@@ -199,11 +199,11 @@
   <div v-if="displayActualData" class="content" :class="{ small: !!allowEdit }">
     <div
       v-for="(data, index) in displayActualData"
-      :key="data.color"
+      :key="data.dish"
       class="dish"
       :class="{
-        [data.previousColor]: true,
-        [data.currentColor + '-force']: true,
+        [data.previousDish]: true,
+        [data.currentDish + '-force']: true,
         animation: dishAnimations,
         clickable: !!allowEdit,
         ['dish-' + (index + 1)]: true,
@@ -211,18 +211,18 @@
       :style="{
         backgroundImage: data.image ? 'url(' + data.image + ')' : '',
       }"
-      @click="addPointToColor(data.color)"
-      @focusin="colorFocus(data.color, true)"
-      @focusout="colorFocus(data.color, false)"
-      @mouseover="colorFocus(data.color, true)"
-      @mouseout="colorFocus(data.color, false)"
+      @click="addPointToDish(data.dish)"
+      @focusin="dishFocus(data.dish, true)"
+      @focusout="dishFocus(data.dish, false)"
+      @mouseover="dishFocus(data.dish, true)"
+      @mouseout="dishFocus(data.dish, false)"
     >
       <div class="points-container">
         <span
           v-if="errorMessage"
           class="warning-message"
           :class="{
-            hide: !displayErrorMessage || pressedColor !== data.color,
+            hide: !displayErrorMessage || pressedDish !== data.dish,
           }"
         >
           {{ errorMessage }}
@@ -238,13 +238,13 @@
           class="categories-inner-wrapper"
           :class="{
             show:
-              currentActiveColorDelayed === data.color ||
-              currentActiveColorAnimation === data.color,
+              currentActiveDishDelayed === data.dish ||
+              currentActiveDishAnimation === data.dish,
           }"
         >
           <div
             class="categories"
-            :class="{ active: currentActiveColorDelayed === data.color }"
+            :class="{ active: currentActiveDishDelayed === data.dish }"
           >
             <div
               v-for="category in data.categories"
@@ -258,15 +258,7 @@
         </div>
       </div>
       <div class="name">
-        {{ data.colorString }}
-        <div class="score">
-          <span class="number">
-            {{ data.points }}
-          </span>
-          <span class="badge" :class="[data.badgeClass]">
-            {{ data.badgeString }}
-          </span>
-        </div>
+        {{ data.dishString }}
       </div>
     </div>
   </div>
@@ -333,7 +325,7 @@
     flex-direction: column;
     justify-content: center;
     margin: 0.5rem;
-    border: 0.025rem solid rgba(0, 0, 0, 0.5);
+    border: none;
     border-radius: 1rem;
     box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease-in-out;
@@ -505,6 +497,19 @@
     justify-content: flex-end;
     overflow: hidden;
 
+    &:before {
+      content: ' ';
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0.2;
+      background-color: #000000;
+    }
+
     .warning-message {
       position: absolute;
       top: 0;
@@ -545,6 +550,7 @@
     padding: 0;
     margin: 0;
     border: none;
+    z-index: 1;
   }
 
   .name {

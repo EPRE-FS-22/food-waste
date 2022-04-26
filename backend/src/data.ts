@@ -1,5 +1,5 @@
 import { Collection, Db, MongoClient } from 'mongodb';
-import { COLORS } from './constants.js';
+import { DISHES } from './constants.js';
 import { makeId } from './id.js';
 import type { PointEvent, Points, Setting, StringSetting, User } from './model';
 import { hashPassword } from './users.js';
@@ -85,9 +85,9 @@ const ensureDBConnection = () => {
         pointsCollection = db.collection<Points>(pointsCollectionName);
         if ((await pointsCollection.countDocuments()) === 0) {
           await pointsCollection.insertMany(
-            Object.keys(COLORS).map(
-              (color): Points => ({
-                color: color as keyof typeof COLORS,
+            Object.keys(DISHES).map(
+              (dish): Points => ({
+                dish: dish as keyof typeof DISHES,
                 points: 0,
                 lastChanged: new Date(),
               })
