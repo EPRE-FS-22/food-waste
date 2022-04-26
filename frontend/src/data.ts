@@ -39,6 +39,7 @@ export interface DisplayColor {
   badgeString: string;
   badgeClass?: string;
   categories: PointsCategory[];
+  image?: string;
 }
 
 export type DisplayData = DisplayColor[];

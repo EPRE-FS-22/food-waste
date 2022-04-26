@@ -10,6 +10,7 @@
     subscribePoints,
     zeroData,
   } from '../data';
+  import { getPicture } from '../pictures';
 
   const props = defineProps({ allowEdit: { type: Boolean, default: false } });
 
@@ -82,9 +83,29 @@
 
   const displayActualData = ref(displayData.value);
 
+  const getPictures = () => {
+    (async () => {
+      try {
+        displayActualData.value = await Promise.all(
+          displayActualData.value.map(async (item) => {
+            return {
+              ...item,
+              image: await getPicture(item.color),
+            };
+          })
+        );
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    })();
+  };
+  getPictures();
+
   displayData.subscribe((data) => {
     loading.value = false;
     displayActualData.value = data;
+    getPictures();
     if (data !== zeroData) {
       animateDisplayData();
     }
@@ -168,6 +189,7 @@
         }
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
@@ -185,6 +207,9 @@
         animation: dishAnimations,
         clickable: !!allowEdit,
         ['dish-' + (index + 1)]: true,
+      }"
+      :style="{
+        backgroundImage: data.image ? 'url(' + data.image + ')' : '',
       }"
       @click="addPointToColor(data.color)"
       @focusin="colorFocus(data.color, true)"
@@ -313,6 +338,9 @@
     box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
     transition: transform 0.2s ease-in-out;
     overflow: visible;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
 
     &.dish-1,
     &.dish-2,

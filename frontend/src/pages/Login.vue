@@ -86,6 +86,7 @@
           ' your email address, please try again in a bit.';
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
@@ -105,6 +106,7 @@
         message.value = 'Could not set values, please try again in a bit.';
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
@@ -137,6 +139,7 @@
         message.value = 'Incorrect password';
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
@@ -203,6 +206,7 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
@@ -252,6 +256,7 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };

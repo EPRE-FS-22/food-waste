@@ -49,6 +49,7 @@
     "@hcaptcha/vue3-hcaptcha": "^1.0.1",
     "@trpc/client": "^9.20.3",
     "@trpc/server": "^9.20.3",
+    "axios": "^0.27.1",
     "moment": "^2.29.1",
     "rxjs": "^7.5.5",
     "vue": "^3.2.31",

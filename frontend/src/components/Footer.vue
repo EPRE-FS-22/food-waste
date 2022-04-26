@@ -5,6 +5,7 @@
     try {
       await logOut();
     } catch (e) {
+      console.error(e);
       throw e;
     }
   };
