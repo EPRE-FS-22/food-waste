@@ -5,8 +5,7 @@
 <template>
   <div class="header">
     <router-link to="/" class="header-container">
-      <img src="../assets/mllonelogo.png" class="logo" />
-      <div class="title">Waste</div>
+      <img src="../assets/logofullwhite.png" class="logo" />
     </router-link>
     <button v-if="secret" class="view-toggle" @click="ranking = !ranking">
       {{ ranking ? 'Ranking' : 'Overview' }}
@@ -44,14 +43,6 @@
     cursor: pointer;
   }
 
-  .title {
-    font-weight: bold;
-    font-size: 9vh;
-    font-size: calc((9 * (100vh - var(--vh-offset, 0px)) / 100));
-    line-height: 10vh;
-    line-height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100));
-  }
-
   .view-toggle {
     margin-left: auto;
     margin-right: 0.75rem;
@@ -82,13 +73,6 @@
       height: 13.333vh;
       height: calc((13.333 * (100vh - var(--vh-offset, 0px)) / 100));
     }
-
-    .title {
-      font-size: 12vh;
-      font-size: calc((12 * (100vh - var(--vh-offset, 0px)) / 100));
-      line-height: 13.333vh;
-      line-height: calc((13.333 * (100vh - var(--vh-offset, 0px)) / 100));
-    }
   }
 
   @media (max-aspect-ratio: 1/1) {
@@ -100,11 +84,6 @@
       margin-left: 1.75vw;
       margin-right: 1.75vw;
       height: 10vw;
-    }
-
-    .title {
-      font-size: 9vw;
-      line-height: 10vw;
     }
 
     .view-toggle {
@@ -124,11 +103,6 @@
       margin-left: 2.333vw;
       margin-right: 2.333vw;
       height: 13.333vw;
-    }
-
-    .title {
-      font-size: 12vw;
-      line-height: 13.333vw;
     }
   }
 </style>

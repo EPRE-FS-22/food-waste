@@ -578,60 +578,15 @@
     }
   }
 
-  .name,
-  .score {
+  .name {
     text-align: center;
     padding: 0;
     margin: 0;
     border: none;
     z-index: 1;
-  }
-
-  .name {
     margin-left: 5%;
     margin-right: 5%;
     font-weight: normal;
     font-size: 2rem;
-  }
-
-  .score {
-    margin-top: 0.25rem;
-    font-weight: bold;
-    font-size: 1.5rem;
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .badge {
-    background-color: #606060;
-    padding: 0.25rem;
-    font-size: 0.7rem;
-    line-height: 1rem;
-    border-radius: 0.6rem;
-    margin: 0.1rem;
-    margin-left: 0.35rem;
-    border: none;
-    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-  }
-
-  .badge.first {
-    background-color: #ffd700;
-    color: #0f0f0f;
-  }
-
-  .badge.second {
-    background-color: #c0c0c0;
-    color: #0f0f0f;
-  }
-
-  .badge.third {
-    background-color: #cd7f32;
-    color: #0f0f0f;
-  }
-
-  .badge.last {
-    background-color: #871010;
   }
 </style>
