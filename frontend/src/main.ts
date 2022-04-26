@@ -7,6 +7,9 @@ import User from './pages/User.vue';
 import Login from './pages/Login.vue';
 import Ranking from './components/Ranking.vue';
 
+import vhCheck from 'vh-check';
+vhCheck();
+
 import './styles.scss';
 
 const routes = [

@@ -21,6 +21,7 @@
     align-items: flex-end;
     justify-content: space-between;
     height: 12vh;
+    height: calc(12vh - var(--vh-offset, 0px));
   }
 
   .header-container {
@@ -35,15 +36,20 @@
 
   .logo {
     margin-left: 3.5vh;
+    margin-left: calc(3.5vh - var(--vh-offset, 0px));
     margin-right: 3.5vh;
+    margin-right: calc(3.5vh - var(--vh-offset, 0px));
     height: 10vh;
+    height: calc(10vh - var(--vh-offset, 0px));
     cursor: pointer;
   }
 
   .title {
     font-weight: bold;
     font-size: 9vh;
+    font-size: calc(9vh - var(--vh-offset, 0px));
     line-height: 10vh;
+    font-size: calc(10vh - var(--vh-offset, 0px));
   }
 
   .view-toggle {

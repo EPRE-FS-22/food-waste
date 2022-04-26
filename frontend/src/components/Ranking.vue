@@ -49,6 +49,7 @@
     position: relative;
     width: calc(100% - 2rem);
     height: calc(85vh - 2rem);
+    height: calc(85vh - var(--vh-offset, 0px) - 2rem);
     padding: 1rem;
     margin: 0;
     border: none;
@@ -78,22 +79,30 @@
 
   .ranking-content {
     width: calc(76.4vh);
+    width: calc(76.4vh - var(--vh-offset, 0px));
+    padding: 2vh;
     padding: 2vh;
     margin: 0;
     border: none;
     color: #000000;
     font-size: 4.65vh;
+    font-size: calc(4.65vh - var(--vh-offset, 0px));
     line-height: 3.875vh;
+    font-size: calc(3.875vh - var(--vh-offset, 0px));
     z-index: 100;
   }
 
   .subheader {
     text-align: center;
     font-size: 9.5vh;
+    font-size: calc(9.5vh - var(--vh-offset, 0px));
     line-height: 10.5vh;
+    line-height: calc(10.5vh - var(--vh-offset, 0px));
     margin: 0;
     margin-top: 12vh;
+    margin-top: calc(12vh - var(--vh-offset, 0px));
     margin-bottom: 4.55vh;
+    margin-bottom: calc(4.55vh - var(--vh-offset, 0px));
     border: none;
     background: none;
     font-weight: 400;
@@ -105,14 +114,20 @@
     flex-direction: row;
     justify-content: space-between;
     padding: 1.25vh;
+    padding: calc(1.25vh - var(--vh-offset, 0px));
     margin: 0 1.5vh;
+    margin: 0 calc(1.5vh - var(--vh-offset, 0px));
     font-weight: bold;
     letter-spacing: 0.4vh;
+    letter-spacing: calc(0.4vh - var(--vh-offset, 0px));
     transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
 
     &:hover {
       border-radius: 0.5vh;
+      border-radius: calc(0.5vh - var(--vh-offset, 0px));
       box-shadow: 0 0.5vh 0.5vh rgba(0, 0, 0, 0.3);
+      box-shadow: 0 calc(0.5vh - var(--vh-offset, 0px))
+        calc(0.5vh - var(--vh-offset, 0px)) rgba(0, 0, 0, 0.3);
       background-color: rgba(223, 223, 223, 0.5);
       transform: scale(1.03);
     }
@@ -126,6 +141,7 @@
 
     .index {
       margin-left: 2.5vh;
+      margin-left: calc(2.5vh - var(--vh-offset, 0px));
     }
 
     .name {

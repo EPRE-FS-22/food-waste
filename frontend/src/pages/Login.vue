@@ -482,6 +482,7 @@
     align-items: center;
     width: calc(100% - 1rem);
     height: calc(85vh - 1rem);
+    height: calc(85vh - var(--vh-offset, 0px) - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
@@ -521,6 +522,7 @@
     line-height: 1rem;
     width: 90%;
     max-width: 40vh;
+    max-width: calc(40vh - var(--vh-offset, 0px));
     padding: 0.25rem;
     border: solid 0.1rem rgb(179, 179, 179);
     border-radius: 1rem;
@@ -533,6 +535,7 @@
     line-height: 1rem;
     width: 30%;
     max-width: 12vh;
+    max-width: calc(12vh - var(--vh-offset, 0px));
     min-width: 10vw;
     font-weight: bold;
     padding: 0.35rem;
