@@ -8,6 +8,8 @@ import { createContext } from './context.js';
 import { appRouter } from './router.js';
 import 'dotenv/config';
 
+console.log('starting');
+
 const cert = process.env.FOOD_WASTE_SSL_CERT ?? '';
 const key = process.env.FOOD_WASTE_SSL_KEY ?? '';
 

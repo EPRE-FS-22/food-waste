@@ -1,8 +1,7 @@
 import hCaptcha from 'hcaptcha';
+import 'dotenv/config';
 
 const captchaSecret = process.env.FOOD_WASTE_CAPTCHA_SECRET ?? '';
-
-console.log('starting');
 
 if (!captchaSecret) {
   console.log('Captcha not configured, allowing requests without captcha.');

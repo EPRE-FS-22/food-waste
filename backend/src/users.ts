@@ -7,6 +7,7 @@ import { base64Encode } from './base64.js';
 import { sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import { EMAIL_ENDING } from './constants.js';
+import 'dotenv/config';
 
 const frontendPath = process.env.FOOD_WASTE_FRONTEND_PATH ?? '/#';
 const frontendProtocol = process.env.FOOD_WASTE_FRONTEND_PROTOCOL ?? 'http://';

@@ -3,6 +3,7 @@ import { DISHES } from './constants.js';
 import { makeId } from './id.js';
 import type { PointEvent, Points, Setting, StringSetting, User } from './model';
 import { hashPassword } from './users.js';
+import 'dotenv/config';
 
 const rawHost = process.env.FOOD_WASTE_DATABASE_HOST;
 const host = rawHost ? encodeURIComponent(rawHost) : 'localhost';
