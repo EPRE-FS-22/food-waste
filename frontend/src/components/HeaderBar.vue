@@ -21,7 +21,7 @@
     align-items: flex-end;
     justify-content: space-between;
     height: 12vh;
-    height: calc(12vh - var(--vh-offset, 0px));
+    height: calc((12 * (100vh - var(--vh-offset, 0px)) / 100));
   }
 
   .header-container {
@@ -36,20 +36,20 @@
 
   .logo {
     margin-left: 3.5vh;
-    margin-left: calc(3.5vh - var(--vh-offset, 0px));
+    margin-left: calc((3.5 * (100vh - var(--vh-offset, 0px)) / 100));
     margin-right: 3.5vh;
-    margin-right: calc(3.5vh - var(--vh-offset, 0px));
+    margin-right: calc((3.5 * (100vh - var(--vh-offset, 0px)) / 100));
     height: 10vh;
-    height: calc(10vh - var(--vh-offset, 0px));
+    height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100));
     cursor: pointer;
   }
 
   .title {
     font-weight: bold;
     font-size: 9vh;
-    font-size: calc(9vh - var(--vh-offset, 0px));
+    font-size: calc((9 * (100vh - var(--vh-offset, 0px)) / 100));
     line-height: 10vh;
-    font-size: calc(10vh - var(--vh-offset, 0px));
+    line-height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100));
   }
 
   .view-toggle {

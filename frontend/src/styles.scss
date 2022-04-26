@@ -23,7 +23,7 @@ body {
   html,
   body {
     font-size: calc(5px + 1.6vh);
-    font-size: calc(5px + 1.6vh - var(--vh-offset, 0px));
+    font-size: calc(5px + (1.6 * (100vh - var(--vh-offset, 0px)) / 100));
   }
 }
 
@@ -31,7 +31,7 @@ body {
   html,
   body {
     font-size: calc(6px + 1.5vh);
-    font-size: calc(6px + 1.5vh - var(--vh-offset, 0px));
+    font-size: calc(6px + (1.5 * (100vh - var(--vh-offset, 0px)) / 100));
   }
 }
 

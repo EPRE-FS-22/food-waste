@@ -273,7 +273,7 @@
     grid-template-columns: 1fr 1fr 1fr;
     width: calc(100% - 1rem);
     height: calc(85vh - 1rem);
-    height: calc(85vh - var(--vh-offset, 0px) - 1rem);
+    height: calc((85 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
@@ -316,7 +316,7 @@
 
     &.small {
       height: calc(70vh - 1rem);
-      height: calc(70vh - var(--vh-offset, 0px) - 1rem);
+      height: calc((70 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
     }
   }
 
@@ -401,11 +401,13 @@
   @media (max-aspect-ratio: 1/1) {
     .content {
       height: calc(100vh - 15vw - 1rem);
-      height: calc(100vh - var(--vh-offset, 0px) - 1rem - 15vw);
+      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 15vw);
 
       &.small {
         height: calc(100vh - 28vw - 1rem);
-        height: calc(100vh - var(--vh-offset, 0px) - 1rem - 28vw);
+        height: calc(
+          (100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 28vw
+        );
       }
     }
   }
