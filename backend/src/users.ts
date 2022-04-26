@@ -3,7 +3,7 @@ import { frontendHost, frontendPort } from './index.js';
 import type { StringSetting } from './model';
 import { getSettingsCollection, getUsersCollection } from './data.js';
 import { makeId } from './id.js';
-import { base64Decode, base64Encode } from './base64.js';
+import { base64Encode } from './base64.js';
 import { sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import { EMAIL_ENDING } from './constants.js';
@@ -51,15 +51,17 @@ export const changePasswordOrName = async (
   }
 
   if (await verifyPassword(registeredUser.hash, password)) {
-    const passwordHashed = newPassword ? hashPassword(newPassword) : '';
+    const passwordHashed = newPassword ? await hashPassword(newPassword) : '';
 
     await usersCollection.updateOne(
       {
         email,
       },
       {
-        ...(passwordHashed ? { hashPassword: passwordHashed } : {}),
-        ...(name ? { name } : {}),
+        $set: {
+          ...(passwordHashed ? { hash: passwordHashed } : {}),
+          ...(name ? { name } : {}),
+        },
         $currentDate: { changedDate: true },
       }
     );
@@ -106,11 +108,7 @@ export const setPasswordOrName = async (
     return false;
   }
 
-  const codeDecoded = base64Decode(code);
-  if (
-    codeDecoded &&
-    (await verifyPassword(codeDecoded, registeredUser.resetHash))
-  ) {
+  if (code && (await verifyPassword(registeredUser.resetHash, code))) {
     const passwordHashed = newPassword ? hashPassword(newPassword) : '';
 
     await usersCollection.updateOne(
@@ -118,24 +116,29 @@ export const setPasswordOrName = async (
         email,
       },
       {
-        ...(passwordHashed ? { hashPassword: passwordHashed } : {}),
-        ...(name ? { name } : {}),
+        $set: {
+          ...(passwordHashed ? { hash: await passwordHashed } : {}),
+          ...(name ? { name } : {}),
+        },
         $unset: { resetHash: true, resetExpiration: true },
         $currentDate: { changedDate: true },
       }
     );
-    return email;
+    return true;
   } else {
     return false;
   }
 };
 
 export const verifyUserEmail = async (
-  emailEncoded: string,
+  email: string,
   code: string
-): Promise<{ success: boolean; email?: string; stay?: boolean }> => {
-  const email = base64Decode(emailEncoded);
-
+): Promise<{
+  success: boolean;
+  stay?: boolean;
+  admin?: boolean;
+  resetCode?: string;
+}> => {
   if (!checkEmail(email)) {
     return { success: false };
   }
@@ -163,11 +166,7 @@ export const verifyUserEmail = async (
     return { success: false };
   }
 
-  const codeDecoded = base64Decode(code);
-  if (
-    codeDecoded &&
-    (await verifyPassword(codeDecoded, registeredUser.verifyHash))
-  ) {
+  if (code && (await verifyPassword(registeredUser.verifyHash, code))) {
     const passwordNew = makeId(15);
     const passwordHashed = await hashPassword(passwordNew);
     await usersCollection.updateOne(
@@ -175,8 +174,10 @@ export const verifyUserEmail = async (
         email,
       },
       {
-        resetHash: passwordHashed,
-        resetExpiration: new Date(Date.now() + 1000 * 60 * 30),
+        $set: {
+          resetHash: passwordHashed,
+          resetExpiration: new Date(Date.now() + 1000 * 60 * 30),
+        },
         $unset: { verifyHash: true, verifyExpiration: true, verifyStay: true },
         $currentDate: {
           lastLogin: true,
@@ -184,7 +185,12 @@ export const verifyUserEmail = async (
         },
       }
     );
-    return { success: true, email, stay: !!registeredUser.verifyStay };
+    return {
+      success: true,
+      stay: !!registeredUser.verifyStay,
+      admin: false,
+      resetCode: passwordNew,
+    };
   } else {
     return { success: false };
   }
@@ -206,7 +212,10 @@ export const createLoginLink = async (email: string, stay = false) => {
   const passwordHashed = await hashPassword(passwordNew);
 
   const link = `${
-    frontendProtocol + frontendHost + (frontendPort ? (':' + frontendPort) : '') + frontendPath
+    frontendProtocol +
+    frontendHost +
+    (frontendPort ? ':' + frontendPort : '') +
+    frontendPath
   }/link?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}`;
 
   await usersCollection.updateOne(
@@ -214,9 +223,11 @@ export const createLoginLink = async (email: string, stay = false) => {
       email,
     },
     {
-      verifyHash: passwordHashed,
-      verifyExpiration: new Date(Date.now() + 1000 * 60 * 30),
-      verifyStay: stay,
+      $set: {
+        verifyHash: passwordHashed,
+        verifyExpiration: new Date(Date.now() + 1000 * 60 * 30),
+        verifyStay: stay,
+      },
       $currentDate: { lastChanged: true },
     }
   );
@@ -239,8 +250,18 @@ export const registerOrEmailLogin = async (
     const usersCollection = await getUsersCollection();
 
     const registeredUser = await usersCollection.findOne({ email });
-    if (!!registeredUser?.verifyDate === isRegister) {
-      return { success: false };
+    if (isRegister) {
+      if (
+        registeredUser &&
+        (registeredUser.verifyDate ||
+          !registeredUser.verifyExpiration ||
+          registeredUser.verifyExpiration < new Date())
+      )
+        return { success: false };
+    } else {
+      if (!registeredUser || !registeredUser.verifyDate) {
+        return { success: false };
+      }
     }
 
     const passwordNew = makeId(15);
@@ -257,7 +278,7 @@ export const registerOrEmailLogin = async (
         email,
         verifyExpiration: { $lte: new Date() },
         verifyHash: { $exists: true },
-        hashPassword: { $exists: true }
+        verifyDate: { $exists: false },
       });
     } else {
       await usersCollection.updateOne(
@@ -265,9 +286,11 @@ export const registerOrEmailLogin = async (
           email,
         },
         {
-          verifyHash: passwordHashed,
-          verifyExpiration: new Date(Date.now() + 1000 * 60 * 60),
-          verifyStay: stay,
+          $set: {
+            verifyHash: passwordHashed,
+            verifyExpiration: new Date(Date.now() + 1000 * 60 * 60),
+            verifyStay: stay,
+          },
           $currentDate: { lastChanged: true },
         }
       );
@@ -277,7 +300,10 @@ export const registerOrEmailLogin = async (
       ? `Welcome to the Food Waste app.
 
   To confirm your account just press the following link within the next 24 hours: ${
-    frontendProtocol + frontendHost + (frontendPort ? (':' + frontendPort) : '') + frontendPath
+    frontendProtocol +
+    frontendHost +
+    (frontendPort ? ':' + frontendPort : '') +
+    frontendPath
   }/login?register=true&email=${base64Encode(email)}&code=${base64Encode(
           passwordNew
         )}
@@ -286,7 +312,10 @@ export const registerOrEmailLogin = async (
       : `Welcome back to the Food Waste App.
 
   To log in just press the following link within the next hour: ${
-    frontendProtocol + frontendHost + (frontendPort ? (':' + frontendPort) : '') + frontendPath
+    frontendProtocol +
+    frontendHost +
+    (frontendPort ? ':' + frontendPort : '') +
+    frontendPath
   }/login?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}
 
   If you did not request this email, simply ignore it.`;

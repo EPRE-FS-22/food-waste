@@ -240,19 +240,28 @@ export const appRouter = trpc
   })
   .mutation('verify', {
     input: z.object({
-      emailEncoded: z.string().email().nonempty().max(1000),
-      code: z.string().nonempty().max(1000),
+      email: z.string().email().nonempty().max(1000),
+      code: z.string().nonempty().length(15),
     }),
-    async resolve({
-      input,
-      ctx,
-    }): Promise<{ success: boolean; email?: string; sessionId?: string }> {
+    async resolve({ input, ctx }): Promise<{
+      success: boolean;
+      email?: string;
+      sessionId?: string;
+      admin?: boolean;
+      code?: string;
+    }> {
       try {
-        const result = await verifyUserEmail(input.emailEncoded, input.code);
-        if (result.success && result.email) {
+        const result = await verifyUserEmail(input.email, input.code);
+        if (result.success && input.email) {
           const ip = getIp(ctx as Context);
-          const sessionId = addSession(ip, result.email, result.stay);
-          return { success: result.success, email: result.email, sessionId };
+          const sessionId = addSession(ip, input.email, result.stay);
+          return {
+            success: result.success,
+            email: input.email,
+            sessionId,
+            admin: result.admin,
+            code: result.resetCode,
+          };
         }
         return { success: false };
       } catch (e: unknown) {
@@ -263,7 +272,7 @@ export const appRouter = trpc
   .mutation('reset', {
     input: z.object({
       email: z.string().email().nonempty().max(200),
-      code: z.string().nonempty().max(1000),
+      code: z.string().nonempty().length(15),
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20).optional(),
       name: z.string().nonempty().max(200).optional(),
@@ -399,12 +408,13 @@ export const appRouter = trpc
   .mutation('checkSession', {
     input: z.object({
       sessionId: z.string().length(20),
+      email: z.string().email().nonempty().max(200).optional(),
       admin: z.boolean().optional(),
     }),
     resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        return verifySession(input.sessionId, ip, undefined, input.admin);
+        return verifySession(input.sessionId, ip, input.email, input.admin);
       } catch (e: unknown) {
         throw internalServerError(e);
       }

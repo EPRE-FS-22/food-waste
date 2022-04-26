@@ -56,7 +56,7 @@ const randomOrder: { [key: string]: number } = {};
 
 let sessionExpires =
   parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
-
+let sessionEmail = localStorage.getItem('sessionEmail') ?? '';
 let sessionId = localStorage.getItem('session') ?? '';
 let isAdmin = localStorage.getItem('admin') === 'true';
 
@@ -64,6 +64,10 @@ export const hasSession = (admin = false) => {
   return (
     !!sessionId && sessionExpires > new Date().getTime() && (!admin || isAdmin)
   );
+};
+
+export const hasModifiableSession = () => {
+  return hasSession() && sessionEmail;
 };
 
 const processData = (data: PointsWithStats[], zero = false): DisplayData => {
@@ -250,12 +254,22 @@ export const checkSession = (admin = false) => {
     try {
       if (!hasSession(admin)) {
         authFailure.next();
+        return;
       }
       const data = await client.mutation('checkSession', {
         sessionId: sessionId,
-        admin: admin || undefined,
+        email: sessionEmail || undefined,
+        admin: admin || isAdmin || undefined,
       });
       if (!data) {
+        sessionId = '';
+        sessionEmail = '';
+        isAdmin = false;
+        sessionExpires = 0;
+        localStorage.setItem('session', '');
+        localStorage.setItem('sessionEmail', '');
+        localStorage.setItem('sessionExpires', '');
+        localStorage.setItem('admin', '');
         authFailure.next();
       }
     } catch (e: unknown) {
@@ -336,8 +350,11 @@ export const logIn = async (
     }
     sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
     if (sessionId) {
+      sessionEmail = email ?? '';
+      localStorage.setItem('sessionEmail', sessionEmail);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
+      localStorage.setItem('admin', isAdmin ? 'true' : '');
     }
     return {
       success: result.success,
@@ -351,14 +368,95 @@ export const logIn = async (
   }
 };
 
+export const verify = async (email: string, code: string) => {
+  try {
+    const result = await client.mutation('verify', {
+      email,
+      code,
+    });
+    if (result.success && result.sessionId) {
+      sessionId = result.sessionId;
+      isAdmin = !!result.admin;
+    } else {
+      sessionId = '';
+      isAdmin = false;
+    }
+    sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
+    if (sessionId) {
+      sessionEmail = email ?? '';
+      localStorage.setItem('sessionEmail', sessionEmail);
+      localStorage.setItem('session', sessionId);
+      localStorage.setItem('sessionExpires', sessionExpires.toString());
+      localStorage.setItem('admin', isAdmin ? 'true' : '');
+    }
+    return {
+      success: result.success,
+      admin: result.admin,
+      code: result.code,
+    };
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const reset = async (
+  code: string,
+  newPassword?: string,
+  name?: string
+) => {
+  try {
+    if (!sessionEmail) {
+      return false;
+    }
+    const result = await client.mutation('reset', {
+      email: sessionEmail,
+      password: newPassword || undefined,
+      name: name || undefined,
+      code,
+      sessionId,
+    });
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const change = async (
+  password: string,
+  newPassword?: string,
+  name?: string
+) => {
+  try {
+    if (!sessionEmail) {
+      return false;
+    }
+    const result = await client.mutation('change', {
+      email: sessionEmail,
+      password,
+      newPassword: newPassword || undefined,
+      name: name || undefined,
+      sessionId,
+    });
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
 export const logOut = async () => {
   try {
     await client.mutation('logout', { sessionId });
     sessionId = '';
+    sessionEmail = '';
     isAdmin = false;
     sessionExpires = 0;
+    localStorage.setItem('sessionEmail', '');
     localStorage.setItem('session', '');
     localStorage.setItem('sessionExpires', '');
+    localStorage.setItem('admin', '');
   } catch (e) {
     console.error(e);
     throw e;

@@ -1,6 +1,17 @@
 <script setup lang="ts">
   import { useRouter, useRoute } from 'vue-router';
-  import { emailLogIn, hasSession, logIn, register } from '../data';
+  import {
+    authFailure,
+    change,
+    checkSession,
+    emailLogIn,
+    hasModifiableSession,
+    hasSession,
+    logIn,
+    register,
+    reset,
+    verify,
+  } from '../data';
   import { ref } from 'vue';
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
@@ -15,13 +26,21 @@
     change,
     set,
     setAgain,
+    none,
   }
 
   const route = useRoute();
 
-  const loggedIn = hasSession();
+  const type = ref(
+    hasSession()
+      ? hasModifiableSession()
+        ? LoginType.change
+        : LoginType.none
+      : LoginType.logIn
+  );
 
-  const type = ref(loggedIn ? LoginType.change : LoginType.logIn);
+  checkSession();
+  authFailure.subscribe(() => (type.value = LoginType.logIn));
 
   const queryEmail =
     route.query.email && typeof route.query.email === 'string'
@@ -33,15 +52,92 @@
       : '';
   const queryIsRegister = !!route.query.register;
 
+  const message = ref('');
+
   if (queryEmail && queryCode) {
     type.value = LoginType.confirm;
+    message.value = queryIsRegister
+      ? 'Are you sure you want to verify your email address?'
+      : 'Are you sure you want to log in using your email address?';
   }
 
-  const confirmAction = () => {
-    if (queryIsRegister) {
-      console.log('register verify');
-    } else {
-      console.log('login verify');
+  let setCode = '';
+
+  const confirmAction = async () => {
+    try {
+      message.value = '';
+      const result = await verify(queryEmail, queryCode);
+      if (result.success) {
+        if (result.admin) {
+          router.push('/admin');
+        } else {
+          setCode = result.code ?? '';
+          if (queryIsRegister) {
+            type.value = LoginType.set;
+          } else {
+            type.value = LoginType.setAgain;
+          }
+        }
+        router.replace({ query: {} });
+      } else {
+        message.value =
+          'Could not ' +
+          (queryIsRegister ? 'verify' : 'log in using') +
+          ' your email address, please try again in a bit.';
+      }
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  const setAction = async () => {
+    try {
+      message.value = '';
+      if (!newPassword.value && !name.value) {
+        message.value = 'New password and name cannot both be empty';
+        return;
+      }
+      const result = await reset(setCode, newPassword.value, name.value);
+      if (result) {
+        setCode = '';
+        router.push('/user');
+      } else {
+        message.value = 'Could not set values, please try again in a bit.';
+      }
+    } catch (e) {
+      throw e;
+    }
+  };
+
+  const changeAction = async () => {
+    try {
+      passwordMessage.value = '';
+      message.value = '';
+      let fail = false;
+      if (!password.value) {
+        passwordMessage.value = 'Password cannot be empty';
+        fail = true;
+      }
+      if (!newPassword.value && !name.value) {
+        message.value = 'New password and name cannot both be empty';
+        fail = true;
+      }
+      if (fail) {
+        return;
+      }
+      const result = await change(
+        password.value,
+        newPassword.value,
+        name.value
+      );
+      if (result) {
+        setCode = '';
+        router.push('/user');
+      } else {
+        message.value = 'Incorrect password';
+      }
+    } catch (e) {
+      throw e;
     }
   };
 
@@ -52,8 +148,9 @@
 
   const email = ref('');
   const password = ref('');
+  const newPassword = ref('');
+  const name = ref('');
 
-  const message = ref('');
   const emailMessage = ref('');
   const passwordMessage = ref('');
   const captchaMessage = ref('');
@@ -93,7 +190,7 @@
       if (result.success) {
         message.value =
           (isRegister ? 'Verification' : 'Log-in') +
-          'E-Mail sent, please also check your spam folder';
+          ' E-Mail sent, please also check your spam folder';
       } else {
         const difference = result.nextTry.getTime() - Date.now();
         emailMessage.value =
@@ -171,16 +268,19 @@
         emailLogInAction(true);
         break;
       case LoginType.change:
-        logInAction();
+        changeAction();
         break;
       case LoginType.setAgain:
-        logInAction();
+        setAction();
         break;
       case LoginType.set:
-        logInAction();
+        setAction();
         break;
       case LoginType.confirm:
         confirmAction();
+        break;
+      case LoginType.none:
+        router.push('/');
         break;
     }
   };
@@ -199,34 +299,42 @@
     <label v-if="message" class="label general-label login-item">{{
       message
     }}</label>
-    <label class="label email-label login-item" for="email"
-      >Please enter your student E-Mail address{{
-        emailMessage ? ': ' + emailMessage : ''
-      }}<template v-if="type === LoginType.emailLogIn">
-        <br />
-        <div
-          class="label-button"
-          tabindex="0"
-          @click="type = LoginType.logIn"
-          @keyup.enter="type = LoginType.logIn"
-        >
-          Log in with password instead
-        </div>
-      </template></label
-    >
-    <input
-      id="email"
-      v-model="email"
-      type="email"
-      class="field email login-item"
-      name="email"
-      :placeholder="
-        'x.y@stud.hslu.ch' + (type === LoginType.logIn ? ' (optional)' : '')
+    <template
+      v-if="
+        type === LoginType.logIn ||
+        type === LoginType.emailLogIn ||
+        type === LoginType.register
       "
-      maxlength="200"
-      @keyup.enter="triggerAction()"
-    />
-    <template v-if="type === LoginType.logIn">
+    >
+      <label class="label email-label login-item" for="email"
+        >Please enter your student E-Mail address{{
+          emailMessage ? ': ' + emailMessage : ''
+        }}<template v-if="type === LoginType.emailLogIn">
+          <br />
+          <div
+            class="label-button"
+            tabindex="0"
+            @click="type = LoginType.logIn"
+            @keyup.enter="type = LoginType.logIn"
+          >
+            Log in with password instead
+          </div>
+        </template></label
+      >
+      <input
+        id="email"
+        v-model="email"
+        type="email"
+        class="field email login-item"
+        name="email"
+        :placeholder="
+          'x.y@stud.hslu.ch' + (type === LoginType.logIn ? ' (optional)' : '')
+        "
+        maxlength="200"
+        @keyup.enter="triggerAction()"
+      />
+    </template>
+    <template v-if="type === LoginType.logIn || type === LoginType.change">
       <label class="label password-label login-item" for="password"
         >Please enter your password{{
           passwordMessage ? ': ' + passwordMessage : ''
@@ -248,6 +356,59 @@
         name="password"
         placeholder="password"
         maxlength="20"
+        autocomplete="current-password"
+        @keyup.enter="triggerAction()"
+      />
+    </template>
+    <template
+      v-if="
+        type === LoginType.set ||
+        type === LoginType.setAgain ||
+        type === LoginType.change
+      "
+    >
+      <label class="label new-password-label login-item" for="new-password"
+        >Please (optionally) enter a new password<br />
+        <div
+          class="label-button"
+          tabindex="0"
+          @click="router.push('/user')"
+          @keyup.enter="router.push('/user')"
+        >
+          Go to user page instead.
+        </div></label
+      >
+      <input
+        id="new-password"
+        v-model="newPassword"
+        type="password"
+        class="field new-password login-item"
+        name="new-password"
+        placeholder="new password"
+        maxlength="20"
+        autocomplete="new-password"
+        @keyup.enter="triggerAction()"
+      />
+    </template>
+    <template
+      v-if="
+        type === LoginType.set ||
+        type === LoginType.setAgain ||
+        type === LoginType.change
+      "
+    >
+      <label class="label name-label login-item" for="name"
+        >Please (optionally) enter your (new) name
+      </label>
+      <input
+        id="name"
+        v-model="name"
+        type="text"
+        class="field name login-item"
+        name="name"
+        placeholder="John Doe"
+        maxlength="200"
+        autocomplete="name"
         @keyup.enter="triggerAction()"
       />
     </template>
@@ -276,6 +437,8 @@
           ? 'Set'
           : type === LoginType.confirm
           ? 'Confirm'
+          : type === LoginType.none
+          ? 'Back'
           : 'Change'
       }}
     </button>

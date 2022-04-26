@@ -34,11 +34,17 @@
       }}</router-link
     >
     <router-link
-      v-else-if="$router.currentRoute.value.path !== '/login'"
+      v-else-if="$router.currentRoute.value.path === '/login' && hasSession()"
       to="/"
       class="action-link footer-item"
       @click="logOutOnclick()"
       >Log out</router-link
+    >
+    <router-link
+      v-else-if="$router.currentRoute.value.path !== '/login'"
+      to="/login"
+      class="action-link footer-item"
+      >Account</router-link
     >
     <a class="contact footer-item" @click="mailToUs()">Contact</a>
   </div>
