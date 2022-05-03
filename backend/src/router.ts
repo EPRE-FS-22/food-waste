@@ -1,10 +1,7 @@
 import * as trpc from '@trpc/server';
 import { z } from 'zod';
-import { DISHES, REFRESH_INTERVAL } from './constants.js';
-import { Subject } from 'rxjs';
-import type { PointsWithStats } from './model';
+import { TRAIN_INTERVAL } from './constants.js';
 import { makeId } from './id.js';
-import { addPoints, getPointsWithStats } from './points.js';
 import {
   changePasswordOrName,
   createLoginLink,
@@ -15,25 +12,37 @@ import {
   verifyAdminPassword,
 } from './users.js';
 import { Context } from './context.js';
-
-let dataChanged = false;
-const dataChangedEvent = new Subject<PointsWithStats[]>();
+import {
+  acceptDishEvent,
+  addDish,
+  addDishEvent,
+  addDishPreference,
+  getAvailableDishes,
+  getDishPreferences,
+  getMyDishes,
+  getRecommendedDishes,
+  getSignedUpDishes,
+  train,
+} from './dishes.js';
 
 let adminSessions: {
-  [key: string]: { expirationDate: Date; ip: string; email?: string };
+  [key: string]: { expirationDate: Date; ip: string; adminId: string };
 } = {};
 
 const sessions: {
-  [key: string]: { expirationDate: Date; email: string; ip?: string };
+  [key: string]: { expirationDate: Date; userId: string; ip?: string };
 } = {};
 
 const addSession = (
   ip: string,
-  email?: string,
+  userId: string,
   stay = false,
   isAdmin = false
 ) => {
   let sessionId = '';
+  if (!userId) {
+    return '';
+  }
   if (isAdmin) {
     do {
       sessionId = makeId(20);
@@ -41,8 +50,9 @@ const addSession = (
     adminSessions[sessionId] = {
       expirationDate: new Date(new Date().getTime() + 1000 * 60 * 60 * 24),
       ip,
+      adminId: userId,
     };
-  } else if (email) {
+  } else {
     do {
       sessionId = makeId(20);
     } while (sessions[sessionId]);
@@ -51,10 +61,8 @@ const addSession = (
         new Date().getTime() + 1000 * 60 * 60 * 24 * (stay ? 90 : 1)
       ),
       ip: stay ? undefined : ip,
-      email,
+      userId,
     };
-  } else {
-    return '';
   }
   Object.keys(sessions).forEach((id) => {
     if (sessions[id].expirationDate < new Date()) {
@@ -72,32 +80,42 @@ const addSession = (
 const verifySession = (
   sessionId: string,
   ip: string,
-  email?: string,
+  userId: string,
   admin = false
 ) => {
+  if (!userId) {
+    return false;
+  }
   if (admin) {
     const session = adminSessions[sessionId];
-    return session && session.ip === ip && session.expirationDate > new Date();
-  } else if (email) {
+    return (
+      session &&
+      session.ip === ip &&
+      session.expirationDate > new Date() &&
+      session.adminId === userId
+    );
+  } else {
     const session = sessions[sessionId];
     return (
       session &&
       (!session.ip || session.ip === ip) &&
       session.expirationDate > new Date() &&
-      session.email === email
+      session.userId === userId
     );
   }
-  return false;
 };
 
 const deleteSessions = (
   sessionId: string,
   ip: string,
-  email?: string,
+  userId: string,
   all = false,
   admin = false
 ) => {
-  if (verifySession(sessionId, ip, email, admin)) {
+  if (!userId) {
+    return false;
+  }
+  if (verifySession(sessionId, ip, userId, admin)) {
     if (admin) {
       if (all) {
         adminSessions = {};
@@ -105,11 +123,11 @@ const deleteSessions = (
         delete adminSessions[sessionId];
       }
       return true;
-    } else if (email) {
+    } else {
       if (all) {
         Object.keys(sessions).forEach((id) => {
           const session = sessions[id];
-          if (session.email === email) {
+          if (session.userId === userId) {
             delete sessions[id];
           }
         });
@@ -140,27 +158,92 @@ const internalServerError = (e: unknown) => {
 
 export const appRouter = trpc
   .router()
-  .subscription('onPointsChanged', {
-    resolve() {
-      return new trpc.Subscription<PointsWithStats[]>((emit) => {
-        const onPointsIncrease = (data: PointsWithStats[]) => {
-          emit.data(data);
-        };
-
-        const sub = dataChangedEvent.subscribe((data: PointsWithStats[]) => {
-          onPointsIncrease(data);
-        });
-
-        return () => {
-          sub.unsubscribe();
-        };
-      });
+  .query('getAvailableDishes', {
+    input: z.object({
+      userId: z.string().nonempty().length(20).optional(),
+      sessionId: z.string().length(20).optional(),
+      start: z.number().nonnegative().optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        if (input.userId && input.sessionId) {
+          const ip = getIp(ctx as Context);
+          if (verifySession(input.sessionId, ip, input.userId)) {
+            return await getAvailableDishes(input.userId, input.start);
+          }
+          return false;
+        } else {
+          return await getAvailableDishes(undefined, input.start);
+        }
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
     },
   })
-  .query('getPoints', {
-    async resolve() {
+  .query('getRecommendedDishes', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+      previousIds: z.array(z.string().nonempty().length(20)).optional(),
+    }),
+    async resolve({ input, ctx }) {
       try {
-        return await getPointsWithStats();
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await getRecommendedDishes(input.userId, input.previousIds);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getMyDishes', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await getMyDishes(input.userId);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getSignedUpDishes', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await getSignedUpDishes(input.userId);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getDishPreferences', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await getDishPreferences(input.userId);
+        }
+        return false;
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -168,15 +251,15 @@ export const appRouter = trpc
   })
   .query('getLoginLink', {
     input: z.object({
-      email: z.string().email().nonempty().max(200),
+      userId: z.string().nonempty().length(20),
       sessionId: z.string().length(20),
       stay: z.boolean().optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.email)) {
-          return await createLoginLink(input.email, input.stay);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await createLoginLink(input.userId, input.stay);
         }
         return false;
       } catch (e: unknown) {
@@ -240,24 +323,24 @@ export const appRouter = trpc
   })
   .mutation('verify', {
     input: z.object({
-      email: z.string().email().nonempty().max(1000),
+      userId: z.string().nonempty().length(20),
       code: z.string().nonempty().length(15),
     }),
     async resolve({ input, ctx }): Promise<{
       success: boolean;
-      email?: string;
+      userId?: string;
       sessionId?: string;
       admin?: boolean;
       code?: string;
     }> {
       try {
-        const result = await verifyUserEmail(input.email, input.code);
-        if (result.success && input.email) {
+        const result = await verifyUserEmail(input.userId, input.code);
+        if (result.success) {
           const ip = getIp(ctx as Context);
-          const sessionId = addSession(ip, input.email, result.stay);
+          const sessionId = addSession(ip, input.userId, result.stay);
           return {
             success: result.success,
-            email: input.email,
+            userId: input.userId,
             sessionId,
             admin: result.admin,
             code: result.resetCode,
@@ -271,7 +354,7 @@ export const appRouter = trpc
   })
   .mutation('reset', {
     input: z.object({
-      email: z.string().email().nonempty().max(200),
+      userId: z.string().nonempty().length(20),
       code: z.string().nonempty().length(15),
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20).optional(),
@@ -280,9 +363,9 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.email)) {
+        if (verifySession(input.sessionId, ip, input.userId)) {
           return await setPasswordOrName(
-            input.email,
+            input.userId,
             input.code,
             input.password,
             input.name
@@ -296,7 +379,7 @@ export const appRouter = trpc
   })
   .mutation('change', {
     input: z.object({
-      email: z.string().email().nonempty().max(200),
+      userId: z.string().nonempty().length(20),
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20),
       newPassword: z.string().nonempty().max(20).optional(),
@@ -305,9 +388,9 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.email)) {
+        if (verifySession(input.sessionId, ip, input.userId)) {
           return await changePasswordOrName(
-            input.email,
+            input.userId,
             input.password,
             input.newPassword,
             input.name
@@ -332,29 +415,32 @@ export const appRouter = trpc
       showCaptcha: boolean;
       nextTry: Date;
       admin?: boolean;
+      userId?: string;
     }> {
       try {
         const ip = getIp(ctx as Context);
         const result = input.email
           ? await loginUser(input.email, input.password, ip, input.captchaToken)
           : await verifyAdminPassword(input.password, ip, input.captchaToken);
-        if (result.success) {
+        if (result.success && result.userId) {
           if (result.admin) {
-            const sessionId = addSession(ip, undefined, input.stay, true);
+            const sessionId = addSession(ip, result.userId, input.stay, true);
             return {
               success: true,
               sessionId,
               showCaptcha: result.showCaptcha,
               nextTry: result.nextTry,
               admin: true,
+              userId: result.userId,
             };
           } else {
-            const sessionId = addSession(ip, input.email, input.stay);
+            const sessionId = addSession(ip, result.userId, input.stay);
             return {
               success: true,
               sessionId,
               showCaptcha: result.showCaptcha,
               nextTry: result.nextTry,
+              userId: result.userId,
             };
           }
         }
@@ -368,36 +454,89 @@ export const appRouter = trpc
       }
     },
   })
-  .mutation('addPoints', {
+  .mutation('addDish', {
     input: z.object({
-      dish: z.string().nonempty().max(20),
-      number: z.number().min(-1000).max(1000).int(),
+      dish: z.string().nonempty().max(50),
       sessionId: z.string().length(20),
-      date: z.number().nonnegative().optional(),
-      owner: z.string().nonempty().max(100).optional(),
-      reason: z.string().nonempty().max(1000).optional(),
+      userId: z.string().length(20),
+      slots: z.number().min(1).max(10).int(),
+      date: z.number().nonnegative(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (
-          Object.keys(DISHES).includes(input.dish) &&
-          verifySession(input.sessionId, ip, undefined, true)
-        ) {
-          let date = input.date ? new Date(input.date) : undefined;
-          if (date && isNaN(date.getTime())) {
-            date = undefined;
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          const date = new Date(input.date);
+          if (date && !isNaN(date.getTime())) {
+            const dishId = await addDish(
+              input.dish,
+              input.userId,
+              input.slots,
+              date
+            );
+            return dishId;
           }
-
-          const points = await addPoints(
-            input.dish as keyof typeof DISHES,
-            input.number,
-            date,
-            input.owner,
-            input.reason
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('addDishPreference', {
+    input: z.object({
+      dish: z.string().nonempty().max(50),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+      likes: z.boolean(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await addDishPreference(input.dish, input.userId, input.likes);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('addDishEvent', {
+    input: z.object({
+      dishId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+      message: z.string().nonempty().max(200).optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await addDishEvent(input.dishId, input.userId, input.message);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('acceptDishEvent', {
+    input: z.object({
+      eventId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+      response: z.string().nonempty().max(200).optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await acceptDishEvent(
+            input.eventId,
+            input.userId,
+            input.response
           );
-          dataChanged = true;
-          return points;
         }
         return false;
       } catch (e: unknown) {
@@ -408,13 +547,13 @@ export const appRouter = trpc
   .mutation('checkSession', {
     input: z.object({
       sessionId: z.string().length(20),
-      email: z.string().email().nonempty().max(200).optional(),
+      userId: z.string().nonempty().length(20),
       admin: z.boolean().optional(),
     }),
     resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        return verifySession(input.sessionId, ip, input.email, input.admin);
+        return verifySession(input.sessionId, ip, input.userId, input.admin);
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -423,13 +562,13 @@ export const appRouter = trpc
   .mutation('logout', {
     input: z.object({
       sessionId: z.string().length(20),
-      email: z.string().email().nonempty().max(200).optional(),
+      userId: z.string().nonempty().length(20),
       all: z.boolean().optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        return deleteSessions(input.sessionId, ip, input.email, input.all);
+        return deleteSessions(input.sessionId, ip, input.userId, input.all);
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -438,13 +577,10 @@ export const appRouter = trpc
 
 setInterval(async () => {
   try {
-    if (dataChanged) {
-      dataChanged = false;
-      dataChangedEvent.next(await getPointsWithStats());
-    }
+    train();
   } catch (e: unknown) {
     throw internalServerError(e);
   }
-}, REFRESH_INTERVAL);
+}, TRAIN_INTERVAL);
 
 export type AppRouter = typeof appRouter;

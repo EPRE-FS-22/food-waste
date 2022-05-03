@@ -5,7 +5,7 @@
     change,
     checkSession,
     emailLogIn,
-    hasModifiableSession,
+    hasUserSession,
     hasSession,
     logIn,
     register,
@@ -15,8 +15,9 @@
   import { ref } from 'vue';
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
-  import { EMAIL_ENDING } from '../../../backend/src/constants';
+  import { EMAIL_REGEX } from '../../../backend/src/constants';
   import { base64Decode } from '../helpers';
+  import { loggedIn, userLoggedIn } from '../settings';
 
   enum LoginType {
     logIn,
@@ -31,21 +32,26 @@
 
   const route = useRoute();
 
+  loggedIn.value = hasSession();
+  userLoggedIn.value = hasUserSession();
+
   const type = ref(
-    hasSession()
-      ? hasModifiableSession()
+    loggedIn.value
+      ? userLoggedIn.value
         ? LoginType.change
         : LoginType.none
       : LoginType.logIn
   );
 
   checkSession();
-  authFailure.subscribe(() => (type.value = LoginType.logIn));
+  authFailure.subscribe(() => {
+    loggedIn.value = false;
+    userLoggedIn.value = false;
+    type.value = LoginType.logIn;
+  });
 
-  const queryEmail =
-    route.query.email && typeof route.query.email === 'string'
-      ? base64Decode(route.query.email)
-      : '';
+  const queryUserId =
+    route.query.id && typeof route.query.id === 'string' ? route.query.id : '';
   const queryCode =
     route.query.code && typeof route.query.code === 'string'
       ? base64Decode(route.query.code)
@@ -54,7 +60,7 @@
 
   const message = ref('');
 
-  if (queryEmail && queryCode) {
+  if (queryUserId && queryCode) {
     type.value = LoginType.confirm;
     message.value = queryIsRegister
       ? 'Are you sure you want to verify your email address?'
@@ -66,11 +72,14 @@
   const confirmAction = async () => {
     try {
       message.value = '';
-      const result = await verify(queryEmail, queryCode);
+      const result = await verify(queryUserId, queryCode);
       if (result.success) {
+        loggedIn.value = true;
         if (result.admin) {
+          userLoggedIn.value = false;
           router.push('/admin');
         } else {
+          userLoggedIn.value = true;
           setCode = result.code ?? '';
           if (queryIsRegister) {
             type.value = LoginType.set;
@@ -165,7 +174,7 @@
   const emailLogInAction = async (isRegister = false) => {
     try {
       let fail = false;
-      if (!email.value || !email.value.endsWith(EMAIL_ENDING)) {
+      if (!email.value || !email.value.match(EMAIL_REGEX)) {
         emailMessage.value = 'E-Mail needs to be a valid student address';
         fail = true;
       }
@@ -218,7 +227,7 @@
         passwordMessage.value = 'Password cannot be empty';
         fail = true;
       }
-      if (email.value && !email.value.endsWith(EMAIL_ENDING)) {
+      if (email.value && !email.value.match(EMAIL_REGEX)) {
         emailMessage.value =
           'E-Mail needs to either be a valid student address or empty';
         fail = true;
@@ -241,9 +250,12 @@
       );
       captchaExpired();
       if (result.success) {
+        loggedIn.value = true;
         if (result.admin) {
+          userLoggedIn.value = false;
           router.push('/admin');
         } else {
+          userLoggedIn.value = true;
           router.push('/user');
         }
       } else {
@@ -300,7 +312,7 @@
 </script>
 
 <template>
-  <div class="login">
+  <div class="content-base login">
     <label v-if="message" class="label general-label login-item">{{
       message
     }}</label>
@@ -333,7 +345,7 @@
         class="field email login-item"
         name="email"
         :placeholder="
-          'x.y@stud.hslu.ch' + (type === LoginType.logIn ? ' (optional)' : '')
+          'x.y@example.com' + (type === LoginType.logIn ? ' (optional)' : '')
         "
         maxlength="200"
         @keyup.enter="triggerAction()"
@@ -480,12 +492,6 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: calc(100% - 1rem);
-    height: calc(85vh - 1rem);
-    height: calc((85 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-    padding: 0.5rem;
-    margin: 0;
-    border: none;
   }
 
   .login-item {
@@ -543,11 +549,5 @@
     border: solid 0.05rem rgb(179, 179, 179);
     border-radius: 1rem;
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-  }
-
-  @media (max-aspect-ratio: 1/1) {
-    .login {
-      height: calc(100% - 15vw - 1rem);
-    }
   }
 </style>

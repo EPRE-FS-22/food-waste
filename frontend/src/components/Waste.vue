@@ -1,323 +1,181 @@
 <script setup lang="ts">
-  import { BehaviorSubject, ReplaySubject } from 'rxjs';
-  import { onUpdated, ref } from 'vue';
-  import moment from 'moment';
-  import { loading, secret, settings } from '../settings';
-  import {
-    addPoints,
-    DisplayData,
-    getPoints,
-    subscribePoints,
-    zeroData,
-  } from '../data';
+  import { ref, onBeforeUnmount, watch } from 'vue';
+  import { DisplayType, loading } from '../settings';
   import { getPicture } from '../pictures';
+  import { getAvailableDishes, getMyDishes, getSignedUpDishes } from '../data';
+  import type { Dish, DishEvent, DishInfo } from '../../../backend/src/model';
+  import { PROMO_DISHES } from '../constants';
 
-  const props = defineProps({ allowEdit: { type: Boolean, default: false } });
-
-  const displayData: BehaviorSubject<DisplayData> = subscribePoints();
-
-  let dishAnimations = ref(false);
-  let firstNonZero = true;
-
-  let updated = false;
-  const updatedSubject = new ReplaySubject<void>();
-
-  const currentActiveDish = ref('');
-
-  const currentActiveDishDelayed = ref('');
-
-  const currentActiveDishAnimation = ref('');
-
-  const dishFocus = (dish: string, active: boolean) => {
-    if (active) {
-      if (currentActiveDish.value !== dish) {
-        currentActiveDish.value = dish;
-        setTimeout(() => (currentActiveDishDelayed.value = dish), 100);
-        setTimeout(() => (currentActiveDishAnimation.value = dish), 400);
-      }
-    } else {
-      if (currentActiveDish.value === dish) {
-        currentActiveDish.value = '';
-        setTimeout(() => (currentActiveDishDelayed.value = ''), 100);
-        setTimeout(() => (currentActiveDishAnimation.value = ''), 400);
-      }
-    }
-  };
-
-  onUpdated(() => {
-    if (!updated) {
-      updated = true;
-      updatedSubject.next();
-    }
+  const props = defineProps({
+    small: { type: Boolean, default: false },
+    type: { type: Number, default: DisplayType.available },
   });
 
-  const fullyDisplayData = () => {
-    displayActualData.value.forEach((actualData) => {
-      actualData.currentPercentage = actualData.relativePercentage;
-      actualData.currentDish = actualData.dish;
-    });
-    setTimeout(() => (dishAnimations.value = false), 300);
+  interface DisplayDish extends Dish {
+    image?: string;
+    promo?: boolean;
+  }
+
+  interface DisplayDishInfo extends DishInfo {
+    image?: string;
+    promo?: boolean;
+  }
+
+  interface DisplayDishEvent extends DishEvent {
+    image?: string;
+    promo?: boolean;
+  }
+
+  let dishes = ref(
+    [] as DisplayDish[] | (DisplayDishInfo | DisplayDishEvent)[]
+  );
+
+  const getPictures = async () => {
+    dishes.value = await Promise.all(
+      dishes.value.map(async (item) => {
+        return {
+          ...item,
+          image: await getPicture(item.dish),
+        };
+      })
+    );
   };
 
-  const waitDisplayData = () => {
-    setTimeout(() => {
-      if (firstNonZero) {
-        firstNonZero = false;
-        displayActualData.value.forEach((actualData) => {
-          actualData.currentDish = actualData.dish;
-        });
-      } else {
-        dishAnimations.value = true;
-      }
-    });
-    setTimeout(fullyDisplayData, 10);
-  };
-
-  const animateDisplayData = () => {
-    if (updated) {
-      waitDisplayData();
-    } else {
-      updatedSubject.subscribe(() => waitDisplayData());
-    }
-  };
-
-  const displayActualData = ref(displayData.value);
-
-  const getPictures = () => {
+  const getDishes = () => {
     (async () => {
       try {
-        displayActualData.value = await Promise.all(
-          displayActualData.value.map(async (item) => {
-            return {
-              ...item,
-              image: await getPicture(item.dish),
-            };
-          })
-        );
+        let success = false;
+        switch (props.type) {
+          case DisplayType.available:
+            const availableResult = await getAvailableDishes();
+            if (availableResult) {
+              success = true;
+              dishes.value = availableResult.length
+                ? availableResult
+                : PROMO_DISHES.map(
+                    (item) =>
+                      ({
+                        promo: true,
+                        customId: 'abcdefghijklmnopqrst',
+                        dish: item,
+                        name: 'John Doe',
+                        date: new Date(Date.now() + 1000 * 60 * 60 * 6),
+                        slots: 2,
+                        filled: 1,
+                      } as DisplayDish)
+                  );
+            }
+            break;
+
+          case DisplayType.recommended:
+            const recommendedResult = await getAvailableDishes();
+            if (recommendedResult) {
+              success = true;
+              dishes.value = recommendedResult.length
+                ? recommendedResult
+                : [...PROMO_DISHES].reverse().map(
+                    (item) =>
+                      ({
+                        promo: true,
+                        customId: 'abcdefghijklmnopqrst',
+                        dish: item,
+                        name: 'John Doe',
+                        date: new Date(Date.now() + 1000 * 60 * 60 * 6),
+                        slots: 2,
+                        filled: 1,
+                      } as DisplayDish)
+                  );
+            }
+            break;
+
+          case DisplayType.plans:
+            const myAndSingedUpResult = (await Promise.all([
+              getMyDishes(),
+              getSignedUpDishes(),
+            ])) as [false | DishInfo[], false | DishEvent[]];
+            if (myAndSingedUpResult[0] && myAndSingedUpResult[1]) {
+              success = true;
+              dishes.value = [
+                ...myAndSingedUpResult[0],
+                ...myAndSingedUpResult[1],
+              ].sort((a, b) => {
+                return b.date.getTime() - a.date.getTime();
+              });
+            }
+            break;
+        }
+        if (success) {
+          await getPictures();
+          if (loading.value) {
+            loading.value = false;
+          }
+        }
       } catch (e) {
         console.error(e);
         throw e;
       }
     })();
   };
-  getPictures();
 
-  displayData.subscribe((data) => {
-    displayActualData.value = data;
-    getPictures();
-    if (data !== zeroData) {
-      if (loading.value) {
-        loading.value = false;
+  getDishes();
+
+  watch(
+    () => props.type,
+    (newType, prevType) => {
+      if (newType !== prevType) {
+        getDishes();
       }
-      animateDisplayData();
     }
+  );
+
+  const interval = setInterval(() => {
+    if (props.type !== DisplayType.recommended) {
+      getDishes();
+    }
+  }, 1000 * 60 * 1);
+
+  onBeforeUnmount(() => {
+    loading.value = true;
+    clearInterval(interval);
   });
-
-  const pressedDish = ref('red');
-
-  const errorMessage = ref('');
-  const displayErrorMessage = ref(false);
-
-  getPoints();
-
-  let secretCounter = 0;
-
-  const addPointToDish = async (dish: string) => {
-    try {
-      if (!!props.allowEdit) {
-        if (
-          !settings.value.amount ||
-          isNaN(settings.value.amount) ||
-          typeof settings.value.amount !== 'number'
-        ) {
-          if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true), 10);
-          }
-          errorMessage.value = 'Please enter a valid amount.';
-        } else if (
-          !settings.value.date ||
-          isNaN(moment(settings.value.date).toDate().getTime())
-        ) {
-          if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true), 10);
-          }
-          errorMessage.value = 'Please enter a valid date.';
-        } else if (
-          !settings.value.reason &&
-          (errorMessage.value !==
-            'Please enter a reason. Press again to send anyway.' ||
-            pressedDish.value !== dish)
-        ) {
-          if (!displayErrorMessage.value) {
-            setTimeout(() => (displayErrorMessage.value = true), 10);
-          }
-          errorMessage.value =
-            'Please enter a reason. Press again to send anyway.';
-        } else {
-          if (displayErrorMessage.value) {
-            displayErrorMessage.value = false;
-            setTimeout(() => (errorMessage.value = ''), 300);
-          }
-          await addPoints(
-            dish,
-            settings.value.amount || 0,
-            settings.value.date
-              ? moment(settings.value.date).toDate()
-              : undefined,
-            settings.value.owner,
-            settings.value.reason
-          );
-          if (!settings.value.keepAmount) {
-            settings.value.amount = 1;
-          }
-          if (!settings.value.keepDate) {
-            const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
-            settings.value.date = currentDate;
-          }
-          if (!settings.value.keepOwner) {
-            settings.value.owner = '';
-          }
-          if (!settings.value.keepReason) {
-            settings.value.reason = '';
-          }
-        }
-        pressedDish.value = dish;
-      } else {
-        if (dish === 'ramen') {
-          secretCounter++;
-          if (secretCounter >= 10) {
-            secret.value = true;
-          }
-        }
-      }
-    } catch (e) {
-      console.error(e);
-      throw e;
-    }
-  };
 </script>
 
 <template>
-  <div v-if="displayActualData" class="content" :class="{ small: !!allowEdit }">
+  <div v-if="!dishes.length" class="content-base no-content">
+    Nothing to see here
+  </div>
+  <div v-else class="content-base content" :class="{ small: !!small }">
     <div
-      v-for="(data, index) in displayActualData"
-      :key="data.dish"
+      v-for="(data, index) in dishes"
+      :key="data.customId"
       class="dish"
       :class="{
-        [data.previousDish]: true,
-        [data.currentDish + '-force']: true,
-        animation: dishAnimations,
-        clickable: !!allowEdit,
         ['dish-' + (index + 1)]: true,
       }"
       :style="{
         backgroundImage: data.image ? 'url(' + data.image + ')' : '',
       }"
-      @click="addPointToDish(data.dish)"
-      @focusin="dishFocus(data.dish, true)"
-      @focusout="dishFocus(data.dish, false)"
-      @mouseover="dishFocus(data.dish, true)"
-      @mouseout="dishFocus(data.dish, false)"
     >
-      <div class="points-container">
-        <span
-          v-if="errorMessage"
-          class="warning-message"
-          :class="{
-            hide: !displayErrorMessage || pressedDish !== data.dish,
-          }"
-        >
-          {{ errorMessage }}
-        </span>
-        <div
-          class="points"
-          style="height: 0%; transition: height 1s ease-in-out"
-          :style="{ height: data.currentPercentage + '%' }"
-        ></div>
-      </div>
-      <div v-if="secret" class="categories-wrapper">
-        <div
-          class="categories-inner-wrapper"
-          :class="{
-            show:
-              currentActiveDishDelayed === data.dish ||
-              currentActiveDishAnimation === data.dish,
-          }"
-        >
-          <div
-            class="categories"
-            :class="{ active: currentActiveDishDelayed === data.dish }"
-          >
-            <div
-              v-for="category in data.categories"
-              :key="category.name"
-              class="category"
-            >
-              <span class="category-name"> {{ category.name }} </span>
-              <span class="category-number"> {{ category.amount }} </span>
-            </div>
-          </div>
-        </div>
-      </div>
       <div class="name">
-        {{ data.dishString }}
+        {{ data.dish }}
       </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
+  .no-content {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+  }
+
   .content {
     display: grid;
     grid-template-rows: 1fr 1fr;
     grid-template-columns: 1fr 1fr 1fr;
-    width: calc(100% - 1rem);
-    height: calc(85vh - 1rem);
-    height: calc((85 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-    padding: 0.5rem;
-    margin: 0;
-    border: none;
-
-    .categories-wrapper {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 0;
-      width: 100%;
-      height: 0;
-
-      .categories-inner-wrapper {
-        position: absolute;
-        left: 10%;
-        right: 10%;
-        bottom: 0.05rem;
-        max-height: 6rem;
-        overflow-y: visible;
-        display: none;
-      }
-      .categories {
-        padding: 0.25rem;
-        background-color: rgba(32, 32, 32, 0.95);
-        border: 0.025rem solid rgba(0, 0, 0, 0.5);
-        border-radius: 1rem;
-        box-shadow: 0 1rem 1rem rgba(0, 0, 0, 0.3);
-        transition: opacity 0.3s ease-in-out;
-        opacity: 0;
-        font-size: 1rem;
-        line-height: 1rem;
-        .category {
-          display: flex;
-          flex-direction: row;
-          justify-content: space-between;
-          margin: 0.35rem;
-        }
-      }
-    }
-
-    &.small {
-      height: calc(70vh - 1rem);
-      height: calc((70 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-    }
   }
 
   .dish {
@@ -338,103 +196,11 @@
     background-repeat: no-repeat;
     background-position: center;
 
-    &.dish-1,
-    &.dish-2,
-    &.dish-3 {
-      .categories-wrapper .categories-inner-wrapper {
-        max-height: 5.5rem;
-      }
-    }
-
-    &.animation {
-      transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
-    }
-
-    &.red-force {
-      background-color: #ab0200;
-    }
-
-    &.blue-force {
-      background-color: #166cc2;
-    }
-
-    &.purple-force {
-      background-color: #420082;
-    }
-
-    &.grey-force {
-      background-color: #808184;
-    }
-
-    &.orange-force {
-      background-color: #ff6228;
-    }
-
-    &.yellow-force {
-      background-color: #f6aa00;
-    }
-
-    &.clickable {
-      cursor: pointer;
-    }
-
-    .categories-wrapper .categories-inner-wrapper.show {
-      display: block;
-    }
-
     &:hover,
     &:active,
     &:focus {
       color: #e6e6e6;
       transform: scale(1.03);
-
-      .categories-wrapper .categories-inner-wrapper {
-        display: block;
-
-        .categories.active {
-          opacity: 1;
-        }
-      }
-    }
-  }
-
-  @media (min-aspect-ratio: 3/1) {
-    .content {
-      height: calc(78vh - 1rem);
-      height: calc((78 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-
-      &.small {
-        height: calc(63vh - 1rem);
-        height: calc((63 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
-      }
-    }
-  }
-
-  @media (max-aspect-ratio: 1/1) {
-    .content {
-      height: calc(100vh - 15vw - 1rem);
-      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 15vw);
-
-      &.small {
-        height: calc(100vh - 28vw - 1rem);
-        height: calc(
-          (100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 28vw
-        );
-      }
-    }
-  }
-
-  @media (max-aspect-ratio: 9/16) {
-    .content {
-      height: calc(100vh - 22vw - 1rem);
-      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 22vw);
-
-      &.small {
-        height: calc(100vh - 35vw - 1rem);
-        height: calc(
-          (100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 35vw
-        );
-      }
     }
   }
 
@@ -443,12 +209,6 @@
       grid-template-rows: 1fr;
       grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
       grid-template-areas: 'a b c d e f';
-
-      .dish {
-        .categories-wrapper .categories-inner-wrapper {
-          max-height: 2.25rem;
-        }
-      }
     }
   }
 
@@ -457,19 +217,6 @@
       grid-template-rows: 1fr 1fr 1fr;
       grid-template-columns: 1fr 1fr;
       grid-template-areas: 'a b' 'c d' 'e f';
-
-      .dish {
-        .categories-wrapper .categories-inner-wrapper {
-          max-height: 6rem;
-        }
-
-        &.dish-1,
-        &.dish-2 {
-          .categories-wrapper .categories-inner-wrapper {
-            max-height: 4rem;
-          }
-        }
-      }
     }
   }
 
@@ -478,103 +225,6 @@
       grid-template-rows: 1fr 1fr 1fr 1fr 1fr 1fr;
       grid-template-columns: 1fr;
       grid-template-areas: 'a' 'b' 'c' 'd' 'e' 'f';
-
-      .dish {
-        .categories-wrapper .categories-inner-wrapper {
-          max-height: 6rem;
-        }
-        &:first-child {
-          .categories-wrapper .categories-inner-wrapper {
-            max-height: 2.5rem;
-          }
-        }
-      }
-    }
-  }
-
-  .red {
-    background-color: #ab0200;
-  }
-
-  .blue {
-    background-color: #166cc2;
-  }
-
-  .purple {
-    background-color: #420082;
-  }
-
-  .grey {
-    background-color: #808184;
-  }
-
-  .orange {
-    background-color: #ff6228;
-  }
-
-  .yellow {
-    background-color: #f6aa00;
-  }
-
-  .points-container {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 0;
-    margin: 0;
-    height: 100%;
-    border: none;
-    border-radius: 1rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    overflow: hidden;
-
-    &:before {
-      content: ' ';
-      display: block;
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      opacity: 0.2;
-      background-color: #000000;
-    }
-
-    .warning-message {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      margin: 0;
-      width: calc(100% - 2rem);
-      text-align: center;
-      height: calc(100% - 2rem);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 1rem;
-      background-color: rgba(184, 0, 0, 0.7);
-      border-radius: 1rem;
-      z-index: 50;
-      opacity: 1;
-      transition: opacity 0.3s ease-in-out;
-
-      &.hide {
-        opacity: 0;
-      }
-    }
-
-    .points {
-      background-color: #d3d3d3;
-      opacity: 0.35;
-      padding: 0;
-      margin: 0;
-      border: none;
     }
   }
 

@@ -15,13 +15,18 @@ const passwordFailedCaptcha: Record<string, number> = {};
 export const timeOutCaptchaAndResponse = async (
   ip: string,
   captchaToken?: string,
-  action?: () => Promise<{ success: boolean; admin?: boolean }>,
+  action?: () => Promise<{
+    success: boolean;
+    admin?: boolean;
+    userId?: string;
+  }>,
   response?: boolean
 ): Promise<{
   success: boolean;
   showCaptcha: boolean;
   nextTry: Date;
   admin?: boolean;
+  userId?: string;
 }> => {
   const timeOut = passwordTimeOuts[ip];
   let needsCaptcha = false;
@@ -137,6 +142,7 @@ export const timeOutCaptchaAndResponse = async (
           passwordTries[ip] === 8,
         nextTry: new Date(),
         admin: true,
+        userId: result.userId,
       };
     }
     return {
@@ -146,6 +152,7 @@ export const timeOutCaptchaAndResponse = async (
         passwordTries[ip] === 6 ||
         passwordTries[ip] === 8,
       nextTry: new Date(),
+      userId: result.userId,
     };
   }
   return {
@@ -155,5 +162,6 @@ export const timeOutCaptchaAndResponse = async (
       passwordTries[ip] === 6 ||
       passwordTries[ip] === 8,
     nextTry: new Date(),
+    userId: result.userId,
   };
 };

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ranking, secret } from '../settings';
+  import { loggedIn, userLoggedIn } from '../settings';
 </script>
 
 <template>
@@ -7,9 +7,64 @@
     <router-link to="/" class="header-container">
       <img src="../assets/logofullwhite.png" class="logo" />
     </router-link>
-    <button v-if="secret" class="view-toggle" @click="ranking = !ranking">
-      {{ ranking ? 'Ranking' : 'Overview' }}
-    </button>
+    <div class="right-hand-buttons">
+      <router-link
+        v-if="$router.currentRoute.value.path === '/' && !loggedIn"
+        to="/login"
+        class="view-toggle"
+      >
+        Log in / Sign up
+      </router-link>
+      <router-link
+        v-if="$router.currentRoute.value.path === '/' && loggedIn"
+        :to="userLoggedIn ? '/user' : '/admin'"
+        class="view-toggle"
+      >
+        {{ userLoggedIn ? 'User menu' : 'Admin panel' }}
+      </router-link>
+      <router-link
+        v-if="
+          $router.currentRoute.value.path === '/login' ||
+          $router.currentRoute.value.path === '/admin'
+        "
+        to="/"
+        class="view-toggle"
+      >
+        Back
+      </router-link>
+      <router-link
+        v-if="
+          ($router.currentRoute.value.path === '/user') |
+            ($router.currentRoute.value.path === '/add') |
+            ($router.currentRoute.value.path === '/details')
+        "
+        to="/plans"
+        class="view-toggle"
+      >
+        Plans
+      </router-link>
+      <router-link
+        v-if="
+          ($router.currentRoute.value.path === '/plans') |
+            ($router.currentRoute.value.path === '/add') |
+            ($router.currentRoute.value.path === '/add')
+        "
+        to="/user"
+        class="view-toggle"
+      >
+        Discover
+      </router-link>
+      <router-link
+        v-if="
+          $router.currentRoute.value.path === '/user' ||
+          $router.currentRoute.value.path === '/plans'
+        "
+        to="/add"
+        class="view-toggle"
+      >
+        Invite
+      </router-link>
+    </div>
   </div>
 </template>
 
@@ -33,6 +88,11 @@
     text-decoration: none;
   }
 
+  .right-hand-buttons {
+    display: flex;
+    flex-direction: row;
+  }
+
   .logo {
     margin-left: 3.5vh;
     margin-left: calc((3.5 * (100vh - var(--vh-offset, 0px)) / 100));
@@ -44,6 +104,8 @@
   }
 
   .view-toggle {
+    display: block;
+    box-sizing: border-box;
     margin-left: auto;
     margin-right: 0.75rem;
     margin-top: 0;
@@ -57,6 +119,8 @@
     border: solid 0.1rem rgb(179, 179, 179);
     border-radius: 1rem;
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: #000000;
   }
 
   @media (min-aspect-ratio: 3/1) {

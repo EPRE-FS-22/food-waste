@@ -1,9 +1,8 @@
 import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
-import { DISHES } from './constants';
-import type { PointsCategory, PointsWithStats } from '../../backend/src/model';
-import { BehaviorSubject, Subject } from 'rxjs';
+import type { Dish, DishInfo } from '../../backend/src/model';
+import { Subject } from 'rxjs';
 
 const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
 const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
@@ -21,45 +20,16 @@ const client = createTRPCClient<AppRouter>({
   ],
 });
 
-let points: PointsWithStats[] = Object.keys(DISHES).map((item) => ({
-  dish: item as keyof typeof DISHES,
-  points: 0,
-  lastChanged: new Date(0),
-  categories: [],
-}));
-
-export interface DisplayDish {
-  dish: string;
-  dishString: string;
-  currentDish: string;
-  previousDish: string;
-  points: number;
-  relativePercentage: number;
-  currentPercentage: number;
-  badgeString: string;
-  badgeClass?: string;
-  categories: PointsCategory[];
-  image?: string;
-}
-
-export type DisplayData = DisplayDish[];
-
-const placesStrings = ['1st', '2nd', '3rd', '4th', '5th', '6th'];
-
-const lastString = '';
-
-const scale = 2.1;
-const maxGrowScale = 1.5;
-
-let previousMaxIndex = 0;
-
-const randomOrder: { [key: string]: number } = {};
-
+let loggingOut = true;
 let sessionExpires =
   parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
-let sessionEmail = localStorage.getItem('sessionEmail') ?? '';
+let sessionUserId = localStorage.getItem('sessionUserId') ?? '';
 let sessionId = localStorage.getItem('session') ?? '';
 let isAdmin = localStorage.getItem('admin') === 'true';
+
+export const isLoggingOut = () => {
+  return loggingOut;
+};
 
 export const hasSession = (admin = false) => {
   return (
@@ -67,183 +37,232 @@ export const hasSession = (admin = false) => {
   );
 };
 
-export const hasModifiableSession = () => {
-  return hasSession() && sessionEmail;
+export const hasUserSession = () => {
+  return hasSession() && !isAdmin;
 };
-
-const processData = (data: PointsWithStats[], zero = false): DisplayData => {
-  const highestPoints = Math.max(...data.map((item) => item.points));
-
-  let pointsMaxIndex = scale * highestPoints;
-  if (previousMaxIndex) {
-    if (pointsMaxIndex < previousMaxIndex * maxGrowScale) {
-      pointsMaxIndex = previousMaxIndex;
-    } else {
-      pointsMaxIndex = pointsMaxIndex / maxGrowScale;
-    }
-  }
-
-  previousMaxIndex = pointsMaxIndex;
-
-  if (!pointsMaxIndex) {
-    pointsMaxIndex = 1;
-  }
-
-  const dataNormalizedArray: {
-    dish: string;
-    relative: number;
-    points: number;
-    categories: PointsCategory[];
-  }[] = data.map((item) => ({
-    dish: item.dish,
-    relative: item.points / pointsMaxIndex,
-    points: item.points,
-    categories: item.categories,
-  }));
-
-  dataNormalizedArray.sort((a, b) => {
-    if (a.points < b.points) {
-      return 1;
-    }
-    if (a.points > b.points) {
-      return -1;
-    }
-    const previousRandom = randomOrder[a.dish + '-' + b.dish];
-    if (previousRandom) {
-      return 0;
-    }
-    const previousReverseRandom = randomOrder[b.dish + '-' + a.dish];
-    if (previousReverseRandom) {
-      return 0;
-    }
-    const random = Math.random();
-    randomOrder[a.dish + '-' + b.dish] = random;
-    if (random < 0.5) {
-      return 0;
-    } else {
-      return -1;
-    }
-  });
-
-  let previousScore = -1;
-  let previousPlaceString = '';
-
-  const displayData: DisplayData = dataNormalizedArray.map((item, index) => {
-    let badgeString = '';
-    let badgeClass = '';
-    if (item.points === previousScore) {
-      badgeString = previousPlaceString;
-    } else {
-      if (
-        lastString &&
-        (item.points === 0 ||
-          index === dataNormalizedArray.length - 1 ||
-          !dataNormalizedArray
-            .slice(index)
-            .find((searchItem) => searchItem.points < item.points))
-      ) {
-        previousPlaceString = lastString;
-      } else {
-        previousPlaceString = placesStrings[index] ?? '';
-      }
-      badgeString = previousPlaceString;
-      previousScore = item.points;
-    }
-
-    if (placesStrings[0] === previousPlaceString) {
-      badgeClass = 'first';
-    } else if (placesStrings[1] === previousPlaceString) {
-      badgeClass = 'second';
-    } else if (placesStrings[2] === previousPlaceString) {
-      badgeClass = 'third';
-    } else if (lastString && lastString === previousPlaceString) {
-      badgeClass = 'last';
-    }
-
-    const previousDish = zero
-      ? item.dish
-      : dataSubject.value[index]?.dish ?? item.dish;
-    const returnObject: DisplayDish = {
-      dish: item.dish,
-      dishString: item.dish.charAt(0).toUpperCase() + item.dish.slice(1),
-      currentDish: previousDish,
-      previousDish,
-      points: item.points,
-      relativePercentage: item.relative * 100,
-      currentPercentage: zero
-        ? 0
-        : dataSubject.value.find((prevItem) => prevItem.dish === item.dish)
-            ?.currentPercentage ?? 0,
-      badgeString,
-      badgeClass,
-      categories: item.categories.sort((a, b) => b.amount - a.amount),
-    };
-    return returnObject;
-  });
-
-  return displayData;
-};
-
-export const zeroData = processData(points, true);
-
-const dataSubject = new BehaviorSubject(zeroData);
 
 export const authFailure = new Subject<void>();
 
 export const inLogin = new Subject<boolean>();
 
-const getLatestTimestamp = (data: PointsWithStats[]) => {
-  return Math.max(...data.map((item) => new Date(item.lastChanged).getTime()));
-};
+let dishesPreviousIndex = 0;
+let dishesIndex = 0;
+let dishesDate = new Date();
+let dishes: Dish[] = [];
 
-const isDataNewer = (data: PointsWithStats[]) => {
-  return getLatestTimestamp(data) > getLatestTimestamp(points);
-};
-
-export const getPoints = async () => {
+export const getAvailableDishes = async (next = false) => {
   try {
-    const data = await client.query('getPoints');
-    if (isDataNewer(data)) {
-      points = data;
-      const displayData = processData(points);
-      dataSubject.next(displayData);
+    if (!next) {
+      if (dishes && dishesDate.getTime() > Date.now() - 1000 * 60 * 1) {
+        return dishes;
+      }
+      dishesIndex = dishesPreviousIndex;
     }
-    return dataSubject.value;
+    const data = await client.query('getAvailableDishes', {});
+    if (data) {
+      dishesPreviousIndex = dishesIndex;
+      dishesIndex += data.length;
+      dishesDate = new Date();
+      dishes = data;
+      return data;
+    } else {
+      authFailure.next();
+      return false;
+    }
   } catch (e) {
     console.error(e);
     throw e;
   }
 };
 
-export const addPoints = async (
-  dish: string,
-  number: number,
-  date?: Date,
-  owner?: string,
-  reason?: string
-) => {
+let recommendedDishesPrevious: Dish[] = [];
+let recommendedDishesDate = new Date();
+let recommendedDishes: Dish[] = [];
+
+export const getRecommendedDishes = async (next = false) => {
   try {
-    if (!hasSession(true)) {
+    if (!hasSession()) {
       authFailure.next();
+      return false;
     }
-    const data = await client.mutation('addPoints', {
-      dish,
-      number,
-      sessionId: sessionId,
-      date: date ? date.getTime() : undefined,
-      owner: owner || undefined,
-      reason: reason || undefined,
+    if (!next) {
+      if (
+        recommendedDishes &&
+        recommendedDishesDate.getTime() > Date.now() - 1000 * 60 * 5
+      ) {
+        return recommendedDishes;
+      }
+    }
+    const data = await client.query('getRecommendedDishes', {
+      sessionId,
+      userId: sessionUserId,
+      previousIds: recommendedDishesPrevious.map((dish) => dish.customId),
     });
-    if (!data) {
+    if (data) {
+      recommendedDishesPrevious = recommendedDishes;
+      recommendedDishesDate = new Date();
+      recommendedDishes = data;
+      return data;
+    } else {
       authFailure.next();
-      return;
+      return false;
     }
-    if (isDataNewer(data)) {
-      points = data;
-      const displayData = processData(points);
-      dataSubject.next(displayData);
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+let myDishesDate = new Date();
+let myDishes: DishInfo[] = [];
+
+export const getMyDishes = async () => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
     }
-    return dataSubject.value;
+    if (myDishes && myDishesDate.getTime() > Date.now() - 1000 * 60 * 1) {
+      return myDishes;
+    }
+    const data = await client.query('getMyDishes', {
+      sessionId,
+      userId: sessionUserId,
+    });
+    if (data) {
+      myDishesDate = new Date();
+      myDishes = data;
+      return data;
+    } else {
+      authFailure.next();
+      return false;
+    }
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+let signedUpDishesDate = new Date();
+let signedUpDishes: Dish[] = [];
+
+export const getSignedUpDishes = async () => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    if (
+      signedUpDishes &&
+      signedUpDishesDate.getTime() > Date.now() - 1000 * 60 * 1
+    ) {
+      return signedUpDishes;
+    }
+    const data = await client.query('getSignedUpDishes', {
+      sessionId,
+      userId: sessionUserId,
+    });
+    if (data) {
+      signedUpDishesDate = new Date();
+      signedUpDishes = data;
+      return data;
+    } else {
+      authFailure.next();
+      return false;
+    }
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const addDish = async (dish: string, slots: number, date: Date) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('addDish', {
+      dish,
+      slots,
+      sessionId: sessionId,
+      userId: sessionUserId,
+      date: date.getTime(),
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const addDishPreference = async (dish: string, likes: boolean) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('addDishPreference', {
+      dish,
+      likes,
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const addDishRequest = async (dishId: string, message?: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('addDishEvent', {
+      dishId,
+      message,
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const acceptDishRequest = async (eventId: string, response?: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('acceptDishEvent', {
+      eventId,
+      response,
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
   } catch (e: unknown) {
     console.error(e);
     throw e;
@@ -258,17 +277,17 @@ export const checkSession = (admin = false) => {
         return;
       }
       const data = await client.mutation('checkSession', {
-        sessionId: sessionId,
-        email: sessionEmail || undefined,
+        sessionId,
+        userId: sessionUserId,
         admin: admin || isAdmin || undefined,
       });
       if (!data) {
         sessionId = '';
-        sessionEmail = '';
+        sessionUserId = '';
         isAdmin = false;
         sessionExpires = 0;
         localStorage.setItem('session', '');
-        localStorage.setItem('sessionEmail', '');
+        localStorage.setItem('sessionUserId', '');
         localStorage.setItem('sessionExpires', '');
         localStorage.setItem('admin', '');
         authFailure.next();
@@ -278,29 +297,6 @@ export const checkSession = (admin = false) => {
       throw e;
     }
   })();
-};
-
-export const subscribePoints = () => {
-  (async () => {
-    try {
-      await client.subscription('onPointsChanged', undefined, {
-        onNext: (data) => {
-          if (data.type === 'data') {
-            const newData = data.data;
-            if (isDataNewer(newData)) {
-              points = newData;
-              const displayData = processData(points);
-              dataSubject.next(displayData);
-            }
-          }
-        },
-      });
-    } catch (e) {
-      console.error(e);
-      throw e;
-    }
-  })();
-  return dataSubject;
 };
 
 export const register = async (email: string, captchaToken?: string) => {
@@ -351,8 +347,8 @@ export const logIn = async (
     }
     sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
     if (sessionId) {
-      sessionEmail = email ?? '';
-      localStorage.setItem('sessionEmail', sessionEmail);
+      sessionUserId = result.userId ?? '';
+      localStorage.setItem('sessionUserId', sessionUserId);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
@@ -369,10 +365,10 @@ export const logIn = async (
   }
 };
 
-export const verify = async (email: string, code: string) => {
+export const verify = async (userId: string, code: string) => {
   try {
     const result = await client.mutation('verify', {
-      email,
+      userId,
       code,
     });
     if (result.success && result.sessionId) {
@@ -384,8 +380,8 @@ export const verify = async (email: string, code: string) => {
     }
     sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
     if (sessionId) {
-      sessionEmail = email ?? '';
-      localStorage.setItem('sessionEmail', sessionEmail);
+      sessionUserId = userId ?? '';
+      localStorage.setItem('sessionUserId', sessionUserId);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
@@ -407,11 +403,11 @@ export const reset = async (
   name?: string
 ) => {
   try {
-    if (!sessionEmail) {
+    if (!sessionUserId) {
       return false;
     }
     const result = await client.mutation('reset', {
-      email: sessionEmail,
+      userId: sessionUserId,
       password: newPassword || undefined,
       name: name || undefined,
       code,
@@ -430,11 +426,11 @@ export const change = async (
   name?: string
 ) => {
   try {
-    if (!sessionEmail) {
+    if (!sessionUserId) {
       return false;
     }
     const result = await client.mutation('change', {
-      email: sessionEmail,
+      userId: sessionUserId,
       password,
       newPassword: newPassword || undefined,
       name: name || undefined,
@@ -449,15 +445,17 @@ export const change = async (
 
 export const logOut = async () => {
   try {
-    await client.mutation('logout', { sessionId });
+    loggingOut = true;
+    await client.mutation('logout', { sessionId, userId: sessionUserId });
     sessionId = '';
-    sessionEmail = '';
+    sessionUserId = '';
     isAdmin = false;
     sessionExpires = 0;
-    localStorage.setItem('sessionEmail', '');
+    localStorage.setItem('sessionUserId', '');
     localStorage.setItem('session', '');
     localStorage.setItem('sessionExpires', '');
     localStorage.setItem('admin', '');
+    loggingOut = false;
   } catch (e) {
     console.error(e);
     throw e;

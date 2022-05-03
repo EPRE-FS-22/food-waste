@@ -1,12 +1,17 @@
 <script setup lang="ts">
+  import { DisplayType } from '../settings';
   import Waste from '../components/Waste.vue';
-  import Ranking from '../components/Ranking.vue';
-  import { ranking } from '../settings';
+  import { hasSession, isLoggingOut } from '../data';
+  import { useRouter } from 'vue-router';
+  const router = useRouter();
+
+  if (!isLoggingOut() && hasSession()) {
+    router.push('/user');
+  }
 </script>
 
 <template>
   <div class="page">
-    <Ranking v-if="ranking" :allow-edit="false"> </Ranking>
-    <Waste v-else :allow-edit="false"> </Waste>
+    <Waste :small="false" :type="DisplayType.available"> </Waste>
   </div>
 </template>

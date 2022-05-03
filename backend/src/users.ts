@@ -6,14 +6,14 @@ import { makeId } from './id.js';
 import { base64Encode } from './base64.js';
 import { sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
-import { EMAIL_ENDING } from './constants.js';
 import 'dotenv/config';
+import { EMAIL_REGEX } from './constants.js';
 
 const frontendPath = process.env.FOOD_WASTE_FRONTEND_PATH ?? '/#';
 const frontendProtocol = process.env.FOOD_WASTE_FRONTEND_PROTOCOL ?? 'http://';
 
 export const checkEmail = (email?: string): boolean =>
-  !!email && email.endsWith(EMAIL_ENDING);
+  !!email && !!email.match(EMAIL_REGEX)
 
 export const hashPassword = async (password: string) => {
   return await hash(password);
@@ -31,7 +31,7 @@ export const verifyPassword = async (hash: string, password: string) => {
 };
 
 export const changePasswordOrName = async (
-  email: string,
+  userId: string,
   password: string,
   newPassword?: string,
   name?: string
@@ -40,13 +40,9 @@ export const changePasswordOrName = async (
     return false;
   }
 
-  if (!checkEmail(email)) {
-    return false;
-  }
-
   const usersCollection = await getUsersCollection();
 
-  const registeredUser = await usersCollection.findOne({ email });
+  const registeredUser = await usersCollection.findOne({ customId: userId });
   if (!registeredUser || !registeredUser.hash) {
     return false;
   }
@@ -56,7 +52,7 @@ export const changePasswordOrName = async (
 
     await usersCollection.updateOne(
       {
-        email,
+        customId: userId,
       },
       {
         $set: {
@@ -66,14 +62,14 @@ export const changePasswordOrName = async (
         $currentDate: { changedDate: true },
       }
     );
-    return email;
+    return true;
   }
 
   return false;
 };
 
 export const setPasswordOrName = async (
-  email: string,
+  userId: string,
   code: string,
   newPassword?: string,
   name?: string
@@ -82,13 +78,9 @@ export const setPasswordOrName = async (
     return false;
   }
 
-  if (!checkEmail(email)) {
-    return false;
-  }
-
   const usersCollection = await getUsersCollection();
 
-  const registeredUser = await usersCollection.findOne({ email });
+  const registeredUser = await usersCollection.findOne({ customId: userId });
   if (
     !registeredUser ||
     !registeredUser.resetHash ||
@@ -100,7 +92,7 @@ export const setPasswordOrName = async (
   if (registeredUser.resetExpiration < new Date()) {
     await usersCollection.updateOne(
       {
-        email,
+        customId: userId,
       },
       {
         $unset: { resetHash: true, resetExpiration: true },
@@ -114,7 +106,7 @@ export const setPasswordOrName = async (
 
     await usersCollection.updateOne(
       {
-        email,
+        customId: userId,
       },
       {
         $set: {
@@ -132,7 +124,7 @@ export const setPasswordOrName = async (
 };
 
 export const verifyUserEmail = async (
-  email: string,
+  userId: string,
   code: string
 ): Promise<{
   success: boolean;
@@ -140,13 +132,9 @@ export const verifyUserEmail = async (
   admin?: boolean;
   resetCode?: string;
 }> => {
-  if (!checkEmail(email)) {
-    return { success: false };
-  }
-
   const usersCollection = await getUsersCollection();
 
-  const registeredUser = await usersCollection.findOne({ email });
+  const registeredUser = await usersCollection.findOne({ customId: userId });
   if (
     !registeredUser ||
     !registeredUser.verifyHash ||
@@ -158,7 +146,7 @@ export const verifyUserEmail = async (
   if (registeredUser.verifyExpiration < new Date()) {
     await usersCollection.updateOne(
       {
-        email,
+        customId: userId,
       },
       {
         $unset: { verifyHash: true, verifyExpiration: true, verifyStay: true },
@@ -172,7 +160,7 @@ export const verifyUserEmail = async (
     const passwordHashed = await hashPassword(passwordNew);
     await usersCollection.updateOne(
       {
-        email,
+        customId: userId,
       },
       {
         $set: {
@@ -197,14 +185,10 @@ export const verifyUserEmail = async (
   }
 };
 
-export const createLoginLink = async (email: string, stay = false) => {
-  if (!checkEmail(email)) {
-    return false;
-  }
-
+export const createLoginLink = async (userId: string, stay = false) => {
   const usersCollection = await getUsersCollection();
 
-  const registeredUser = await usersCollection.findOne({ email });
+  const registeredUser = await usersCollection.findOne({ customId: userId });
   if (!registeredUser) {
     return false;
   }
@@ -217,11 +201,11 @@ export const createLoginLink = async (email: string, stay = false) => {
     frontendHost +
     (frontendPort ? ':' + frontendPort : '') +
     frontendPath
-  }/link?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}`;
+  }/link?id=${userId}&code=${base64Encode(passwordNew)}`;
 
   await usersCollection.updateOne(
     {
-      email,
+      customId: userId,
     },
     {
       $set: {
@@ -265,10 +249,14 @@ export const registerOrEmailLogin = async (
       }
     }
 
+    let userId = registeredUser?.customId;
+
     const passwordNew = makeId(15);
     const passwordHashed = await hashPassword(passwordNew);
     if (isRegister) {
+      userId = makeId(20);
       await usersCollection.insertOne({
+        customId: userId,
         email,
         verifyHash: passwordHashed,
         verifyExpiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
@@ -297,36 +285,38 @@ export const registerOrEmailLogin = async (
       );
     }
 
-    const body = isRegister
-      ? `Welcome to the Food Waste app.
+    if (userId) {
+      const body = isRegister
+        ? `Welcome to the Food Waste app.
 
-  To confirm your account just press the following link within the next 24 hours: ${
-    frontendProtocol +
-    frontendHost +
-    (frontendPort ? ':' + frontendPort : '') +
-    frontendPath
-  }/login?register=true&email=${base64Encode(email)}&code=${base64Encode(
-          passwordNew
-        )}
+    To confirm your account just press the following link within the next 24 hours: ${
+      frontendProtocol +
+      frontendHost +
+      (frontendPort ? ':' + frontendPort : '') +
+      frontendPath
+    }/login?register=true&id=${userId}&code=${base64Encode(passwordNew)}
 
-  If you did not request this email, simply ignore it.`
-      : `Welcome back to the Food Waste App.
+    If you did not request this email, simply ignore it.`
+        : `Welcome back to the Food Waste App.
 
-  To log in just press the following link within the next hour: ${
-    frontendProtocol +
-    frontendHost +
-    (frontendPort ? ':' + frontendPort : '') +
-    frontendPath
-  }/login?email=${base64Encode(email)}&code=${base64Encode(passwordNew)}
+    To log in just press the following link within the next hour: ${
+      frontendProtocol +
+      frontendHost +
+      (frontendPort ? ':' + frontendPort : '') +
+      frontendPath
+    }/login?id=${userId}&code=${base64Encode(passwordNew)}
 
-  If you did not request this email, simply ignore it.`;
+    If you did not request this email, simply ignore it.`;
 
-    await sendMail(
-      email,
-      'Food Waste ' + (isRegister ? 'Verification' : 'Login'),
-      body
-    );
-    return { success: true };
+      await sendMail(
+        email,
+        'Food Waste ' + (isRegister ? 'Verification' : 'Login'),
+        body
+      );
+      return { success: true };
+    }
+
+    return { success: false };
   });
 };
 
@@ -342,10 +332,14 @@ export const verifyAdminPassword = async (
       key: 'password',
       type: 'string',
     })) as StringSetting | undefined;
-    if (hashedPasswordObject) {
+    const adminIdObject = (await settingsCollection.findOne({
+      key: 'adminId',
+      type: 'string',
+    })) as StringSetting | undefined;
+    if (hashedPasswordObject && adminIdObject) {
       const result = await verifyPassword(hashedPasswordObject.value, password);
       if (result) {
-        return { success: true, admin: true };
+        return { success: true, admin: true, userId: adminIdObject.value };
       }
     }
     return { success: false };
@@ -371,9 +365,36 @@ export const loginUser = async (
     if (user && user.hash) {
       const result = await verifyPassword(user.hash, password);
       if (result) {
-        return { success: true };
+        return { success: true, userId: user.customId };
       }
     }
     return { success: false };
   });
+};
+
+export const getUserName = async (userId: string): Promise<string> => {
+  const usersCollection = await getUsersCollection();
+
+  const user = await usersCollection.findOne({
+    customId: userId,
+  });
+
+  if (!user) {
+    const settingsCollection = await getSettingsCollection();
+
+    const adminIdObject = (await settingsCollection.findOne({
+      key: 'adminId',
+      type: 'string',
+      value: userId,
+    })) as StringSetting | undefined;
+
+    if (adminIdObject) {
+      return 'Admin';
+    }
+  }
+
+  if (user && user.name) {
+    return user.name;
+  }
+  return '';
 };

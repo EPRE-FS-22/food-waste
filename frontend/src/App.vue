@@ -8,10 +8,14 @@
   <div
     class="loading"
     :class="{
-      hide: !loading || $router.currentRoute.value.path === '/login',
+      hide:
+        !loading ||
+        $router.currentRoute.value.path === '/login' ||
+        $router.currentRoute.value.path === '/add' ||
+        $router.currentRoute.value.path === '/details',
     }"
   >
-    Loading scores...
+    Loading deliciousness...
   </div>
   <div class="container">
     <HeaderBar> </HeaderBar>

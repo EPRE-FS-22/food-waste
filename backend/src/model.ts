@@ -1,30 +1,65 @@
-import { DISHES } from './constants.js';
-
-export interface Points {
-  dish: keyof typeof DISHES;
-  points: number;
-  lastChanged: Date;
-}
-
-export interface PointsCategory {
-  name: string;
-  amount: number;
-}
-
-export interface PointsWithStats extends Points {
-  categories: PointsCategory[];
-}
-
-export interface PointEvent {
+export interface DishBase {
   dish: string;
-  pointsDiff: number;
-  date: Date;
-  addedDate: Date;
-  addedBy?: string;
-  owner?: string;
-  reason?: string;
 }
 
+export interface DBDishBase extends DishBase {
+  description: string;
+}
+
+export interface DishPlan extends DishBase {
+  customId: string;
+}
+
+export interface Dish extends DishPlan {
+  name: string;
+  date: Date;
+  slots: number;
+  filled: number;
+}
+
+export interface DishInfoBase extends Dish {
+  lastAcceptedDate?: Date;
+  createdDate: Date;
+}
+
+export interface DishInfo extends DishInfoBase {
+  participantNames: string[];
+  participantMessages: (string | undefined)[];
+  responses: (string | undefined)[];
+  participantRequestsNames: string[];
+  participantRequestsMessages: (string | undefined)[];
+  eventIds: string[];
+  eventRequestsIds: string[];
+}
+
+export interface DBDish extends DishInfoBase, DBDishBase {
+  userId: string;
+}
+
+export interface DishEventBase extends DishPlan {
+  participantName: string;
+  accepted: boolean;
+  message?: string;
+  response?: string;
+  signupDate: Date;
+  acceptedDate?: Date;
+}
+
+export interface DishEvent extends DishEventBase, Dish {}
+
+export interface DBDishEvent extends DishEventBase, DBDishBase {
+  participantId: string;
+  dishId: string;
+}
+
+export interface DishPreference extends DishBase {
+  likes: boolean;
+}
+
+export interface DBDishPreference extends DishPreference, DBDishBase {
+  userId: string;
+  setDate: Date;
+}
 export interface BaseSetting {
   key: string;
   value: unknown;
@@ -56,6 +91,7 @@ export interface SubSetting extends BaseSetting {
 }
 
 export interface User {
+  customId: string;
   email: string;
   registerDate: Date;
   name?: string;

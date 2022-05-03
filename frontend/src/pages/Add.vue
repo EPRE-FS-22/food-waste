@@ -1,6 +1,4 @@
 <script setup lang="ts">
-  import Waste from '../components/Waste.vue';
-  import { DisplayType } from '../settings';
   import { useRouter } from 'vue-router';
   import { authFailure, checkSession, hasUserSession } from '../data';
   const router = useRouter();
@@ -16,7 +14,15 @@
 </script>
 
 <template>
-  <div class="page">
-    <Waste :small="false" :type="DisplayType.recommended"> </Waste>
-  </div>
+  <div class="content-base add">Add</div>
 </template>
+
+<style lang="scss">
+  .add {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+  }
+</style>
