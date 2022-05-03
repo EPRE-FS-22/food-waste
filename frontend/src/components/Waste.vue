@@ -4,7 +4,7 @@
   import { getPicture } from '../pictures';
   import { getAvailableDishes, getMyDishes, getSignedUpDishes } from '../data';
   import type { Dish, DishEvent, DishInfo } from '../../../backend/src/model';
-  import { PROMO_DISHES } from '../constants';
+  import { PROMO_DISHES } from '../../../backend/src/constants';
 
   const props = defineProps({
     small: { type: Boolean, default: false },

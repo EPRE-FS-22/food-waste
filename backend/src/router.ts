@@ -3,13 +3,14 @@ import { z } from 'zod';
 import { TRAIN_INTERVAL } from './constants.js';
 import { makeId } from './id.js';
 import {
-  changePasswordOrName,
   createLoginLink,
   loginUser,
   registerOrEmailLogin,
-  setPasswordOrName,
   verifyUserEmail,
   verifyAdminPassword,
+  getUserInfo,
+  setUserInfo,
+  changeUserInfo,
 } from './users.js';
 import { Context } from './context.js';
 import {
@@ -22,7 +23,11 @@ import {
   getMyDishes,
   getRecommendedDishes,
   getSignedUpDishes,
+  removeDish,
+  removeDishEvent,
+  removeDishPreference,
   train,
+  unacceptDishEvent,
 } from './dishes.js';
 
 let adminSessions: {
@@ -163,17 +168,68 @@ export const appRouter = trpc
       userId: z.string().nonempty().length(20).optional(),
       sessionId: z.string().length(20).optional(),
       start: z.number().nonnegative().optional(),
+      locationCity: z.string().nonempty().max(100).optional(),
+      dateStart: z.number().nonnegative().optional(),
+      dateEnd: z.number().nonnegative().optional(),
+      locationRangeSize: z.number().nonnegative().max(200).optional(),
+      ageRangeSize: z.number().nonnegative().max(200).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         if (input.userId && input.sessionId) {
           const ip = getIp(ctx as Context);
           if (verifySession(input.sessionId, ip, input.userId)) {
-            return await getAvailableDishes(input.userId, input.start);
+            let dateStart: Date | undefined = undefined;
+            if (input.dateStart) {
+              const dateStartParsed = new Date(input.dateStart);
+              if (dateStartParsed && !isNaN(dateStartParsed.getTime())) {
+                dateStart = dateStartParsed;
+              }
+            }
+            let dateEnd: Date | undefined = undefined;
+            if (input.dateEnd) {
+              const dateEndParsed = new Date(input.dateEnd);
+              if (dateEnd && !isNaN(dateEndParsed.getTime())) {
+                dateEnd = dateEndParsed;
+              }
+            }
+            return await getAvailableDishes(
+              input.userId,
+              input.start,
+              undefined,
+              input.locationCity,
+              dateStart,
+              dateEnd,
+              input.locationRangeSize,
+              input.ageRangeSize
+            );
           }
           return false;
         } else {
-          return await getAvailableDishes(undefined, input.start);
+          let dateStart: Date | undefined = undefined;
+          if (input.dateStart) {
+            const dateStartParsed = new Date(input.dateStart);
+            if (dateStartParsed && !isNaN(dateStartParsed.getTime())) {
+              dateStart = dateStartParsed;
+            }
+          }
+          let dateEnd: Date | undefined = undefined;
+          if (input.dateEnd) {
+            const dateEndParsed = new Date(input.dateEnd);
+            if (dateEnd && !isNaN(dateEndParsed.getTime())) {
+              dateEnd = dateEndParsed;
+            }
+          }
+          return await getAvailableDishes(
+            undefined,
+            input.start,
+            undefined,
+            input.locationCity,
+            dateStart,
+            dateEnd,
+            input.locationRangeSize,
+            input.ageRangeSize
+          );
         }
       } catch (e: unknown) {
         throw internalServerError(e);
@@ -185,12 +241,40 @@ export const appRouter = trpc
       userId: z.string().nonempty().length(20),
       sessionId: z.string().length(20),
       previousIds: z.array(z.string().nonempty().length(20)).optional(),
+      locationCity: z.string().nonempty().max(100).optional(),
+      dateStart: z.number().nonnegative().optional(),
+      dateEnd: z.number().nonnegative().optional(),
+      locationRangeSize: z.number().nonnegative().max(200).optional(),
+      ageRangeSize: z.number().nonnegative().max(200).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
-          return await getRecommendedDishes(input.userId, input.previousIds);
+          let dateStart: Date | undefined = undefined;
+          if (input.dateStart) {
+            const dateStartParsed = new Date(input.dateStart);
+            if (dateStartParsed && !isNaN(dateStartParsed.getTime())) {
+              dateStart = dateStartParsed;
+            }
+          }
+          let dateEnd: Date | undefined = undefined;
+          if (input.dateEnd) {
+            const dateEndParsed = new Date(input.dateEnd);
+            if (dateEnd && !isNaN(dateEndParsed.getTime())) {
+              dateEnd = dateEndParsed;
+            }
+          }
+          return await getRecommendedDishes(
+            input.userId,
+            input.previousIds,
+            undefined,
+            input.locationCity,
+            dateStart,
+            dateEnd,
+            input.locationRangeSize,
+            input.ageRangeSize
+          );
         }
         return false;
       } catch (e: unknown) {
@@ -225,6 +309,26 @@ export const appRouter = trpc
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
           return await getSignedUpDishes(input.userId);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getUserInfo', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          const info = await getUserInfo(input.userId);
+          if (info) {
+            return info;
+          }
         }
         return false;
       } catch (e: unknown) {
@@ -352,24 +456,34 @@ export const appRouter = trpc
       }
     },
   })
-  .mutation('reset', {
+  .mutation('setUserInfo', {
     input: z.object({
       userId: z.string().nonempty().length(20),
       code: z.string().nonempty().length(15),
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20).optional(),
       name: z.string().nonempty().max(200).optional(),
+      age: z.number().nonnegative().min(18).max(200).optional(),
+      locationCity: z.string().nonempty().max(100).optional(),
+      exactLocation: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
-          return await setPasswordOrName(
+          const result = await setUserInfo(
             input.userId,
             input.code,
             input.password,
-            input.name
+            input.name,
+            input.age,
+            input.locationCity,
+            input.exactLocation
           );
+
+          if (result) {
+            return await getUserInfo(input.userId);
+          }
         }
         return false;
       } catch (e: unknown) {
@@ -377,24 +491,34 @@ export const appRouter = trpc
       }
     },
   })
-  .mutation('change', {
+  .mutation('changeUserInfo', {
     input: z.object({
       userId: z.string().nonempty().length(20),
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20),
       newPassword: z.string().nonempty().max(20).optional(),
       name: z.string().nonempty().max(200).optional(),
+      age: z.number().nonnegative().min(18).max(200).optional(),
+      locationCity: z.string().nonempty().max(100).optional(),
+      exactLocation: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
-          return await changePasswordOrName(
+          const result = await changeUserInfo(
             input.userId,
             input.password,
             input.newPassword,
-            input.name
+            input.name,
+            input.age,
+            input.locationCity,
+            input.exactLocation
           );
+
+          if (result) {
+            return await getUserInfo(input.userId);
+          }
         }
         return false;
       } catch (e: unknown) {
@@ -461,6 +585,8 @@ export const appRouter = trpc
       userId: z.string().length(20),
       slots: z.number().min(1).max(10).int(),
       date: z.number().nonnegative(),
+      locationCity: z.string().nonempty().max(100).optional(),
+      exactLocation: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
@@ -472,9 +598,36 @@ export const appRouter = trpc
               input.dish,
               input.userId,
               input.slots,
-              date
+              date,
+              input.locationCity,
+              input.exactLocation
             );
             return dishId;
+          }
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('removeDish', {
+    input: z.object({
+      dishId: z.string().length(20),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+      admin: z.boolean().optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (input.admin) {
+          if (verifySession(input.sessionId, ip, input.userId, true)) {
+            return await removeDish(input.dishId);
+          }
+        } else {
+          if (verifySession(input.sessionId, ip, input.userId)) {
+            return await removeDish(input.dishId, input.userId);
           }
         }
         return false;
@@ -502,6 +655,24 @@ export const appRouter = trpc
       }
     },
   })
+  .mutation('removeDishPreference', {
+    input: z.object({
+      dish: z.string().nonempty().max(50),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await removeDishPreference(input.dish, input.userId);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
   .mutation('addDishEvent', {
     input: z.object({
       dishId: z.string().nonempty().length(20),
@@ -514,6 +685,24 @@ export const appRouter = trpc
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
           return await addDishEvent(input.dishId, input.userId, input.message);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('removeDishEvent', {
+    input: z.object({
+      eventId: z.string().length(20),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await removeDishEvent(input.eventId, input.userId);
         }
         return false;
       } catch (e: unknown) {
@@ -537,6 +726,24 @@ export const appRouter = trpc
             input.userId,
             input.response
           );
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('unacceptDishEvent', {
+    input: z.object({
+      eventId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await unacceptDishEvent(input.eventId, input.userId);
         }
         return false;
       } catch (e: unknown) {

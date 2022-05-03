@@ -1,22 +1,38 @@
 import { hash, verify } from 'argon2';
-import { frontendHost, frontendPort } from './index.js';
-import type { StringSetting } from './model';
+import { generateFrontendLink } from './index.js';
+import type { StringSetting, UserInfoPrivate } from './model';
 import { getSettingsCollection, getUsersCollection } from './data.js';
 import { makeId } from './id.js';
 import { base64Encode } from './base64.js';
 import { sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import 'dotenv/config';
-import { EMAIL_REGEX } from './constants.js';
-
-const frontendPath = process.env.FOOD_WASTE_FRONTEND_PATH ?? '/#';
-const frontendProtocol = process.env.FOOD_WASTE_FRONTEND_PROTOCOL ?? 'http://';
+import { APP_NAME, EMAIL_REGEX } from './constants.js';
+import { getCoords } from './geo.js';
 
 export const checkEmail = (email?: string): boolean =>
   !!email && !!email.match(EMAIL_REGEX);
 
 export const hashPassword = async (password: string) => {
   return await hash(password);
+};
+
+const listStrings = (items: string[]): string => {
+  if (items.length) {
+    if (items.length === 1) {
+      return items[0];
+    } else if (items.length === 2) {
+      return items[0] + ' and ' + items[1];
+    } else {
+      return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+    }
+  }
+  return '';
+};
+
+const listChanges = (changes: { [key: string]: unknown }): [string, number] => {
+  const filteredChanges = Object.keys(changes).filter((key) => changes[key]);
+  return [listStrings(filteredChanges), filteredChanges.length];
 };
 
 export const verifyPassword = async (hash: string, password: string) => {
@@ -30,11 +46,14 @@ export const verifyPassword = async (hash: string, password: string) => {
   }
 };
 
-export const changePasswordOrName = async (
+export const changeUserInfo = async (
   userId: string,
   password: string,
   newPassword?: string,
-  name?: string
+  name?: string,
+  age?: number,
+  locationCity?: string,
+  exactLocation?: string
 ) => {
   if (!newPassword && !name) {
     return false;
@@ -58,21 +77,47 @@ export const changePasswordOrName = async (
         $set: {
           ...(passwordHashed ? { hash: passwordHashed } : {}),
           ...(name ? { name } : {}),
+          ...(age ? { age } : {}),
+          ...(locationCity ? { locationCity } : {}),
+          ...(exactLocation ? { exactLocation } : {}),
         },
         $currentDate: { changedDate: true },
       }
     );
+
+    const [changesString, changesNumber] = listChanges({
+      password: passwordHashed,
+      name,
+      age,
+      'approximate location': locationCity,
+      'exact address': exactLocation,
+    });
+
+    const body = `Hello ${registeredUser.name}
+
+Thank your for using the ${APP_NAME} App.
+
+Your ${changesString} ${changesNumber > 0 ? 'have' : 'has'} been changed.
+
+If this was not you use the site to reset it: ${generateFrontendLink(
+      '/login'
+    )}`;
+    sendMail(registeredUser.email, APP_NAME + ' account changed', body);
+
     return true;
   }
 
   return false;
 };
 
-export const setPasswordOrName = async (
+export const setUserInfo = async (
   userId: string,
   code: string,
   newPassword?: string,
-  name?: string
+  name?: string,
+  age?: number,
+  locationCity?: string,
+  exactLocation?: string
 ) => {
   if (!newPassword && !name) {
     return false;
@@ -104,6 +149,12 @@ export const setPasswordOrName = async (
   if (code && (await verifyPassword(registeredUser.resetHash, code))) {
     const passwordHashed = newPassword ? hashPassword(newPassword) : '';
 
+    let locationCityCoords: [number, number] | null = null;
+
+    if (locationCity) {
+      locationCityCoords = await getCoords(locationCity);
+    }
+
     await usersCollection.updateOne(
       {
         customId: userId,
@@ -112,11 +163,35 @@ export const setPasswordOrName = async (
         $set: {
           ...(passwordHashed ? { hash: await passwordHashed } : {}),
           ...(name ? { name } : {}),
+          ...(age ? { age } : {}),
+          ...(locationCityCoords ? { locationCity } : {}),
+          ...(locationCityCoords ? { locationCityCoords } : {}),
+          ...(exactLocation ? { exactLocation } : {}),
         },
         $unset: { resetHash: true, resetExpiration: true },
         $currentDate: { changedDate: true },
       }
     );
+
+    const [changesString, changesNumber] = listChanges({
+      password: passwordHashed,
+      name,
+      age,
+      'approximate location': locationCityCoords,
+      'exact address': exactLocation,
+    });
+
+    const body = `Hello ${registeredUser.name}
+
+Thank your for using the ${APP_NAME} App.
+
+Your ${changesString} ${changesNumber > 0 ? 'have' : 'has'} been changed.
+
+If this was not you use the site to reset it: ${generateFrontendLink(
+      '/login'
+    )}`;
+    sendMail(registeredUser.email, APP_NAME + ' account changed', body);
+
     return true;
   } else {
     return false;
@@ -196,12 +271,9 @@ export const createLoginLink = async (userId: string, stay = false) => {
   const passwordNew = makeId(15);
   const passwordHashed = await hashPassword(passwordNew);
 
-  const link = `${
-    frontendProtocol +
-    frontendHost +
-    (frontendPort ? ':' + frontendPort : '') +
-    frontendPath
-  }/link?id=${userId}&code=${base64Encode(passwordNew)}`;
+  const link = generateFrontendLink(
+    `/link?id=${userId}&code=${base64Encode(passwordNew)}`
+  );
 
   await usersCollection.updateOne(
     {
@@ -287,30 +359,27 @@ export const registerOrEmailLogin = async (
 
     if (userId) {
       const body = isRegister
-        ? `Welcome to the Food Waste app.
+        ? `Welcome to the ${APP_NAME} app.
 
-    To confirm your account just press the following link within the next 24 hours: ${
-      frontendProtocol +
-      frontendHost +
-      (frontendPort ? ':' + frontendPort : '') +
-      frontendPath
-    }/login?register=true&id=${userId}&code=${base64Encode(passwordNew)}
+To confirm your account just press the following link within the next 24 hours: ${generateFrontendLink(
+            '/login?register=true&id=' +
+              userId +
+              '&code=' +
+              base64Encode(passwordNew)
+          )}
 
-    If you did not request this email, simply ignore it.`
-        : `Welcome back to the Food Waste App.
+If you did not request this email, simply ignore it.`
+        : `Welcome back to the ${APP_NAME} App.
 
-    To log in just press the following link within the next hour: ${
-      frontendProtocol +
-      frontendHost +
-      (frontendPort ? ':' + frontendPort : '') +
-      frontendPath
-    }/login?id=${userId}&code=${base64Encode(passwordNew)}
+To log in just press the following link within the next hour: ${generateFrontendLink(
+            '/login?id=' + userId + '&code=' + base64Encode(passwordNew)
+          )}
 
-    If you did not request this email, simply ignore it.`;
+If you did not request this email, simply ignore it.`;
 
       await sendMail(
         email,
-        'Food Waste ' + (isRegister ? 'Verification' : 'Login'),
+        APP_NAME + ' ' + (isRegister ? 'Verification' : 'Login'),
         body
       );
       return { success: true };
@@ -393,8 +462,62 @@ export const getUserName = async (userId: string): Promise<string> => {
     }
   }
 
-  if (user && user.name) {
-    return user.name;
+  if (user) {
+    return user.name ?? user.email;
   }
   return '';
+};
+
+export const getUserInfo = async (
+  userId: string
+): Promise<UserInfoPrivate | null> => {
+  const usersCollection = await getUsersCollection();
+
+  const user = await usersCollection.findOne({
+    customId: userId,
+  });
+
+  if (!user) {
+    const settingsCollection = await getSettingsCollection();
+
+    const adminIdObject = (await settingsCollection.findOne({
+      key: 'adminId',
+      type: 'string',
+      value: userId,
+    })) as StringSetting | undefined;
+
+    if (adminIdObject) {
+      return { name: 'Admin' };
+    }
+  }
+
+  if (user) {
+    return {
+      name: user.name ?? user.email,
+      age: user.age,
+      locationCity: user.locationCity,
+      locationCityCoords: user.locationCityCoords,
+      exactLocation: user.exactLocation,
+    };
+  }
+  return null;
+};
+
+export const sendUserMail = async (
+  userId: string,
+  subject: string,
+  body: string,
+  html?: string
+) => {
+  const usersCollection = await getUsersCollection();
+
+  const user = await usersCollection.findOne({
+    customId: userId,
+  });
+
+  if (user) {
+    sendMail(user.email, subject, body, html);
+  }
+
+  return false;
 };

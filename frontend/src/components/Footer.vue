@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { APP_NAME } from '../../../backend/src/constants';
   import { logOut } from '../data';
   import { loggedIn, userLoggedIn } from '../settings';
   const logOutOnclick = async () => {
@@ -11,7 +12,7 @@
   };
 
   const mailToUs = () => {
-    location.href = 'mailto:info@mll.one?&subject=Food Waste Website';
+    location.href = `mailto:info@mll.one?&subject=${APP_NAME} Website`;
   };
 </script>
 

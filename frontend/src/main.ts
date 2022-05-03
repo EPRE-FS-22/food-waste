@@ -12,6 +12,9 @@ import vhCheck from 'vh-check';
 vhCheck();
 
 import './styles.scss';
+import { APP_NAME } from '../../backend/src/constants';
+
+document.title = APP_NAME;
 
 const routes = [
   { path: '/', component: Home },

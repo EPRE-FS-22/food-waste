@@ -35,11 +35,15 @@
   loggedIn.value = hasSession();
   userLoggedIn.value = hasUserSession();
 
+  const queryIsRegister = !!route.query.register;
+
   const type = ref(
     loggedIn.value
       ? userLoggedIn.value
         ? LoginType.change
         : LoginType.none
+      : queryIsRegister
+      ? LoginType.register
       : LoginType.logIn
   );
 
@@ -56,7 +60,6 @@
     route.query.code && typeof route.query.code === 'string'
       ? base64Decode(route.query.code)
       : '';
-  const queryIsRegister = !!route.query.register;
 
   const message = ref('');
 

@@ -1,7 +1,7 @@
 import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
-import type { Dish, DishInfo } from '../../backend/src/model';
+import type { Dish, DishInfo, UserInfoPrivate } from '../../backend/src/model';
 import { Subject } from 'rxjs';
 
 const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
@@ -27,6 +27,8 @@ let sessionUserId = localStorage.getItem('sessionUserId') ?? '';
 let sessionId = localStorage.getItem('session') ?? '';
 let isAdmin = localStorage.getItem('admin') === 'true';
 
+let userInfo: UserInfoPrivate | null = null;
+
 export const isLoggingOut = () => {
   return loggingOut;
 };
@@ -50,7 +52,14 @@ let dishesIndex = 0;
 let dishesDate = new Date();
 let dishes: Dish[] = [];
 
-export const getAvailableDishes = async (next = false) => {
+export const getAvailableDishes = async (
+  locationCity?: string,
+  dateStart?: Date,
+  dateEnd?: Date,
+  locationRangeSize?: number,
+  ageRangeSize?: number,
+  next = false
+) => {
   try {
     if (!next) {
       if (dishes && dishesDate.getTime() > Date.now() - 1000 * 60 * 1) {
@@ -58,7 +67,14 @@ export const getAvailableDishes = async (next = false) => {
       }
       dishesIndex = dishesPreviousIndex;
     }
-    const data = await client.query('getAvailableDishes', {});
+    const data = await client.query('getAvailableDishes', {
+      locationCity,
+      dateStart: dateStart ? dateStart.getTime() : undefined,
+      dateEnd: dateEnd ? dateEnd.getTime() : undefined,
+      start: dishesIndex,
+      locationRangeSize,
+      ageRangeSize,
+    });
     if (data) {
       dishesPreviousIndex = dishesIndex;
       dishesIndex += data.length;
@@ -79,7 +95,14 @@ let recommendedDishesPrevious: Dish[] = [];
 let recommendedDishesDate = new Date();
 let recommendedDishes: Dish[] = [];
 
-export const getRecommendedDishes = async (next = false) => {
+export const getRecommendedDishes = async (
+  locationCity?: string,
+  dateStart?: Date,
+  dateEnd?: Date,
+  locationRangeSize?: number,
+  ageRangeSize?: number,
+  next = false
+) => {
   try {
     if (!hasSession()) {
       authFailure.next();
@@ -97,6 +120,11 @@ export const getRecommendedDishes = async (next = false) => {
       sessionId,
       userId: sessionUserId,
       previousIds: recommendedDishesPrevious.map((dish) => dish.customId),
+      locationCity,
+      dateStart: dateStart ? dateStart.getTime() : undefined,
+      dateEnd: dateEnd ? dateEnd.getTime() : undefined,
+      locationRangeSize,
+      ageRangeSize,
     });
     if (data) {
       recommendedDishesPrevious = recommendedDishes;
@@ -176,6 +204,28 @@ export const getSignedUpDishes = async () => {
   }
 };
 
+export const getDishPreferences = async () => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const data = await client.query('getDishPreferences', {
+      sessionId,
+      userId: sessionUserId,
+    });
+    if (data) {
+      return data;
+    } else {
+      authFailure.next();
+      return false;
+    }
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
 export const addDish = async (dish: string, slots: number, date: Date) => {
   try {
     if (!hasSession()) {
@@ -200,6 +250,28 @@ export const addDish = async (dish: string, slots: number, date: Date) => {
   }
 };
 
+export const removeDish = async (dishId: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('removeDish', {
+      dishId,
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
 export const addDishPreference = async (dish: string, likes: boolean) => {
   try {
     if (!hasSession()) {
@@ -209,6 +281,28 @@ export const addDishPreference = async (dish: string, likes: boolean) => {
     const result = await client.mutation('addDishPreference', {
       dish,
       likes,
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const removeDishPreference = async (dish: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('removeDishPreference', {
+      dish,
       sessionId: sessionId,
       userId: sessionUserId,
     });
@@ -246,6 +340,28 @@ export const addDishRequest = async (dishId: string, message?: string) => {
   }
 };
 
+export const removeDishRequest = async (eventId: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('removeDishEvent', {
+      eventId,
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
 export const acceptDishRequest = async (eventId: string, response?: string) => {
   try {
     if (!hasSession()) {
@@ -255,6 +371,28 @@ export const acceptDishRequest = async (eventId: string, response?: string) => {
     const result = await client.mutation('acceptDishEvent', {
       eventId,
       response,
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    if (!result) {
+      authFailure.next();
+      return false;
+    }
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const unacceptDishRequest = async (eventId: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('unacceptDishEvent', {
+      eventId,
       sessionId: sessionId,
       userId: sessionUserId,
     });
@@ -400,19 +538,30 @@ export const verify = async (userId: string, code: string) => {
 export const reset = async (
   code: string,
   newPassword?: string,
-  name?: string
+  name?: string,
+  age?: number,
+  locationCity?: string,
+  exactLocation?: string
 ) => {
   try {
-    if (!sessionUserId) {
+    if (!hasSession()) {
+      authFailure.next();
       return false;
     }
-    const result = await client.mutation('reset', {
+    const result = await client.mutation('setUserInfo', {
       userId: sessionUserId,
       password: newPassword || undefined,
       name: name || undefined,
+      age: age || undefined,
+      locationCity: locationCity || undefined,
+      exactLocation: exactLocation || undefined,
       code,
       sessionId,
     });
+
+    if (result) {
+      userInfo = result;
+    }
     return result;
   } catch (e) {
     console.error(e);
@@ -423,19 +572,57 @@ export const reset = async (
 export const change = async (
   password: string,
   newPassword?: string,
-  name?: string
+  name?: string,
+  age?: number,
+  locationCity?: string,
+  exactLocation?: string
 ) => {
   try {
-    if (!sessionUserId) {
+    if (!hasSession()) {
+      authFailure.next();
       return false;
     }
-    const result = await client.mutation('change', {
+
+    const result = await client.mutation('changeUserInfo', {
       userId: sessionUserId,
       password,
       newPassword: newPassword || undefined,
       name: name || undefined,
+      age: age || undefined,
+      locationCity: locationCity || undefined,
+      exactLocation: exactLocation || undefined,
       sessionId,
     });
+
+    if (result) {
+      userInfo = result;
+    }
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const getUserInfo = async () => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+
+    if (userInfo) {
+      return userInfo;
+    }
+
+    const result = await client.query('getUserInfo', {
+      userId: sessionUserId,
+      sessionId,
+    });
+
+    if (result) {
+      userInfo = result;
+    }
     return result;
   } catch (e) {
     console.error(e);

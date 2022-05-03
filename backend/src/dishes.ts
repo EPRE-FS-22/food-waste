@@ -15,8 +15,16 @@ import type {
   DishInfo,
   DishPreference,
 } from './model';
-import { getUserName } from './users.js';
+import { getUserInfo, getUserName, sendUserMail } from './users.js';
 import ContentBasedRecommender from 'content-based-recommender';
+import { generateFrontendLink } from './index.js';
+import {
+  APP_NAME,
+  DEFAULT_SEARCH_AGE_RANGE,
+  DEFAULT_SEARCH_LOCATION_RANGE,
+} from './constants.js';
+import moment from 'moment';
+import { getCoords } from './geo.js';
 
 const recommender = new ContentBasedRecommender({
   minScore: 0.1,
@@ -118,16 +126,61 @@ const stripDishPreferencesDBValues = (
 export const getAvailableDishes = async (
   userId?: string,
   start = 0,
-  limit = 6
+  limit = 6,
+  locationCity?: string,
+  dateStart?: Date,
+  dateEnd?: Date,
+  locationRangeSize?: number,
+  ageRangeSize?: number
 ) => {
+  let locationCityCoords: [number, number] | undefined = undefined;
+  let agePreference: number | undefined = undefined;
+  if (locationCity) {
+    locationCityCoords = (await getCoords(locationCity)) ?? undefined;
+  }
+  if (userId) {
+    const userInfo = await getUserInfo(userId);
+    if (userInfo && !locationCityCoords) {
+      locationCityCoords = userInfo.locationCityCoords;
+      agePreference = userInfo.age;
+    }
+  }
+
   const dishesCollection = await getDishesCollection();
 
   return stripDishesDBValues(
     await dishesCollection
       .find({
         $and: [
-          { date: { $gte: new Date() } },
+          dateStart
+            ? { date: { $gte: dateStart } }
+            : { date: { $gte: new Date() } },
           userId ? { userId: { $ne: userId } } : {},
+          dateEnd ? { date: { $lte: dateEnd } } : {},
+          agePreference
+            ? {
+                age: {
+                  $gte:
+                    agePreference - (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
+                  $lte:
+                    agePreference + (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
+                },
+              }
+            : {},
+          locationCityCoords
+            ? {
+                locationCityCoords: {
+                  $near: {
+                    $geometry: {
+                      type: 'Point',
+                      coordinates: locationCityCoords,
+                    },
+                    $maxDistance:
+                      locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE,
+                  },
+                },
+              }
+            : {},
         ],
         $expr: { $ne: ['$slots', '$filled'] },
       })
@@ -167,15 +220,62 @@ const getSimilarDishes = (
 export const getRecommendedDishes = async (
   userId: string,
   previousIds?: string[],
-  limit = 6
+  limit = 6,
+  locationCity?: string,
+  dateStart?: Date,
+  dateEnd?: Date,
+  locationRangeSize?: number,
+  ageRangeSize?: number
 ) => {
+  let locationCityCoords: [number, number] | undefined = undefined;
+  let agePreference: number | undefined = undefined;
+  if (locationCity) {
+    locationCityCoords = (await getCoords(locationCity)) ?? undefined;
+  }
+  if (userId) {
+    const userInfo = await getUserInfo(userId);
+    if (userInfo && !locationCityCoords) {
+      locationCityCoords = userInfo.locationCityCoords;
+      agePreference = userInfo.age;
+    }
+  }
+
   const dishesCollection = await getDishesCollection();
 
   const dishes = await dishesCollection
     .find({
-      customId: { $not: { $in: previousIds } },
-      date: { $gte: new Date() },
-      userId,
+      $and: [
+        { customId: { $not: { $in: previousIds } } },
+        dateStart
+          ? { date: { $gte: dateStart } }
+          : { date: { $gte: new Date() } },
+        userId ? { userId: { $ne: userId } } : {},
+        dateEnd ? { date: { $lte: dateEnd } } : {},
+        agePreference
+          ? {
+              age: {
+                $gte:
+                  agePreference - (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
+                $lte:
+                  agePreference + (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
+              },
+            }
+          : {},
+        locationCityCoords
+          ? {
+              locationCityCoords: {
+                $near: {
+                  $geometry: {
+                    type: 'Point',
+                    coordinates: locationCityCoords,
+                  },
+                  $maxDistance:
+                    locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE,
+                },
+              },
+            }
+          : {},
+      ],
       $expr: { $ne: ['$slots', '$filled'] },
     })
     .toArray();
@@ -271,6 +371,7 @@ export const getMyDishes = async (userId: string) => {
   const dishes = await dishesCollection
     .find({
       userId,
+      date: { $gte: new Date() },
     })
     .toArray();
 
@@ -295,6 +396,7 @@ export const getSignedUpDishes = async (userId: string) => {
   const dishEvents = await dishEventsCollection
     .find({
       participantId: userId,
+      date: { $gte: new Date() },
     })
     .toArray();
 
@@ -334,7 +436,7 @@ export const getDish = async (customId: string, userId?: string) => {
 };
 
 const getDishDescription = async (dish: string) => {
-  const page = (await wiki().find(dish)) as Page | undefined;
+  const page = (await wiki().page(dish)) as Page | undefined;
 
   return (await page?.summary()) ?? '';
 };
@@ -349,52 +451,154 @@ export const addDishPreference = async (
   if (description) {
     const dishPreferencesCollection = await getDishPreferencesCollection();
 
-    console.log(description);
-
-    await dishPreferencesCollection.insertOne({
+    const previous = await dishPreferencesCollection.findOne({
       dish: dish,
-      likes,
-      description,
-      userId: userId,
-      setDate: new Date(),
+      userId,
     });
 
-    return true;
+    if (!previous) {
+      return !!(
+        await dishPreferencesCollection.insertOne({
+          dish: dish,
+          likes,
+          description,
+          userId,
+          setDate: new Date(),
+        })
+      ).insertedId;
+    }
   }
   return false;
+};
+
+export const removeDishPreference = async (dish: string, userId: string) => {
+  const dishPreferencesCollection = await getDishPreferencesCollection();
+
+  const result = await dishPreferencesCollection.deleteOne({
+    dish: dish,
+    userId: userId,
+  });
+
+  return result.deletedCount > 0;
 };
 
 export const addDish = async (
   dish: string,
   userId: string,
   slots: number,
-  date: Date
+  date: Date,
+  locationCity?: string,
+  exactLocation?: string
 ) => {
   const description = await getDishDescription(dish);
 
   if (description) {
     const dishesCollection = await getDishesCollection();
 
-    console.log(description);
-
     const id = makeId(20);
 
-    const name = await getUserName(userId);
+    const userInfo = await getUserInfo(userId);
 
-    await dishesCollection.insertOne({
-      customId: id,
-      dish: dish,
-      description,
+    const locationCityCoords = locationCity
+      ? await getCoords(locationCity)
+      : null;
+
+    if (userInfo) {
+      await dishesCollection.insertOne({
+        customId: id,
+        dish: dish,
+        description,
+        userId,
+        name: userInfo.name,
+        slots,
+        filled: 0,
+        date: date,
+        createdDate: new Date(),
+        age: userInfo.age,
+        locationCity: locationCityCoords
+          ? locationCity ?? userInfo.locationCity
+          : undefined,
+        locationCityCoords: locationCityCoords ?? userInfo.locationCityCoords,
+        exactLocation: exactLocation ?? userInfo.exactLocation,
+      });
+
+      return id;
+    }
+  }
+  return false;
+};
+
+export const removeDish = async (customId: string, userId?: string) => {
+  const dishesCollection = await getDishesCollection();
+
+  const dish = await dishesCollection.findOne({
+    customId,
+    userId,
+  });
+
+  if (dish) {
+    const result = await dishesCollection.deleteOne({
+      customId,
       userId,
-      name,
-      slots,
-      filled: 0,
-      date: date,
-      createdDate: new Date(),
     });
 
-    return id;
+    if (result.deletedCount > 0) {
+      const dishEventsCollection = await getDishEventsCollection();
+
+      const dishEvents = await dishEventsCollection.find({ dishId: customId });
+
+      dishEvents.forEach((dishEvent) => {
+        const body = userId
+          ? `Hello ${dishEvent.participantName}
+
+Thank your for using the ${APP_NAME} App.
+
+Unfortunately the plan for eating ${dish.dish} on ${moment(
+              dish.date
+            ).calendar()} has been cancelled by the host.
+
+Use the site to search for alternatives: ${generateFrontendLink('/user')}`
+          : `Hello ${dishEvent.participantName}
+
+Thank your for using the ${APP_NAME} App.
+
+Unfortunately the plan for eating ${dish.dish} on ${moment(
+              dish.date
+            ).calendar()} has been cancelled by an admin.
+
+Use the site to search for alternatives: ${generateFrontendLink('/user')}`;
+        sendUserMail(
+          dishEvent.participantId,
+          APP_NAME + (userId ? ' plan cancelled' : ' plan cancelled by admin'),
+          body
+        );
+      });
+
+      if (!userId) {
+        const body = `Hello ${dish.name}
+
+Thank your for using the ${APP_NAME} App.
+
+Unfortunately your plan for eating ${dish.dish} on ${moment(
+          dish.date
+        ).calendar()} has been cancelled by an admin.
+
+If you do not agree with this decision use the contact option on our site: ${generateFrontendLink(
+          '/user'
+        )}`;
+        sendUserMail(dish.userId, APP_NAME + ' plan cancelled by admin', body);
+      }
+
+      return (
+        (
+          await dishEventsCollection.deleteMany({
+            dishId: customId,
+          })
+        ).deletedCount > 0
+      );
+    }
   }
+
   return false;
 };
 
@@ -418,7 +622,7 @@ export const addDishEvent = async (
 
     const id = makeId(20);
 
-    await dishEventsCollection.insertOne({
+    const result = await dishEventsCollection.insertOne({
       dish: dish.dish,
       dishId: dish.customId,
       description: dish.description,
@@ -430,8 +634,77 @@ export const addDishEvent = async (
       signupDate: new Date(),
     });
 
-    return true;
+    if (result.insertedId) {
+      const body = `Congratulations ${dish.name}
+
+Your plan on ${APP_NAME} for eating ${dish.dish} on ${moment(
+        dish.date
+      ).calendar()} has received a new guest request from ${participantName}.
+
+Use the site to accept it: ${generateFrontendLink('/plans')}`;
+      sendUserMail(userId, APP_NAME + ' new guest request', body);
+
+      return true;
+    }
   }
+  return false;
+};
+
+export const removeDishEvent = async (customId: string, userId?: string) => {
+  const dishEventsCollection = await getDishEventsCollection();
+
+  const dishEvent = await dishEventsCollection.findOne({
+    customId,
+    participantId: userId,
+  });
+
+  if (
+    dishEvent &&
+    (
+      await dishEventsCollection.deleteOne({
+        customId,
+        participantId: userId,
+      })
+    ).deletedCount > 0 &&
+    dishEvent.accepted
+  ) {
+    const dishesCollection = await getDishesCollection();
+
+    const dish = await dishesCollection.findOne({
+      customId: dishEvent.dishId,
+    });
+
+    if (dish) {
+      const result = await dishesCollection.updateOne(
+        {
+          customId: dishEvent.dishId,
+        },
+        {
+          $dec: {
+            filled: 1,
+          },
+        }
+      );
+
+      if (result.modifiedCount > 0) {
+        const body = `Hello ${dish.name}
+
+Thank your for using the ${APP_NAME} App.
+
+Unfortunately your guest ${dishEvent.participantName} for eating ${
+          dish.dish
+        } on ${moment(dish.date).calendar()} has cancelled.
+
+Use the site to see and accept other requests: ${generateFrontendLink(
+          '/plans'
+        )}`;
+        sendUserMail(dish.userId, APP_NAME + ' guest cancelled', body);
+
+        return true;
+      }
+    }
+  }
+
   return false;
 };
 
@@ -455,21 +728,24 @@ export const acceptDishEvent = async (
       $expr: { $ne: ['$slots', '$filled'] },
     });
 
-    if (dish) {
-      await dishEventsCollection.updateOne(
-        {
-          customId,
-        },
-        {
-          $set: {
-            accepted: true,
-            response,
+    if (
+      dish &&
+      (
+        await dishEventsCollection.updateOne(
+          {
+            customId,
           },
-          $currentDate: { acceptedDate: true },
-        }
-      );
-
-      await dishesCollection.updateOne(
+          {
+            $set: {
+              accepted: true,
+              response,
+            },
+            $currentDate: { acceptedDate: true },
+          }
+        )
+      ).modifiedCount > 0
+    ) {
+      const result = await dishesCollection.updateOne(
         {
           customId,
         },
@@ -481,9 +757,92 @@ export const acceptDishEvent = async (
         }
       );
 
-      return true;
+      if (result.modifiedCount > 0) {
+        const body = `Congratulations ${dishEvent.participantName}
+
+Your request on ${APP_NAME} for eating ${dish.dish} on ${moment(
+          dish.date
+        ).calendar()} with ${dish.name} has been accepted.
+
+Use the site to see more details: ${generateFrontendLink('/plans')}`;
+        sendUserMail(
+          dishEvent.participantId,
+          APP_NAME + ' request accepted',
+          body
+        );
+
+        return true;
+      }
     }
   }
+  return false;
+};
+
+export const unacceptDishEvent = async (customId: string, userId: string) => {
+  const dishEventsCollection = await getDishEventsCollection();
+
+  const dishEvent = await dishEventsCollection.findOne({
+    customId,
+  });
+
+  if (dishEvent) {
+    const dishesCollection = await getDishesCollection();
+
+    const dish = await dishesCollection.findOne({
+      customId: dishEvent.dishId,
+    });
+
+    if (
+      dish &&
+      (
+        await dishesCollection.updateOne(
+          {
+            customId,
+            userId,
+          },
+          {
+            $dec: {
+              filled: 1,
+            },
+          }
+        )
+      ).modifiedCount > 0
+    ) {
+      const result = await dishEventsCollection.updateOne(
+        {
+          customId,
+        },
+        {
+          $set: {
+            accepted: false,
+          },
+          $unset: {
+            acceptedDate: true,
+          },
+        }
+      );
+
+      if (result.modifiedCount > 0) {
+        const body = `Hello ${dish.name}
+
+Thank your for using the ${APP_NAME} App.
+
+Unfortunately your host ${dish.name} for eating ${dish.dish} on ${moment(
+          dish.date
+        ).calendar()} has cancelled your invite.
+
+Use the site to search for alternatives: ${generateFrontendLink('/user')}`;
+        sendUserMail(
+          dishEvent.participantId,
+          APP_NAME + ' invite cancelled',
+          body
+        );
+
+        return true;
+      }
+    }
+  }
+
   return false;
 };
 

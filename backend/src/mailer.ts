@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
+import { APP_NAME } from './constants';
 
 const mailHostname = process.env.FOOD_WASTE_MAIL_HOSTNAME;
 const mailPort = parseInt(process.env.FOOD_WASTE_MAIL_PORT ?? '') || 587;
@@ -38,7 +39,7 @@ export const sendMail = async (
 ) => {
   if (mailTransporter) {
     await mailTransporter.sendMail({
-      from: '"Food Waste" <' + mailAddress + '>',
+      from: `"${APP_NAME}" <${mailAddress}>`,
       to,
       subject,
       text: body,

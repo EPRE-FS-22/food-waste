@@ -7,6 +7,12 @@ export const PROMO_DISHES = [
   'Burger',
 ];
 
+export const APP_NAME = 'FoodMatch';
+
+export const DEFAULT_SEARCH_LOCATION_RANGE = 50;
+
+export const DEFAULT_SEARCH_AGE_RANGE = 10;
+
 export const TRAIN_INTERVAL = 60 * 1000 * 5;
 
 export const EMAIL_REGEX =

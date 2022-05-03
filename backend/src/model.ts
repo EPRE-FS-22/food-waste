@@ -10,8 +10,7 @@ export interface DishPlan extends DishBase {
   customId: string;
 }
 
-export interface Dish extends DishPlan {
-  name: string;
+export interface Dish extends DishPlan, UserInfo {
   date: Date;
   slots: number;
   filled: number;
@@ -32,7 +31,7 @@ export interface DishInfo extends DishInfoBase {
   eventRequestsIds: string[];
 }
 
-export interface DBDish extends DishInfoBase, DBDishBase {
+export interface DBDish extends DishInfoBase, DBDishBase, UserInfoPrivate {
   userId: string;
 }
 
@@ -90,11 +89,21 @@ export interface SubSetting extends BaseSetting {
   type: 'sub';
 }
 
-export interface User {
+export interface UserInfo {
+  name?: string;
+  age?: number;
+  locationCity?: string;
+  locationCityCoords?: [number, number];
+}
+
+export interface UserInfoPrivate extends UserInfo {
+  exactLocation?: string;
+}
+
+export interface User extends UserInfoPrivate {
   customId: string;
   email: string;
   registerDate: Date;
-  name?: string;
   hash?: string;
   verifyHash?: string;
   verifyExpiration?: Date;
