@@ -13,7 +13,7 @@ const frontendPath = process.env.FOOD_WASTE_FRONTEND_PATH ?? '/#';
 const frontendProtocol = process.env.FOOD_WASTE_FRONTEND_PROTOCOL ?? 'http://';
 
 export const checkEmail = (email?: string): boolean =>
-  !!email && !!email.match(EMAIL_REGEX)
+  !!email && !!email.match(EMAIL_REGEX);
 
 export const hashPassword = async (password: string) => {
   return await hash(password);
