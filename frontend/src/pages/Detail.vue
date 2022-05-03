@@ -13,27 +13,32 @@
 </script>
 
 <template>
-  <div class="detail">
-    <h1>{{ title }}</h1>
-    <div class="description-section">
-      <h4>Description</h4>
-      <p>{{ description }}</p>
-    </div>
-    <p style="text-align: center">Number of people: {{ personCount }}</p>
-    <div class="button-section">
-      <router-link to="/">
-        <img src="../assets/icons8-cancel-128.png" />
-      </router-link>
-      <router-link to="/">
-        <img src="../assets/icons8-check-circle-128.png" />
-      </router-link>
+  <div class="content-base detail">
+    <div class="detail-margin">
+      <h1>{{ title }}</h1>
+      <div class="description-section">
+        <h4>Description</h4>
+        <p>{{ description }}</p>
+      </div>
+      <p style="text-align: center">Number of people: {{ personCount }}</p>
+      <div class="button-section">
+        <router-link to="/">
+          <img src="../assets/icons8-cancel-128.png" />
+        </router-link>
+        <router-link to="/">
+          <img src="../assets/icons8-check-circle-128.png" />
+        </router-link>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
   .detail {
-    margin: 10%;
+    overflow-y: auto;
+    .detail-margin {
+      margin: 10%;
+    }
   }
 
   .description-section {
