@@ -1,21 +1,22 @@
 <script setup lang="ts">
-  import Panel from '../components/Panel.vue';
   import Waste from '../components/Waste.vue';
   import { DisplayType } from '../settings';
   import { useRouter } from 'vue-router';
-  import { authFailure, checkSession } from '../data';
+  import { authFailure, checkSession, hasUserSession } from '../data';
   const router = useRouter();
 
   authFailure.subscribe(() => {
     router.push('/login');
   });
 
-  checkSession(true);
+  if (!hasUserSession()) {
+    router.push('/admin');
+  }
+  checkSession();
 </script>
 
 <template>
   <div class="page">
-    <Panel></Panel>
-    <Waste :small="true" :type="DisplayType.available"> </Waste>
+    <Waste :small="false" :type="DisplayType.plans"> </Waste>
   </div>
 </template>

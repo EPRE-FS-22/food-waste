@@ -1,9 +1,16 @@
 import moment from 'moment';
 import { ref } from 'vue';
 
-export const ranking = ref(false);
+export enum DisplayType {
+  available,
+  recommended,
+  plans,
+}
 
-export const secret = ref(false);
+export const loggedIn = ref(false);
+export const userLoggedIn = ref(false);
+
+export const ranking = ref(false);
 
 export const loading = ref(true);
 

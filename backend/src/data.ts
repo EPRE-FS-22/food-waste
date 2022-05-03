@@ -1,7 +1,13 @@
 import { Collection, Db, MongoClient } from 'mongodb';
-import { DISHES } from './constants.js';
 import { makeId } from './id.js';
-import type { PointEvent, Points, Setting, StringSetting, User } from './model';
+import type {
+  DBDish,
+  DBDishEvent,
+  DBDishPreference,
+  Setting,
+  StringSetting,
+  User,
+} from './model';
 import { hashPassword } from './users.js';
 import 'dotenv/config';
 
@@ -34,8 +40,9 @@ const client = new MongoClient(url);
 // Database Name
 const dbName = 'foodWaste';
 
-const pointsCollectionName = 'points';
-const pointEventsCollectionName = 'pointEvents';
+const dishesCollectionName = 'dishes';
+const dishEventsCollectionName = 'dishEvents';
+const dishPreferencesCollectionName = 'dishPreferences';
 const settingsCollectionName = 'settings';
 const usersCollectionName = 'users';
 
@@ -49,8 +56,10 @@ const connectingWaitPromises: ((cancel?: boolean) => void)[] = [];
 const closingWaitPromises: (() => void)[] = [];
 
 let db: Db | undefined = undefined;
-let pointsCollection: Collection<Points> | undefined = undefined;
-let pointEventsCollection: Collection<PointEvent> | undefined = undefined;
+let dishesCollection: Collection<DBDish> | undefined = undefined;
+let dishEventsCollection: Collection<DBDishEvent> | undefined = undefined;
+let dishPreferencesCollection: Collection<DBDishPreference> | undefined =
+  undefined;
 let settingsCollection: Collection<Setting> | undefined = undefined;
 let usersCollection: Collection<User> | undefined = undefined;
 
@@ -83,33 +92,20 @@ const ensureDBConnection = () => {
         await client.connect();
         console.log('Connected successfully to database server');
         db = client.db(dbName);
-        pointsCollection = db.collection<Points>(pointsCollectionName);
-        if ((await pointsCollection.countDocuments()) === 0) {
-          await pointsCollection.insertMany(
-            Object.keys(DISHES).map(
-              (dish): Points => ({
-                dish: dish as keyof typeof DISHES,
-                points: 0,
-                lastChanged: new Date(),
-              })
-            )
-          );
-        }
-        pointEventsCollection = db.collection<PointEvent>(
-          pointEventsCollectionName
+        dishesCollection = db.collection(dishesCollectionName);
+        dishEventsCollection = db.collection(dishEventsCollectionName);
+        dishPreferencesCollection = db.collection(
+          dishPreferencesCollectionName
         );
-        settingsCollection = db.collection<Setting>(settingsCollectionName);
-        usersCollection = db.collection<User>(usersCollectionName);
+        settingsCollection = db.collection(settingsCollectionName);
+        usersCollection = db.collection(usersCollectionName);
 
         const passwordObject = (await settingsCollection.findOne({
           key: 'password',
           type: 'string',
         })) as StringSetting | null;
-        let password: string | undefined;
-        if (passwordObject) {
-          password = passwordObject.value;
-        } else {
-          password = process.env.FOOD_WASTE_DEFAULT_PASSWORD;
+        if (!passwordObject) {
+          let password = process.env.FOOD_WASTE_DEFAULT_PASSWORD;
           if (!password) {
             password = makeId(15);
             console.log('Generated password: ' + password);
@@ -118,6 +114,18 @@ const ensureDBConnection = () => {
           await settingsCollection.insertOne({
             key: 'password',
             value: passwordHashed,
+            type: 'string',
+          });
+        }
+        const adminIdObject = (await settingsCollection.findOne({
+          key: 'adminId',
+          type: 'string',
+        })) as StringSetting | null;
+        if (!adminIdObject) {
+          const adminId = makeId(20);
+          await settingsCollection.insertOne({
+            key: 'adminId',
+            value: adminId,
             type: 'string',
           });
         }
@@ -181,14 +189,19 @@ const ensureNoDBConnection = (forGood = false) => {
   });
 };
 
-export const getPointsCollection = async () => {
+export const getDishesCollection = async () => {
   await ensureDBConnection();
-  return pointsCollection as Collection<Points>;
+  return dishesCollection as Collection<DBDish>;
 };
 
-export const getPointEventsCollection = async () => {
+export const getDishEventsCollection = async () => {
   await ensureDBConnection();
-  return pointEventsCollection as Collection<PointEvent>;
+  return dishEventsCollection as Collection<DBDishEvent>;
+};
+
+export const getDishPreferencesCollection = async () => {
+  await ensureDBConnection();
+  return dishPreferencesCollection as Collection<DBDishPreference>;
 };
 
 export const getSettingsCollection = async () => {

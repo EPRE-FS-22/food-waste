@@ -4,8 +4,9 @@ import App from './App.vue';
 import Home from './pages/Home.vue';
 import Admin from './pages/Admin.vue';
 import User from './pages/User.vue';
+import Add from './pages/Add.vue';
+import Plans from './pages/Plans.vue';
 import Login from './pages/Login.vue';
-import Ranking from './components/Ranking.vue';
 
 import vhCheck from 'vh-check';
 vhCheck();
@@ -16,8 +17,9 @@ const routes = [
   { path: '/', component: Home },
   { path: '/admin', component: Admin },
   { path: '/user', component: User },
+  { path: '/add', component: Add },
+  { path: '/plans', component: Plans },
   { path: '/login', component: Login },
-  { path: '/ranking', component: Ranking },
 ];
 
 const router = createRouter({
