@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import 'dotenv/config';
-import { APP_NAME } from './constants';
+import { APP_NAME } from './constants.js';
 
 const mailHostname = process.env.FOOD_WASTE_MAIL_HOSTNAME;
 const mailPort = parseInt(process.env.FOOD_WASTE_MAIL_PORT ?? '') || 587;
