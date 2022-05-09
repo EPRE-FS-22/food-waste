@@ -19,6 +19,9 @@ export const timeOutCaptchaAndResponse = async (
     success: boolean;
     admin?: boolean;
     userId?: string;
+    infosSet?: boolean;
+    identityConfirmed?: boolean;
+    preferencesSet?: boolean;
   }>,
   response?: boolean
 ): Promise<{
@@ -27,6 +30,9 @@ export const timeOutCaptchaAndResponse = async (
   nextTry: Date;
   admin?: boolean;
   userId?: string;
+  infosSet?: boolean;
+  identityConfirmed?: boolean;
+  preferencesSet?: boolean;
 }> => {
   const timeOut = passwordTimeOuts[ip];
   let needsCaptcha = false;
@@ -91,7 +97,7 @@ export const timeOutCaptchaAndResponse = async (
         lengthInMin = 1440;
         break;
     }
-    const nextTry = new Date(new Date().getTime() + lengthInMin * 60 * 1000);
+    const nextTry = new Date(Date.now() + lengthInMin * 60 * 1000);
     passwordTimeOuts[ip] = nextTry;
     delete passwordTries[ip];
     previous.push(new Date());
@@ -143,6 +149,9 @@ export const timeOutCaptchaAndResponse = async (
         nextTry: new Date(),
         admin: true,
         userId: result.userId,
+        infosSet: result.infosSet,
+        identityConfirmed: result.identityConfirmed,
+        preferencesSet: result.preferencesSet,
       };
     }
     return {
@@ -153,6 +162,9 @@ export const timeOutCaptchaAndResponse = async (
         passwordTries[ip] === 8,
       nextTry: new Date(),
       userId: result.userId,
+      infosSet: result.infosSet,
+      identityConfirmed: result.identityConfirmed,
+      preferencesSet: result.preferencesSet,
     };
   }
   return {

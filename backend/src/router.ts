@@ -11,6 +11,7 @@ import {
   getUserInfo,
   setUserInfo,
   changeUserInfo,
+  resetUserInfo,
 } from './users.js';
 import { Context } from './context.js';
 import {
@@ -35,14 +36,24 @@ let adminSessions: {
 } = {};
 
 const sessions: {
-  [key: string]: { expirationDate: Date; userId: string; ip?: string };
+  [key: string]: {
+    expirationDate: Date;
+    userId: string;
+    ip?: string;
+    identityConfirmed?: boolean;
+    infosSet?: boolean;
+    preferencesSet?: boolean;
+  };
 } = {};
 
 const addSession = (
   ip: string,
   userId: string,
   stay = false,
-  isAdmin = false
+  isAdmin = false,
+  identityConfirmed = false,
+  infosSet = false,
+  preferencesSet = false
 ) => {
   let sessionId = '';
   if (!userId) {
@@ -53,7 +64,7 @@ const addSession = (
       sessionId = makeId(20);
     } while (adminSessions[sessionId]);
     adminSessions[sessionId] = {
-      expirationDate: new Date(new Date().getTime() + 1000 * 60 * 60 * 24),
+      expirationDate: new Date(Date.now() + 1000 * 60 * 60 * 24),
       ip,
       adminId: userId,
     };
@@ -63,10 +74,13 @@ const addSession = (
     } while (sessions[sessionId]);
     sessions[sessionId] = {
       expirationDate: new Date(
-        new Date().getTime() + 1000 * 60 * 60 * 24 * (stay ? 90 : 1)
+        Date.now() + 1000 * 60 * 60 * 24 * (stay ? 90 : 1)
       ),
       ip: stay ? undefined : ip,
       userId,
+      identityConfirmed,
+      infosSet,
+      preferencesSet,
     };
   }
   Object.keys(sessions).forEach((id) => {
@@ -107,6 +121,60 @@ const verifySession = (
       session.expirationDate > new Date() &&
       session.userId === userId
     );
+  }
+};
+
+const getSessionData = (sessionId: string) => {
+  const session = sessions[sessionId];
+  if (session) {
+    return {
+      identityConfirmed: session.identityConfirmed,
+      infosSet: session.infosSet,
+      preferencesSet: session.preferencesSet,
+    };
+  }
+  return null;
+};
+
+const getConfirmedSession = (sessionId: string, ip: string, userId: string) => {
+  if (verifySession(sessionId, ip, userId)) {
+    const sessionData = getSessionData(sessionId);
+    if (sessionData && sessionData.identityConfirmed && sessionData.infosSet) {
+      return sessionData;
+    }
+  }
+  return null;
+};
+
+const isConfirmedSessionWithPreferences = (
+  sessionId: string,
+  ip: string,
+  userId: string
+) => {
+  if (verifySession(sessionId, ip, userId)) {
+    const sessionData = getSessionData(sessionId);
+    if (
+      sessionData &&
+      sessionData.identityConfirmed &&
+      sessionData.infosSet &&
+      sessionData.preferencesSet
+    ) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const updateSessionData = (
+  sessionId: string,
+  identityConfirmed = false,
+  infosSet = false,
+  preferencesSet = false
+) => {
+  if (sessions[sessionId]) {
+    sessions[sessionId].identityConfirmed = identityConfirmed;
+    sessions[sessionId].infosSet = infosSet;
+    sessions[sessionId].preferencesSet = preferencesSet;
   }
 };
 
@@ -250,7 +318,9 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (
+          isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
+        ) {
           let dateStart: Date | undefined = undefined;
           if (input.dateStart) {
             const dateStartParsed = new Date(input.dateStart);
@@ -290,7 +360,9 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (
+          isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
+        ) {
           return await getMyDishes(input.userId);
         }
         return false;
@@ -307,7 +379,9 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (
+          isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
+        ) {
           return await getSignedUpDishes(input.userId);
         }
         return false;
@@ -327,6 +401,12 @@ export const appRouter = trpc
         if (verifySession(input.sessionId, ip, input.userId)) {
           const info = await getUserInfo(input.userId);
           if (info) {
+            updateSessionData(
+              input.sessionId,
+              info.identityConfirmed,
+              info.infosSet,
+              info.preferencesSet
+            );
             return info;
           }
         }
@@ -344,8 +424,16 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
-          return await getDishPreferences(input.userId);
+        const sessionData = getConfirmedSession(
+          input.sessionId,
+          ip,
+          input.userId
+        );
+        if (sessionData) {
+          const dishPreferences = await getDishPreferences(input.userId);
+          if (!sessionData.preferencesSet && dishPreferences.length > 0) {
+            updateSessionData(input.sessionId, true, true, true);
+          }
         }
         return false;
       } catch (e: unknown) {
@@ -362,7 +450,7 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           return await createLoginLink(input.userId, input.stay);
         }
         return false;
@@ -436,6 +524,9 @@ export const appRouter = trpc
       sessionId?: string;
       admin?: boolean;
       code?: string;
+      infosSet?: boolean;
+      identityConfirmed?: boolean;
+      preferencesSet?: boolean;
     }> {
       try {
         const result = await verifyUserEmail(input.userId, input.code);
@@ -448,6 +539,9 @@ export const appRouter = trpc
             sessionId,
             admin: result.admin,
             code: result.resetCode,
+            infosSet: result.infosSet,
+            identityConfirmed: result.identityConfirmed,
+            preferencesSet: result.preferencesSet,
           };
         }
         return { success: false };
@@ -461,11 +555,12 @@ export const appRouter = trpc
       userId: z.string().nonempty().length(20),
       code: z.string().nonempty().length(15),
       sessionId: z.string().length(20),
-      password: z.string().nonempty().max(20).optional(),
-      name: z.string().nonempty().max(200).optional(),
-      age: z.number().nonnegative().min(18).max(200).optional(),
-      locationCity: z.string().nonempty().max(100).optional(),
-      exactLocation: z.string().nonempty().max(1000).optional(),
+      password: z.string().nonempty().max(20),
+      name: z.string().nonempty().max(200),
+      age: z.number().nonnegative().min(18).max(200),
+      locationCity: z.string().nonempty().max(100),
+      exactLocation: z.string().nonempty().max(1000),
+      idBase64: z.string().nonempty().max(1000000),
     }),
     async resolve({ input, ctx }) {
       try {
@@ -478,11 +573,51 @@ export const appRouter = trpc
             input.name,
             input.age,
             input.locationCity,
+            input.exactLocation,
+            input.idBase64
+          );
+
+          if (result) {
+            updateSessionData(input.sessionId, true, true);
+            return await getUserInfo(input.userId);
+          }
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('resetUserInfo', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      code: z.string().nonempty().length(15),
+      sessionId: z.string().length(20),
+      password: z.string().nonempty().max(20).optional(),
+      locationCity: z.string().nonempty().max(100).optional(),
+      exactLocation: z.string().nonempty().max(1000).optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
+          const result = await resetUserInfo(
+            input.userId,
+            input.code,
+            input.password,
+            input.locationCity,
             input.exactLocation
           );
 
           if (result) {
-            return await getUserInfo(input.userId);
+            const userInfo = await getUserInfo(input.userId);
+            updateSessionData(
+              input.sessionId,
+              true,
+              true,
+              userInfo ? userInfo.preferencesSet : false
+            );
+            return userInfo;
           }
         }
         return false;
@@ -497,27 +632,30 @@ export const appRouter = trpc
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20),
       newPassword: z.string().nonempty().max(20).optional(),
-      name: z.string().nonempty().max(200).optional(),
-      age: z.number().nonnegative().min(18).max(200).optional(),
       locationCity: z.string().nonempty().max(100).optional(),
       exactLocation: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           const result = await changeUserInfo(
             input.userId,
             input.password,
             input.newPassword,
-            input.name,
-            input.age,
             input.locationCity,
             input.exactLocation
           );
 
           if (result) {
-            return await getUserInfo(input.userId);
+            const userInfo = await getUserInfo(input.userId);
+            updateSessionData(
+              input.sessionId,
+              true,
+              true,
+              userInfo ? userInfo.preferencesSet : false
+            );
+            return userInfo;
           }
         }
         return false;
@@ -540,6 +678,9 @@ export const appRouter = trpc
       nextTry: Date;
       admin?: boolean;
       userId?: string;
+      infosSet?: boolean;
+      identityConfirmed?: boolean;
+      preferencesSet?: boolean;
     }> {
       try {
         const ip = getIp(ctx as Context);
@@ -556,6 +697,9 @@ export const appRouter = trpc
               nextTry: result.nextTry,
               admin: true,
               userId: result.userId,
+              identityConfirmed: result.identityConfirmed,
+              infosSet: result.infosSet,
+              preferencesSet: result.preferencesSet,
             };
           } else {
             const sessionId = addSession(ip, result.userId, input.stay);
@@ -565,6 +709,9 @@ export const appRouter = trpc
               showCaptcha: result.showCaptcha,
               nextTry: result.nextTry,
               userId: result.userId,
+              identityConfirmed: result.identityConfirmed,
+              infosSet: result.infosSet,
+              preferencesSet: result.preferencesSet,
             };
           }
         }
@@ -585,13 +732,14 @@ export const appRouter = trpc
       userId: z.string().length(20),
       slots: z.number().min(1).max(10).int(),
       date: z.number().nonnegative(),
+      dishDescription: z.string().nonempty().max(1000).optional(),
       locationCity: z.string().nonempty().max(100).optional(),
       exactLocation: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           const date = new Date(input.date);
           if (date && !isNaN(date.getTime())) {
             const dishId = await addDish(
@@ -599,6 +747,7 @@ export const appRouter = trpc
               input.userId,
               input.slots,
               date,
+              input.dishDescription,
               input.locationCity,
               input.exactLocation
             );
@@ -626,7 +775,7 @@ export const appRouter = trpc
             return await removeDish(input.dishId);
           }
         } else {
-          if (verifySession(input.sessionId, ip, input.userId)) {
+          if (getConfirmedSession(input.sessionId, ip, input.userId)) {
             return await removeDish(input.dishId, input.userId);
           }
         }
@@ -646,8 +795,25 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
-          return await addDishPreference(input.dish, input.userId, input.likes);
+        const sessionData = getConfirmedSession(
+          input.sessionId,
+          ip,
+          input.userId
+        );
+        if (sessionData) {
+          if (
+            await addDishPreference(
+              input.dish,
+              input.userId,
+              input.likes,
+              !sessionData.preferencesSet
+            )
+          ) {
+            if (!sessionData.preferencesSet) {
+              updateSessionData(input.sessionId, true, true, true);
+            }
+            return await getDishPreferences(input.userId);
+          }
         }
         return false;
       } catch (e: unknown) {
@@ -664,8 +830,10 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
-          return await removeDishPreference(input.dish, input.userId);
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
+          if (await removeDishPreference(input.dish, input.userId)) {
+            return await getDishPreferences(input.userId);
+          }
         }
         return false;
       } catch (e: unknown) {
@@ -683,7 +851,7 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           return await addDishEvent(input.dishId, input.userId, input.message);
         }
         return false;
@@ -701,7 +869,7 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           return await removeDishEvent(input.eventId, input.userId);
         }
         return false;
@@ -720,7 +888,7 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           return await acceptDishEvent(
             input.eventId,
             input.userId,
@@ -742,7 +910,7 @@ export const appRouter = trpc
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           return await unacceptDishEvent(input.eventId, input.userId);
         }
         return false;

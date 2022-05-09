@@ -3,21 +3,28 @@
   import {
     authFailure,
     change,
+    checkHasSetCode,
     checkSession,
+    clearSetCode,
     emailLogIn,
-    hasUserSession,
-    hasSession,
     logIn,
     register,
     reset,
+    set,
     verify,
   } from '../data';
-  import { ref } from 'vue';
+  import { onUnmounted, ref } from 'vue';
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
   import { EMAIL_REGEX } from '../../../backend/src/constants';
   import { base64Decode } from '../helpers';
-  import { loggedIn, userLoggedIn } from '../settings';
+  import {
+    loggedIn,
+    resetState,
+    userConfirmed,
+    userConfirmedWithPreferences,
+    userLoggedIn,
+  } from '../settings';
 
   enum LoginType {
     logIn,
@@ -32,26 +39,35 @@
 
   const route = useRoute();
 
-  loggedIn.value = hasSession();
-  userLoggedIn.value = hasUserSession();
-
   const queryIsRegister = !!route.query.register;
 
   const type = ref(
     loggedIn.value
       ? userLoggedIn.value
-        ? LoginType.change
+        ? userConfirmed.value
+          ? LoginType.change
+          : LoginType.set
         : LoginType.none
       : queryIsRegister
       ? LoginType.register
       : LoginType.logIn
   );
 
+  if (type.value === LoginType.set) {
+    checkHasSetCode();
+  }
+
+  onUnmounted(() => {
+    if (type.value === LoginType.setAgain) {
+      clearSetCode();
+    }
+  });
+
   checkSession();
   authFailure.subscribe(() => {
-    loggedIn.value = false;
-    userLoggedIn.value = false;
+    resetState();
     type.value = LoginType.logIn;
+    message.value = 'Your session expired, please log in again.';
   });
 
   const queryUserId =
@@ -70,27 +86,23 @@
       : 'Are you sure you want to log in using your email address?';
   }
 
-  let setCode = '';
-
   const confirmAction = async () => {
     try {
       message.value = '';
       const result = await verify(queryUserId, queryCode);
       if (result.success) {
         loggedIn.value = true;
+        router.replace({ query: {} });
+        resetState();
         if (result.admin) {
-          userLoggedIn.value = false;
           router.push('/admin');
         } else {
-          userLoggedIn.value = true;
-          setCode = result.code ?? '';
-          if (queryIsRegister) {
+          if (queryIsRegister || !userConfirmed.value) {
             type.value = LoginType.set;
           } else {
             type.value = LoginType.setAgain;
           }
         }
-        router.replace({ query: {} });
       } else {
         message.value =
           'Could not ' +
@@ -110,12 +122,47 @@
         message.value = 'New password and name cannot both be empty';
         return;
       }
-      const result = await reset(setCode, newPassword.value, name.value);
+      const result = await set(
+        newPassword.value,
+        name.value,
+        18,
+        'Baar',
+        'Teststrasse 1, Zug',
+        'a'
+      );
+      resetState();
       if (result) {
-        setCode = '';
-        router.push('/user');
-      } else {
+        if (userConfirmedWithPreferences.value) {
+          router.push('/user');
+        } else {
+          router.push('/preferences');
+        }
+      } else if (userLoggedIn.value) {
         message.value = 'Could not set values, please try again in a bit.';
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const resetAction = async () => {
+    try {
+      message.value = '';
+      if (!newPassword.value) {
+        message.value = 'New password cannot be empty';
+        return;
+      }
+      const result = await reset(newPassword.value);
+      resetState();
+      if (result) {
+        if (userConfirmedWithPreferences.value) {
+          router.push('/user');
+        } else {
+          router.push('/preferences');
+        }
+      } else {
+        message.value = 'Could not set value, please try again in a bit.';
       }
     } catch (e) {
       console.error(e);
@@ -139,14 +186,14 @@
       if (fail) {
         return;
       }
-      const result = await change(
-        password.value,
-        newPassword.value,
-        name.value
-      );
+      const result = await change(password.value, newPassword.value);
+      resetState();
       if (result) {
-        setCode = '';
-        router.push('/user');
+        if (userConfirmedWithPreferences.value) {
+          router.push('/user');
+        } else {
+          router.push('/preferences');
+        }
       } else {
         message.value = 'Incorrect password';
       }
@@ -252,14 +299,17 @@
         showCaptcha.value && captchaSitekey ? captchaToken : undefined
       );
       captchaExpired();
+      resetState();
       if (result.success) {
         loggedIn.value = true;
         if (result.admin) {
-          userLoggedIn.value = false;
           router.push('/admin');
         } else {
-          userLoggedIn.value = true;
-          router.push('/user');
+          if (userConfirmedWithPreferences.value) {
+            router.push('/user');
+          } else {
+            router.push('/preferences');
+          }
         }
       } else {
         const difference = result.nextTry.getTime() - Date.now();
@@ -291,7 +341,7 @@
         changeAction();
         break;
       case LoginType.setAgain:
-        setAction();
+        resetAction();
         break;
       case LoginType.set:
         setAction();
@@ -347,9 +397,7 @@
         type="email"
         class="field email login-item"
         name="email"
-        :placeholder="
-          'x.y@example.com' + (type === LoginType.logIn ? ' (optional)' : '')
-        "
+        :placeholder="'x.y@example.com'"
         maxlength="200"
         @keyup.enter="triggerAction()"
       />
@@ -380,6 +428,21 @@
         @keyup.enter="triggerAction()"
       />
     </template>
+    <label
+      v-if="type === LoginType.setAgain"
+      class="label change-label login-item"
+      ><router-link
+        :to="userConfirmedWithPreferences ? '/user' : 'preferences'"
+        class="label-button label-button-solo"
+      >
+        Don't want to change anything?
+        {{
+          userConfirmedWithPreferences
+            ? 'Go to the user page instead.'
+            : 'Set your preferences instead.'
+        }}
+      </router-link></label
+    >
     <template
       v-if="
         type === LoginType.set ||
@@ -387,17 +450,10 @@
         type === LoginType.change
       "
     >
-      <label class="label new-password-label login-item" for="new-password"
-        >Please (optionally) enter a new password<br />
-        <div
-          class="label-button"
-          tabindex="0"
-          @click="router.push('/user')"
-          @keyup.enter="router.push('/user')"
-        >
-          Go to user page instead.
-        </div></label
-      >
+      <label class="label name-label login-item" for="name"
+        >Please{{ type === LoginType.set ? '' : ' (optionally)' }} enter a new
+        password
+      </label>
       <input
         id="new-password"
         v-model="newPassword"
@@ -410,15 +466,9 @@
         @keyup.enter="triggerAction()"
       />
     </template>
-    <template
-      v-if="
-        type === LoginType.set ||
-        type === LoginType.setAgain ||
-        type === LoginType.change
-      "
-    >
+    <template v-if="type === LoginType.set">
       <label class="label name-label login-item" for="name"
-        >Please (optionally) enter your (new) name
+        >Please enter your name
       </label>
       <input
         id="name"

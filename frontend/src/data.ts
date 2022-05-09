@@ -23,9 +23,15 @@ const client = createTRPCClient<AppRouter>({
 let loggingOut = true;
 let sessionExpires =
   parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
-let sessionUserId = localStorage.getItem('sessionUserId') ?? '';
 let sessionId = localStorage.getItem('session') ?? '';
 let isAdmin = localStorage.getItem('admin') === 'true';
+let sessionUserId = localStorage.getItem('sessionUserId') ?? '';
+let identityConfirmed = !!localStorage.getItem('identityConfirmed') ?? false;
+let infosSet = !!localStorage.getItem('infosSet') ?? false;
+let preferencesSet = !!localStorage.getItem('preferencesSet') ?? false;
+
+let setCode = '';
+let setExpired = 0;
 
 let userInfo: UserInfoPrivate | null = null;
 
@@ -34,13 +40,42 @@ export const isLoggingOut = () => {
 };
 
 export const hasSession = (admin = false) => {
-  return (
-    !!sessionId && sessionExpires > new Date().getTime() && (!admin || isAdmin)
-  );
+  return !!sessionId && sessionExpires > Date.now() && (!admin || isAdmin);
+};
+
+export const hasConfirmedUserSessionWithPreferences = () => {
+  return hasConfirmedUserSession() && preferencesSet;
+};
+
+export const hasConfirmedUserSession = () => {
+  return hasUserSession() && infosSet && identityConfirmed;
 };
 
 export const hasUserSession = () => {
   return hasSession() && !isAdmin;
+};
+
+export const hasSetCode = () => {
+  return !!setCode && setExpired > Date.now();
+};
+
+export const checkHasSetCode = async () => {
+  (async () => {
+    try {
+      if (!hasSetCode()) {
+        await logOut();
+        authFailure.next();
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      throw e;
+    }
+  })();
+};
+
+export const clearSetCode = () => {
+  setCode = '';
+  setExpired = 0;
 };
 
 export const authFailure = new Subject<void>();
@@ -226,7 +261,12 @@ export const getDishPreferences = async () => {
   }
 };
 
-export const addDish = async (dish: string, slots: number, date: Date) => {
+export const addDish = async (
+  dish: string,
+  slots: number,
+  date: Date,
+  dishDescription?: string
+) => {
   try {
     if (!hasSession()) {
       authFailure.next();
@@ -235,6 +275,7 @@ export const addDish = async (dish: string, slots: number, date: Date) => {
     const result = await client.mutation('addDish', {
       dish,
       slots,
+      dishDescription,
       sessionId: sessionId,
       userId: sessionUserId,
       date: date.getTime(),
@@ -287,6 +328,8 @@ export const addDishPreference = async (dish: string, likes: boolean) => {
     if (!result) {
       authFailure.next();
       return false;
+    } else {
+      preferencesSet = true;
     }
     return result;
   } catch (e: unknown) {
@@ -424,10 +467,16 @@ export const checkSession = (admin = false) => {
         sessionUserId = '';
         isAdmin = false;
         sessionExpires = 0;
+        identityConfirmed = false;
+        infosSet = false;
+        preferencesSet = false;
         localStorage.setItem('session', '');
         localStorage.setItem('sessionUserId', '');
         localStorage.setItem('sessionExpires', '');
         localStorage.setItem('admin', '');
+        localStorage.setItem('identityConfirmed', '');
+        localStorage.setItem('infosSet', '');
+        localStorage.setItem('preferencesSet', '');
         authFailure.next();
       }
     } catch (e: unknown) {
@@ -476,24 +525,35 @@ export const logIn = async (
       email,
       captchaToken,
     });
+    console.log(result);
     if (result.success && result.sessionId) {
       sessionId = result.sessionId;
       isAdmin = !!result.admin;
-    } else {
-      sessionId = '';
-      isAdmin = false;
-    }
-    sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
-    if (sessionId) {
       sessionUserId = result.userId ?? '';
+      sessionExpires = Date.now() + 1000 * 60 * 60 * 23.5;
+      identityConfirmed = !!result.identityConfirmed;
+      infosSet = !!result.infosSet;
+      preferencesSet = !!result.preferencesSet;
+    }
+
+    if (sessionId) {
       localStorage.setItem('sessionUserId', sessionUserId);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
+      localStorage.setItem(
+        'identityConfirmed',
+        identityConfirmed ? 'true' : ''
+      );
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
     }
     return {
       success: result.success,
       admin: result.admin,
+      identityConfirmed: result.identityConfirmed,
+      infosSet: result.infosSet,
+      preferencesSet: result.preferencesSet,
       showCaptcha: result.showCaptcha,
       nextTry: new Date(result.nextTry),
     };
@@ -512,21 +572,35 @@ export const verify = async (userId: string, code: string) => {
     if (result.success && result.sessionId) {
       sessionId = result.sessionId;
       isAdmin = !!result.admin;
-    } else {
-      sessionId = '';
-      isAdmin = false;
-    }
-    sessionExpires = new Date().getTime() + 1000 * 60 * 60 * 23.5;
-    if (sessionId) {
+      sessionExpires = Date.now() + 1000 * 60 * 60 * 23.5;
       sessionUserId = userId ?? '';
+      identityConfirmed = !!result.identityConfirmed;
+      infosSet = !!result.infosSet;
+      preferencesSet = !!result.preferencesSet;
+      if (!identityConfirmed || !infosSet) {
+        setCode = result.code ?? '';
+        setExpired = Date.now() + 1000 * 60 * 25 ?? 0;
+      }
+    }
+
+    if (sessionId) {
       localStorage.setItem('sessionUserId', sessionUserId);
       localStorage.setItem('session', sessionId);
       localStorage.setItem('sessionExpires', sessionExpires.toString());
       localStorage.setItem('admin', isAdmin ? 'true' : '');
+      localStorage.setItem(
+        'identityConfirmed',
+        identityConfirmed ? 'true' : ''
+      );
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
     }
     return {
       success: result.success,
       admin: result.admin,
+      identityConfirmed: result.identityConfirmed,
+      infosSet: result.infosSet,
+      preferencesSet: result.preferencesSet,
       code: result.code,
     };
   } catch (e) {
@@ -535,11 +609,59 @@ export const verify = async (userId: string, code: string) => {
   }
 };
 
+export const set = async (
+  newPassword: string,
+  name: string,
+  age: number,
+  locationCity: string,
+  exactLocation: string,
+  idBase64: string
+) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    if (!hasSetCode()) {
+      await logOut();
+      authFailure.next();
+      return false;
+    }
+
+    const result = await client.mutation('setUserInfo', {
+      userId: sessionUserId,
+      password: newPassword,
+      name,
+      age,
+      locationCity,
+      exactLocation,
+      code: setCode,
+      sessionId,
+      idBase64,
+    });
+
+    if (result) {
+      userInfo = result;
+      identityConfirmed = !!userInfo.identityConfirmed;
+      infosSet = !!userInfo.infosSet;
+      preferencesSet = !!userInfo.preferencesSet;
+      localStorage.setItem(
+        'identityConfirmed',
+        identityConfirmed ? 'true' : ''
+      );
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
+      clearSetCode();
+    }
+    return result;
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
 export const reset = async (
-  code: string,
   newPassword?: string,
-  name?: string,
-  age?: number,
   locationCity?: string,
   exactLocation?: string
 ) => {
@@ -548,19 +670,33 @@ export const reset = async (
       authFailure.next();
       return false;
     }
-    const result = await client.mutation('setUserInfo', {
+    if (!hasSetCode()) {
+      await logOut();
+      authFailure.next();
+      return false;
+    }
+
+    const result = await client.mutation('resetUserInfo', {
       userId: sessionUserId,
       password: newPassword || undefined,
-      name: name || undefined,
-      age: age || undefined,
       locationCity: locationCity || undefined,
       exactLocation: exactLocation || undefined,
-      code,
+      code: setCode,
       sessionId,
     });
 
     if (result) {
       userInfo = result;
+      identityConfirmed = !!userInfo.identityConfirmed;
+      infosSet = !!userInfo.infosSet;
+      preferencesSet = !!userInfo.preferencesSet;
+      localStorage.setItem(
+        'identityConfirmed',
+        identityConfirmed ? 'true' : ''
+      );
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
+      clearSetCode();
     }
     return result;
   } catch (e) {
@@ -572,8 +708,6 @@ export const reset = async (
 export const change = async (
   password: string,
   newPassword?: string,
-  name?: string,
-  age?: number,
   locationCity?: string,
   exactLocation?: string
 ) => {
@@ -587,8 +721,6 @@ export const change = async (
       userId: sessionUserId,
       password,
       newPassword: newPassword || undefined,
-      name: name || undefined,
-      age: age || undefined,
       locationCity: locationCity || undefined,
       exactLocation: exactLocation || undefined,
       sessionId,
@@ -596,6 +728,15 @@ export const change = async (
 
     if (result) {
       userInfo = result;
+      identityConfirmed = !!userInfo.identityConfirmed;
+      infosSet = !!userInfo.infosSet;
+      preferencesSet = !!userInfo.preferencesSet;
+      localStorage.setItem(
+        'identityConfirmed',
+        identityConfirmed ? 'true' : ''
+      );
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
     }
     return result;
   } catch (e) {
@@ -622,6 +763,18 @@ export const getUserInfo = async () => {
 
     if (result) {
       userInfo = result;
+      identityConfirmed = !!userInfo.identityConfirmed;
+      infosSet = !!userInfo.infosSet;
+      preferencesSet = !!userInfo.preferencesSet;
+      localStorage.setItem(
+        'identityConfirmed',
+        identityConfirmed ? 'true' : ''
+      );
+      localStorage.setItem('infosSet', infosSet ? 'true' : '');
+      localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
+      if (identityConfirmed && infosSet) {
+        clearSetCode();
+      }
     }
     return result;
   } catch (e) {
@@ -638,10 +791,16 @@ export const logOut = async () => {
     sessionUserId = '';
     isAdmin = false;
     sessionExpires = 0;
+    identityConfirmed = false;
+    infosSet = false;
+    preferencesSet = false;
     localStorage.setItem('sessionUserId', '');
     localStorage.setItem('session', '');
     localStorage.setItem('sessionExpires', '');
     localStorage.setItem('admin', '');
+    localStorage.setItem('identityConfirmed', '');
+    localStorage.setItem('infosSet', '');
+    localStorage.setItem('preferencesSet', '');
     loggingOut = false;
   } catch (e) {
     console.error(e);

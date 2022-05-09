@@ -1,14 +1,12 @@
 <script setup lang="ts">
-  import Waste from '../components/Waste.vue';
-  import { DisplayType, resetState } from '../settings';
   import { useRouter } from 'vue-router';
   import {
     authFailure,
     checkSession,
     hasConfirmedUserSession,
-    hasConfirmedUserSessionWithPreferences,
     hasUserSession,
   } from '../data';
+  import { resetState } from '../settings';
   const router = useRouter();
 
   authFailure.subscribe(() => {
@@ -20,15 +18,21 @@
     router.push('/admin');
   } else if (!hasConfirmedUserSession()) {
     router.push('/login');
-  } else if (!hasConfirmedUserSessionWithPreferences()) {
-    router.push('/preferences');
   } else {
     checkSession();
   }
 </script>
 
 <template>
-  <div class="page">
-    <Waste :small="false" :type="DisplayType.recommended"> </Waste>
-  </div>
+  <div class="content-base preferences">Preferences</div>
 </template>
+
+<style lang="scss">
+  .preferences {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+  }
+</style>

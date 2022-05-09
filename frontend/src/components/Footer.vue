@@ -1,9 +1,18 @@
 <script setup lang="ts">
   import { APP_NAME } from '../../../backend/src/constants';
   import { logOut } from '../data';
-  import { loggedIn, userLoggedIn } from '../settings';
+  import {
+    loggedIn,
+    userConfirmed,
+    userConfirmedWithPreferences,
+    userLoggedIn,
+  } from '../settings';
   const logOutOnclick = async () => {
     try {
+      loggedIn.value = false;
+      userLoggedIn.value = false;
+      userConfirmed.value = false;
+      userConfirmedWithPreferences.value = false;
       await logOut();
     } catch (e) {
       console.error(e);

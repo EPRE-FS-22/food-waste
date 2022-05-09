@@ -1,5 +1,11 @@
 import moment from 'moment';
 import { ref } from 'vue';
+import {
+  hasConfirmedUserSession,
+  hasConfirmedUserSessionWithPreferences,
+  hasSession,
+  hasUserSession,
+} from './data';
 
 export enum DisplayType {
   available,
@@ -7,8 +13,19 @@ export enum DisplayType {
   plans,
 }
 
-export const loggedIn = ref(false);
-export const userLoggedIn = ref(false);
+export const loggedIn = ref(hasSession());
+export const userLoggedIn = ref(hasUserSession());
+export const userConfirmed = ref(hasConfirmedUserSession());
+export const userConfirmedWithPreferences = ref(
+  hasConfirmedUserSessionWithPreferences()
+);
+
+export const resetState = () => {
+  loggedIn.value = hasSession();
+  userLoggedIn.value = hasUserSession();
+  userConfirmed.value = hasConfirmedUserSession();
+  userConfirmedWithPreferences.value = hasConfirmedUserSessionWithPreferences();
+};
 
 export const ranking = ref(false);
 

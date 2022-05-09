@@ -1,5 +1,4 @@
 import { WithId } from 'mongodb';
-import wiki, { Page } from 'wikijs';
 import {
   getDishPreferencesCollection,
   getDishesCollection,
@@ -15,7 +14,12 @@ import type {
   DishInfo,
   DishPreference,
 } from './model';
-import { getUserInfo, getUserName, sendUserMail } from './users.js';
+import {
+  getUserInfo,
+  getUserName,
+  sendUserMail,
+  userPreferencesSet,
+} from './users.js';
 import ContentBasedRecommender from 'content-based-recommender';
 import { generateFrontendLink } from './index.js';
 import {
@@ -25,6 +29,7 @@ import {
 } from './constants.js';
 import moment from 'moment';
 import { getCoords } from './geo.js';
+import { getWikiPage } from './wiki.js';
 
 const recommender = new ContentBasedRecommender({
   minScore: 0.1,
@@ -39,6 +44,7 @@ const stripDishDBValues = (dish: WithId<DBDish>): Dish => {
     slots: dish.slots,
     filled: dish.filled,
     dish: dish.dish,
+    dishDescription: dish.dishDescription,
   };
 };
 
@@ -57,6 +63,7 @@ const combineDishInfoDBValues = (
     slots: dish.slots,
     filled: dish.filled,
     dish: dish.dish,
+    dishDescription: dish.dishDescription,
     participantNames: dishEvents
       .filter((d) => d.accepted)
       .map((e) => e.participantName),
@@ -96,6 +103,7 @@ const combineDishEventDBValues = (
     slots: dish.slots,
     filled: dish.filled,
     dish: dish.dish,
+    dishDescription: dish.dishDescription,
     participantName: dishEvent.participantName,
     accepted: dishEvent.accepted,
     message: dishEvent.message,
@@ -436,7 +444,7 @@ export const getDish = async (customId: string, userId?: string) => {
 };
 
 const getDishDescription = async (dish: string) => {
-  const page = (await wiki().page(dish)) as Page | undefined;
+  const page = await getWikiPage(dish);
 
   return (await page?.summary()) ?? '';
 };
@@ -444,7 +452,8 @@ const getDishDescription = async (dish: string) => {
 export const addDishPreference = async (
   dish: string,
   userId: string,
-  likes: boolean
+  likes: boolean,
+  isFirst: boolean
 ) => {
   const description = await getDishDescription(dish);
 
@@ -452,20 +461,26 @@ export const addDishPreference = async (
     const dishPreferencesCollection = await getDishPreferencesCollection();
 
     const previous = await dishPreferencesCollection.findOne({
-      dish: dish,
+      dish,
       userId,
     });
 
     if (!previous) {
-      return !!(
-        await dishPreferencesCollection.insertOne({
-          dish: dish,
-          likes,
-          description,
-          userId,
-          setDate: new Date(),
-        })
-      ).insertedId;
+      let success = true;
+      if (isFirst) {
+        success = await userPreferencesSet(userId);
+      }
+      if (success) {
+        return !!(
+          await dishPreferencesCollection.insertOne({
+            dish: dish,
+            likes,
+            description,
+            userId,
+            setDate: new Date(),
+          })
+        ).insertedId;
+      }
     }
   }
   return false;
@@ -473,6 +488,16 @@ export const addDishPreference = async (
 
 export const removeDishPreference = async (dish: string, userId: string) => {
   const dishPreferencesCollection = await getDishPreferencesCollection();
+
+  const found = await dishPreferencesCollection
+    .find({
+      userId: userId,
+    })
+    .toArray();
+
+  if (found.length < 2) {
+    return false;
+  }
 
   const result = await dishPreferencesCollection.deleteOne({
     dish: dish,
@@ -487,6 +512,7 @@ export const addDish = async (
   userId: string,
   slots: number,
   date: Date,
+  dishDescription?: string,
   locationCity?: string,
   exactLocation?: string
 ) => {
@@ -506,7 +532,8 @@ export const addDish = async (
     if (userInfo) {
       await dishesCollection.insertOne({
         customId: id,
-        dish: dish,
+        dish,
+        dishDescription,
         description,
         userId,
         name: userInfo.name,

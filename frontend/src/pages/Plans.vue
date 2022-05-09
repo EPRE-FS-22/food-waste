@@ -1,18 +1,30 @@
 <script setup lang="ts">
   import Waste from '../components/Waste.vue';
-  import { DisplayType } from '../settings';
+  import { DisplayType, resetState } from '../settings';
   import { useRouter } from 'vue-router';
-  import { authFailure, checkSession, hasUserSession } from '../data';
+  import {
+    authFailure,
+    checkSession,
+    hasConfirmedUserSession,
+    hasConfirmedUserSessionWithPreferences,
+    hasUserSession,
+  } from '../data';
   const router = useRouter();
 
   authFailure.subscribe(() => {
+    resetState();
     router.push('/login');
   });
 
   if (!hasUserSession()) {
     router.push('/admin');
+  } else if (!hasConfirmedUserSession()) {
+    router.push('/login');
+  } else if (!hasConfirmedUserSessionWithPreferences()) {
+    router.push('/preferences');
+  } else {
+    checkSession();
   }
-  checkSession();
 </script>
 
 <template>

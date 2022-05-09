@@ -1,16 +1,29 @@
 <script setup lang="ts">
   import { useRouter } from 'vue-router';
-  import { authFailure, checkSession, hasUserSession } from '../data';
+  import {
+    authFailure,
+    checkSession,
+    hasConfirmedUserSession,
+    hasConfirmedUserSessionWithPreferences,
+    hasUserSession,
+  } from '../data';
+  import { resetState } from '../settings';
   const router = useRouter();
 
   authFailure.subscribe(() => {
+    resetState();
     router.push('/login');
   });
 
   if (!hasUserSession()) {
     router.push('/admin');
+  } else if (!hasConfirmedUserSession()) {
+    router.push('/login');
+  } else if (!hasConfirmedUserSessionWithPreferences()) {
+    router.push('/preferences');
+  } else {
+    checkSession();
   }
-  checkSession();
 </script>
 
 <template>

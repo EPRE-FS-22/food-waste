@@ -14,6 +14,7 @@ export interface Dish extends DishPlan, UserInfo {
   date: Date;
   slots: number;
   filled: number;
+  dishDescription?: string;
 }
 
 export interface DishInfoBase extends Dish {
@@ -31,7 +32,7 @@ export interface DishInfo extends DishInfoBase {
   eventRequestsIds: string[];
 }
 
-export interface DBDish extends DishInfoBase, DBDishBase, UserInfoPrivate {
+export interface DBDish extends DishInfoBase, DBDishBase, UserInfoBasePrivate {
   userId: string;
 }
 
@@ -96,8 +97,14 @@ export interface UserInfo {
   locationCityCoords?: [number, number];
 }
 
-export interface UserInfoPrivate extends UserInfo {
+export interface UserInfoBasePrivate extends UserInfo {
   exactLocation?: string;
+}
+
+export interface UserInfoPrivate extends UserInfoBasePrivate {
+  infosSet: boolean;
+  identityConfirmed: boolean;
+  preferencesSet: boolean;
 }
 
 export interface User extends UserInfoPrivate {

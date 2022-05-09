@@ -7,6 +7,7 @@ import User from './pages/User.vue';
 import Add from './pages/Add.vue';
 import Plans from './pages/Plans.vue';
 import Login from './pages/Login.vue';
+import Preferences from './pages/Preferences.vue';
 
 import vhCheck from 'vh-check';
 vhCheck();
@@ -23,6 +24,7 @@ const routes = [
   { path: '/add', component: Add },
   { path: '/plans', component: Plans },
   { path: '/login', component: Login },
+  { path: '/preferences', component: Preferences },
 ];
 
 const router = createRouter({

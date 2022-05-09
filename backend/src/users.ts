@@ -9,6 +9,7 @@ import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import 'dotenv/config';
 import { APP_NAME, EMAIL_REGEX } from './constants.js';
 import { getCoords } from './geo.js';
+import { validateId } from './validateId.js';
 
 export const checkEmail = (email?: string): boolean =>
   !!email && !!email.match(EMAIL_REGEX);
@@ -50,18 +51,20 @@ export const changeUserInfo = async (
   userId: string,
   password: string,
   newPassword?: string,
-  name?: string,
-  age?: number,
   locationCity?: string,
   exactLocation?: string
 ) => {
-  if (!newPassword && !name) {
+  if (!newPassword && !locationCity && !exactLocation) {
     return false;
   }
 
   const usersCollection = await getUsersCollection();
 
-  const registeredUser = await usersCollection.findOne({ customId: userId });
+  const registeredUser = await usersCollection.findOne({
+    customId: userId,
+    identityConfirmed: true,
+    infosSet: true,
+  });
   if (!registeredUser || !registeredUser.hash) {
     return false;
   }
@@ -76,8 +79,6 @@ export const changeUserInfo = async (
       {
         $set: {
           ...(passwordHashed ? { hash: passwordHashed } : {}),
-          ...(name ? { name } : {}),
-          ...(age ? { age } : {}),
           ...(locationCity ? { locationCity } : {}),
           ...(exactLocation ? { exactLocation } : {}),
         },
@@ -87,8 +88,6 @@ export const changeUserInfo = async (
 
     const [changesString, changesNumber] = listChanges({
       password: passwordHashed,
-      name,
-      age,
       'approximate location': locationCity,
       'exact address': exactLocation,
     });
@@ -113,19 +112,32 @@ If this was not you use the site to reset it: ${generateFrontendLink(
 export const setUserInfo = async (
   userId: string,
   code: string,
-  newPassword?: string,
-  name?: string,
-  age?: number,
-  locationCity?: string,
-  exactLocation?: string
+  newPassword: string,
+  name: string,
+  age: number,
+  locationCity: string,
+  exactLocation: string,
+  idImageBase64: string
 ) => {
-  if (!newPassword && !name) {
+  if (
+    !newPassword ||
+    !name ||
+    !age ||
+    !locationCity ||
+    !exactLocation ||
+    !idImageBase64
+  ) {
     return false;
   }
 
+  const identityConfirmed = validateId(idImageBase64);
+
   const usersCollection = await getUsersCollection();
 
-  const registeredUser = await usersCollection.findOne({ customId: userId });
+  const registeredUser = await usersCollection.findOne({
+    customId: userId,
+    $or: [{ identityConfirmed: false }, { infosSet: false }],
+  });
   if (
     !registeredUser ||
     !registeredUser.resetHash ||
@@ -147,7 +159,99 @@ export const setUserInfo = async (
   }
 
   if (code && (await verifyPassword(registeredUser.resetHash, code))) {
-    const passwordHashed = newPassword ? hashPassword(newPassword) : '';
+    const passwordHashed = newPassword ? await hashPassword(newPassword) : '';
+
+    const locationCityCoords = await getCoords(locationCity);
+
+    if (!locationCityCoords) {
+      return false;
+    }
+
+    await usersCollection.updateOne(
+      {
+        customId: userId,
+      },
+      {
+        $set: {
+          hash: passwordHashed,
+          name,
+          age,
+          locationCity,
+          exactLocation,
+          identityConfirmed: true,
+          infosSet: true,
+        },
+        $unset: { resetHash: true, resetExpiration: true },
+        $currentDate: { changedDate: true },
+      }
+    );
+
+    const [changesString, changesNumber] = listChanges({
+      password: passwordHashed,
+      name,
+      age,
+      'approximate location': locationCityCoords,
+      'exact address': exactLocation,
+      identification: identityConfirmed,
+    });
+
+    const body = `Hello ${registeredUser.name}
+
+Thank your for using the ${APP_NAME} App.
+
+Your ${changesString} ${changesNumber > 0 ? 'have' : 'has'} been set.
+
+If this was not you contact our support via our site: ${generateFrontendLink(
+      '/login'
+    )}`;
+    sendMail(registeredUser.email, APP_NAME + ' account set', body);
+
+    return true;
+  } else {
+    return false;
+  }
+};
+
+export const resetUserInfo = async (
+  userId: string,
+  code: string,
+  newPassword?: string,
+  locationCity?: string,
+  exactLocation?: string
+) => {
+  if (!newPassword && !locationCity && !exactLocation) {
+    return false;
+  }
+
+  const usersCollection = await getUsersCollection();
+
+  const registeredUser = await usersCollection.findOne({
+    customId: userId,
+    identityConfirmed: true,
+    infosSet: true,
+  });
+  if (
+    !registeredUser ||
+    !registeredUser.resetHash ||
+    !registeredUser.resetExpiration
+  ) {
+    return false;
+  }
+
+  if (registeredUser.resetExpiration < new Date()) {
+    await usersCollection.updateOne(
+      {
+        customId: userId,
+      },
+      {
+        $unset: { resetHash: true, resetExpiration: true },
+      }
+    );
+    return false;
+  }
+
+  if (code && (await verifyPassword(registeredUser.resetHash, code))) {
+    const passwordHashed = newPassword ? await hashPassword(newPassword) : '';
 
     let locationCityCoords: [number, number] | null = null;
 
@@ -161,9 +265,7 @@ export const setUserInfo = async (
       },
       {
         $set: {
-          ...(passwordHashed ? { hash: await passwordHashed } : {}),
-          ...(name ? { name } : {}),
-          ...(age ? { age } : {}),
+          ...(passwordHashed ? { hash: passwordHashed } : {}),
           ...(locationCityCoords ? { locationCity } : {}),
           ...(locationCityCoords ? { locationCityCoords } : {}),
           ...(exactLocation ? { exactLocation } : {}),
@@ -175,8 +277,6 @@ export const setUserInfo = async (
 
     const [changesString, changesNumber] = listChanges({
       password: passwordHashed,
-      name,
-      age,
       'approximate location': locationCityCoords,
       'exact address': exactLocation,
     });
@@ -206,6 +306,9 @@ export const verifyUserEmail = async (
   stay?: boolean;
   admin?: boolean;
   resetCode?: string;
+  infosSet?: boolean;
+  identityConfirmed?: boolean;
+  preferencesSet?: boolean;
 }> => {
   const usersCollection = await getUsersCollection();
 
@@ -254,6 +357,9 @@ export const verifyUserEmail = async (
       stay: !!registeredUser.verifyStay,
       admin: false,
       resetCode: passwordNew,
+      infosSet: registeredUser.infosSet,
+      identityConfirmed: registeredUser.identityConfirmed,
+      preferencesSet: registeredUser.preferencesSet,
     };
   } else {
     return { success: false };
@@ -334,6 +440,9 @@ export const registerOrEmailLogin = async (
         verifyExpiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
         verifyStay: stay,
         registerDate: new Date(),
+        identityConfirmed: false,
+        infosSet: false,
+        preferencesSet: false,
       });
       await usersCollection.deleteMany({
         email,
@@ -434,7 +543,13 @@ export const loginUser = async (
     if (user && user.hash) {
       const result = await verifyPassword(user.hash, password);
       if (result) {
-        return { success: true, userId: user.customId };
+        return {
+          success: true,
+          userId: user.customId,
+          infosSet: user.infosSet,
+          identityConfirmed: user.identityConfirmed,
+          preferencesSet: user.preferencesSet,
+        };
       }
     }
     return { success: false };
@@ -487,7 +602,12 @@ export const getUserInfo = async (
     })) as StringSetting | undefined;
 
     if (adminIdObject) {
-      return { name: 'Admin' };
+      return {
+        name: 'Admin',
+        infosSet: false,
+        identityConfirmed: false,
+        preferencesSet: false,
+      };
     }
   }
 
@@ -498,9 +618,29 @@ export const getUserInfo = async (
       locationCity: user.locationCity,
       locationCityCoords: user.locationCityCoords,
       exactLocation: user.exactLocation,
+      identityConfirmed: user.identityConfirmed,
+      infosSet: user.infosSet,
+      preferencesSet: user.preferencesSet,
     };
   }
   return null;
+};
+
+export const userPreferencesSet = async (userId: string) => {
+  const usersCollection = await getUsersCollection();
+
+  return (
+    (
+      await usersCollection.updateOne(
+        {
+          customId: userId,
+        },
+        {
+          $set: { preferencesSet: true },
+        }
+      )
+    ).modifiedCount > 0
+  );
 };
 
 export const sendUserMail = async (

@@ -1,9 +1,15 @@
 <script setup lang="ts">
-  import { DisplayType } from '../settings';
+  import { DisplayType, resetState } from '../settings';
   import Waste from '../components/Waste.vue';
-  import { hasSession, isLoggingOut } from '../data';
+  import { authFailure, checkSession, hasSession, isLoggingOut } from '../data';
   import { useRouter } from 'vue-router';
   const router = useRouter();
+
+  authFailure.subscribe(() => {
+    resetState();
+  });
+
+  checkSession();
 
   if (!isLoggingOut() && hasSession()) {
     router.push('/user');
