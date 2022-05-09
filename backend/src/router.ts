@@ -30,6 +30,8 @@ import {
   train,
   unacceptDishEvent,
 } from './dishes.js';
+import { searchWiki } from './wiki.js';
+import type { Result } from 'wikijs';
 
 let adminSessions: {
   [key: string]: { expirationDate: Date; ip: string; adminId: string };
@@ -755,6 +757,25 @@ export const appRouter = trpc
           }
         }
         return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('searchWikiJs', {
+    input: z.object({
+      searchText: z.string().nonempty().max(20),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
+          const searchResult = await searchWiki(input.searchText);
+          return searchResult;
+        }
+        return [] as Result[];
       } catch (e: unknown) {
         throw internalServerError(e);
       }

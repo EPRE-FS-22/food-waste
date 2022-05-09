@@ -1,35 +1,65 @@
 <script setup lang="ts">
-  import { useRoute } from 'vue-router';
+  import { ref } from 'vue';
+  import type { DisplayDish } from '../model';
+  import { useRoute, useRouter } from 'vue-router';
+  import {
+    authFailure,
+    checkSession,
+    hasUserSession,
+    lastDish,
+    addDishRequest,
+  } from '../data';
+  const router = useRouter();
+
+  authFailure.subscribe(() => {
+    router.push('/login');
+  });
+
+  if (!hasUserSession()) {
+    router.push('/admin');
+  }
+  checkSession();
 
   const route = useRoute();
 
-  var title = 'Pizza';
+  const currentDish = ref(null as null | DisplayDish);
 
-  var description =
+  lastDish.subscribe((item) => {
+    console.log(item);
+    currentDish.value = item;
+  });
+
+  const description =
     'I bought too much flour, so I opened this offer. I expect 2 person who could eat with me.';
 
-  var personCount = 2;
+  const personCount = 2;
   console.log(route.params.id);
+
+  const acceptOffer = () => {
+    addDishRequest(route.params.id.toString());
+  };
 </script>
 
 <template>
   <div class="content-base detail">
-    <div class="detail-margin">
-      <h1>{{ title }}</h1>
-      <div class="description-section">
-        <h4>Description</h4>
-        <p>{{ description }}</p>
+    <template v-if="currentDish">
+      <div class="detail-margin">
+        <h1>{{ currentDish.dish }}</h1>
+        <div class="description-section">
+          <h4>Description</h4>
+          <p>{{ description }}</p>
+        </div>
+        <p style="text-align: center">Number of people: {{ personCount }}</p>
+        <div class="button-section">
+          <router-link to="/">
+            <img src="../assets/icons8-cancel-128.png" />
+          </router-link>
+          <div @click="acceptOffer">
+            <img src="../assets/icons8-check-circle-128.png" />
+          </div>
+        </div>
       </div>
-      <p style="text-align: center">Number of people: {{ personCount }}</p>
-      <div class="button-section">
-        <router-link to="/">
-          <img src="../assets/icons8-cancel-128.png" />
-        </router-link>
-        <router-link to="/">
-          <img src="../assets/icons8-check-circle-128.png" />
-        </router-link>
-      </div>
-    </div>
+    </template>
   </div>
 </template>
 
@@ -57,5 +87,8 @@
 
   .button-section {
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 </style>

@@ -34,9 +34,10 @@
       </router-link>
       <router-link
         v-if="
-          ($router.currentRoute.value.path === '/user') |
-            ($router.currentRoute.value.path === '/add') |
-            ($router.currentRoute.value.path === '/details')
+          $router.currentRoute.value.path === '/user' ||
+          $router.currentRoute.value.path === '/add' ||
+          $router.currentRoute.value.path === '/detail' ||
+          $router.currentRoute.value.path.startsWith('/detail/')
         "
         to="/plans"
         class="view-toggle"
@@ -45,9 +46,11 @@
       </router-link>
       <router-link
         v-if="
-          ($router.currentRoute.value.path === '/plans') |
-            ($router.currentRoute.value.path === '/add') |
-            ($router.currentRoute.value.path === '/add')
+          $router.currentRoute.value.path === '/plans' ||
+          $router.currentRoute.value.path === '/add' ||
+          $router.currentRoute.value.path === '/add' ||
+          $router.currentRoute.value.path === '/detail' ||
+          $router.currentRoute.value.path.startsWith('/detail/')
         "
         to="/user"
         class="view-toggle"

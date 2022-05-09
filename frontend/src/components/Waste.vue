@@ -2,29 +2,23 @@
   import { ref, onBeforeUnmount, watch } from 'vue';
   import { DisplayType, loading } from '../settings';
   import { getPicture } from '../pictures';
-  import { getAvailableDishes, getMyDishes, getSignedUpDishes } from '../data';
-  import type { Dish, DishEvent, DishInfo } from '../../../backend/src/model';
+  import {
+    getAvailableDishes,
+    getMyDishes,
+    getSignedUpDishes,
+    lastDish,
+  } from '../data';
+  import type { DishEvent, DishInfo } from '../../../backend/src/model';
   import { PROMO_DISHES } from '../../../backend/src/constants';
+  import { DisplayDish, DisplayDishEvent, DisplayDishInfo } from '../model';
+  import { useRouter } from 'vue-router';
+
+  const router = useRouter();
 
   const props = defineProps({
     small: { type: Boolean, default: false },
     type: { type: Number, default: DisplayType.available },
   });
-
-  interface DisplayDish extends Dish {
-    image?: string;
-    promo?: boolean;
-  }
-
-  interface DisplayDishInfo extends DishInfo {
-    image?: string;
-    promo?: boolean;
-  }
-
-  interface DisplayDishEvent extends DishEvent {
-    image?: string;
-    promo?: boolean;
-  }
 
   let dishes = ref(
     [] as DisplayDish[] | (DisplayDishInfo | DisplayDishEvent)[]
@@ -39,6 +33,13 @@
         };
       })
     );
+  };
+
+  const clickDish = (index) => {
+    lastDish.next(dishes.value[index]);
+    console.log(index);
+    console.log(dishes.value[index]);
+    router.push('/detail/' + index);
   };
 
   const getDishes = () => {
@@ -65,6 +66,8 @@
                       } as DisplayDish)
                   );
             }
+            console.log('lastDish');
+            lastDish.next(dishes.value[0]);
             break;
 
           case DisplayType.recommended:
@@ -86,6 +89,8 @@
                       } as DisplayDish)
                   );
             }
+            console.log('lastDish');
+            lastDish.next(dishes.value[0]);
             break;
 
           case DisplayType.plans:
@@ -155,6 +160,7 @@
       :style="{
         backgroundImage: data.image ? 'url(' + data.image + ')' : '',
       }"
+      @click="clickDish(index)"
     >
       <div class="name">
         {{ data.dish }}

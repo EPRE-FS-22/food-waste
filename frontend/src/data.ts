@@ -2,7 +2,9 @@ import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
 import type { Dish, DishInfo, UserInfoPrivate } from '../../backend/src/model';
-import { Subject } from 'rxjs';
+import { ReplaySubject, Subject } from 'rxjs';
+import type { DisplayDish } from './model';
+//import { searchWikiJs } from '../../backend/src/dishes';
 
 const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
 const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
@@ -807,3 +809,23 @@ export const logOut = async () => {
     throw e;
   }
 };
+
+export const searchWikiJs = async (searchText: string) => {
+  try {
+    if (!hasSession()) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('searchWikiJs', {
+      searchText,
+      sessionId,
+      userId: sessionUserId,
+    });
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const lastDish: ReplaySubject<DisplayDish> = new ReplaySubject();
