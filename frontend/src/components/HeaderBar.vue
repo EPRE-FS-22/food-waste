@@ -32,7 +32,7 @@
           $router.currentRoute.value.path === '/login' ||
           $router.currentRoute.value.path === '/admin'
         "
-        to="/"
+        :to="userLoggedIn ? '/user' : '/'"
         class="view-toggle"
       >
         Back

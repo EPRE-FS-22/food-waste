@@ -9,10 +9,10 @@
     resetState();
   });
 
-  checkSession();
-
   if (!isLoggingOut() && hasSession()) {
     router.push('/user');
+  } else {
+    checkSession();
   }
 </script>
 

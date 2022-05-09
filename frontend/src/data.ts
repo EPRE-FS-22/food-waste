@@ -22,7 +22,7 @@ const client = createTRPCClient<AppRouter>({
   ],
 });
 
-let loggingOut = true;
+let loggingOut = false;
 let sessionExpires =
   parseInt(localStorage.getItem('sessionExpires') ?? '') ?? 0;
 let sessionId = localStorage.getItem('session') ?? '';
