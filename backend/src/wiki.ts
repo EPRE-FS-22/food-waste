@@ -6,6 +6,6 @@ export const getWikiPage = async (page: string) => {
   return (await wiki().page(page)) as Page | undefined;
 };
 
-export const searchWiki = async (query: string) => {
-  return await wiki().search(query);
+export const searchWiki = async (query: string, limit = 15) => {
+  return await wiki().search(query, limit);
 };

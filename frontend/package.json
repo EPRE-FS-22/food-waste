@@ -28,7 +28,7 @@
     "@vue/eslint-config-prettier": "7.0.0",
     "@vue/eslint-config-typescript": "10.0.0",
     "autoprefixer": "^10.4.4",
-    "eclint": "^2.8.1",
+    "eclint": "^2.1.0",
     "eslint": "8.12.0",
     "eslint-plugin-prettier": "4.0.0",
     "eslint-plugin-vue": "8.5.0",
@@ -54,6 +54,9 @@
     "rxjs": "^7.5.5",
     "vh-check": "^2.0.5",
     "vue": "^3.2.31",
-    "vue-router": "4"
+    "vue-router": "4",
+    "vue-typeahead-bootstrap": "^2.12.0",
+    "vue3-simple-typeahead": "^1.0.5",
+    "wikijs": "^6.3.3"
   }
 }

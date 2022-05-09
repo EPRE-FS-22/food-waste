@@ -212,6 +212,8 @@
   const password = ref('');
   const newPassword = ref('');
   const name = ref('');
+  const age = ref(18);
+  const plz = ref(8000);
 
   const emailMessage = ref('');
   const passwordMessage = ref('');
@@ -479,6 +481,40 @@
         placeholder="John Doe"
         maxlength="200"
         autocomplete="name"
+        @keyup.enter="triggerAction()"
+      />
+
+      <label class="label name-label login-item" for="name"
+        >Please enter your age
+      </label>
+      <input
+        id="age"
+        v-model="age"
+        type="number"
+        class="field name login-item"
+        name="age"
+        placeholder="18"
+        maxlength="3"
+        min="18"
+        max="130"
+        autocomplete="name"
+        @keyup.enter="triggerAction()"
+      />
+
+      <label class="label name-label login-item" for="name"
+        >Please enter your PLZ
+      </label>
+      <input
+        id="plz"
+        v-model="plz"
+        type="number"
+        class="field name login-item"
+        name="plz"
+        placeholder="8000"
+        maxlength="4"
+        autocomplete="name"
+        min="1000"
+        max="9999"
         @keyup.enter="triggerAction()"
       />
     </template>
