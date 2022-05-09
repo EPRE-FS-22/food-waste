@@ -1,5 +1,10 @@
 <script setup lang="ts">
-  import { loggedIn, userLoggedIn } from '../settings';
+  import {
+    loggedIn,
+    userLoggedIn,
+    userConfirmed,
+    userConfirmedWithPreferences,
+  } from '../settings';
 </script>
 
 <template>
@@ -34,10 +39,35 @@
       </router-link>
       <router-link
         v-if="
-          $router.currentRoute.value.path === '/user' ||
-          $router.currentRoute.value.path === '/add' ||
-          $router.currentRoute.value.path === '/detail' ||
-          $router.currentRoute.value.path.startsWith('/detail/')
+          ($router.currentRoute.value.path === '/login' ||
+            $router.currentRoute.value.path === '/user' ||
+            $router.currentRoute.value.path === '/add' ||
+            $router.currentRoute.value.path === '/plans' ||
+            $router.currentRoute.value.path.startsWith('/detail/')) &&
+          userConfirmed
+        "
+        to="/preferences"
+        class="view-toggle"
+      >
+        Preferences
+      </router-link>
+      <router-link
+        v-if="
+          $router.currentRoute.value.path === '/preferences' &&
+          !userConfirmedWithPreferences
+        "
+        to="/login"
+        class="view-toggle"
+      >
+        Account
+      </router-link>
+      <router-link
+        v-if="
+          ($router.currentRoute.value.path === '/user' ||
+            $router.currentRoute.value.path === '/add' ||
+            $router.currentRoute.value.path === '/preferences' ||
+            $router.currentRoute.value.path.startsWith('/detail/')) &&
+          userConfirmedWithPreferences
         "
         to="/plans"
         class="view-toggle"
@@ -46,11 +76,11 @@
       </router-link>
       <router-link
         v-if="
-          $router.currentRoute.value.path === '/plans' ||
-          $router.currentRoute.value.path === '/add' ||
-          $router.currentRoute.value.path === '/add' ||
-          $router.currentRoute.value.path === '/detail' ||
-          $router.currentRoute.value.path.startsWith('/detail/')
+          ($router.currentRoute.value.path === '/plans' ||
+            $router.currentRoute.value.path === '/add' ||
+            $router.currentRoute.value.path === '/preferences' ||
+            $router.currentRoute.value.path.startsWith('/detail/')) &&
+          userConfirmedWithPreferences
         "
         to="/user"
         class="view-toggle"
@@ -59,8 +89,10 @@
       </router-link>
       <router-link
         v-if="
-          $router.currentRoute.value.path === '/user' ||
-          $router.currentRoute.value.path === '/plans'
+          ($router.currentRoute.value.path === '/user' ||
+            $router.currentRoute.value.path === '/plans' ||
+            $router.currentRoute.value.path === '/preferences') &&
+          userConfirmedWithPreferences
         "
         to="/add"
         class="view-toggle"
