@@ -5,3 +5,19 @@ export const base64Decode = (text: string) => {
     )
   );
 };
+
+export const getBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      if (reader.result && typeof reader.result === 'string') {
+        resolve(reader.result);
+      } else {
+        reject(new Error('File reader result was not a string.'));
+      }
+    };
+    reader.onerror = (error) => {
+      reject(error);
+    };
+  });

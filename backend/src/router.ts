@@ -568,7 +568,11 @@ export const appRouter = trpc
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
           const date = new Date(input.dateOfBirth);
-          if (date && !isNaN(date.getTime()) && date.getTime() < Date.now() - 1000 * 60 * 60 * 24 * 365 * 18) {
+          if (
+            date &&
+            !isNaN(date.getTime()) &&
+            date.getTime() < Date.now() - 1000 * 60 * 60 * 24 * 365 * 18
+          ) {
             const result = await setUserInfo(
               input.userId,
               input.code,
@@ -776,7 +780,11 @@ export const appRouter = trpc
       try {
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
-          return await searchWiki(input.searchText, input.limit, !!input.onlyCoords);
+          return await searchWiki(
+            input.searchText,
+            input.limit,
+            !!input.onlyCoords
+          );
         }
         return false;
       } catch (e: unknown) {

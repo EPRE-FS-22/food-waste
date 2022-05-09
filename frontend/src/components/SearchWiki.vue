@@ -23,51 +23,58 @@
       type: Number,
       default: 100,
     },
-    value: {
+    modelValue: {
       type: String,
       default: '',
     },
     onlyCoords: {
       type: Boolean,
-      default: true,
+      default: false,
     },
   });
 
   const emit = defineEmits<{
-    (e: 'input', value: string): void;
+    (e: 'update:modelValue', value: string): void;
   }>();
 
-  const searchText = ref(props.value);
+  const searchText = ref(props.modelValue);
   let searchResults = ref([] as string[]);
   let showResult = ref(false);
 
   let timeoutId = 0;
+  let requestOngoing = false;
+
+  let ignoreNextChange = false;
 
   const selectResult = (selectedText: string) => {
+    ignoreNextChange = true;
+    showResult.value = false;
     searchText.value = selectedText;
-    emit('input', selectedText);
+    emit('update:modelValue', selectedText);
   };
 
   watch(
-    () => props.value,
-    (previous, current) => {
-      searchText.value = props.value;
-      console.log(
-        'Watch props.selected function called with args:',
-        previous,
-        current
-      );
+    () => props.modelValue,
+    (item) => {
+      searchText.value = item;
     }
   );
 
   watch(searchText, async () => {
+    if (ignoreNextChange) {
+      ignoreNextChange = false;
+      return;
+    }
     if (searchText.value.length > 1) {
       if (timeoutId) {
         window.clearTimeout(timeoutId);
       }
+      if (requestOngoing) {
+        return;
+      }
       timeoutId = window.setTimeout(async () => {
         await listWiki();
-      }, 300);
+      }, 500);
     } else {
       searchResults.value = [];
       showResult.value = false;
@@ -76,7 +83,7 @@
 
   const listWiki = async () => {
     try {
-      const results = await searchWiki(searchText.value);
+      const results = await searchWiki(searchText.value, 5, props.onlyCoords);
       if (results) {
         searchResults.value = results;
         showResult.value = true;

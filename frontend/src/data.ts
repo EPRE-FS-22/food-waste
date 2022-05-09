@@ -526,7 +526,6 @@ export const logIn = async (
       email,
       captchaToken,
     });
-    console.log(result);
     if (result.success && result.sessionId) {
       sessionId = result.sessionId;
       isAdmin = !!result.admin;
@@ -811,7 +810,7 @@ export const logOut = async () => {
 
 export const searchWiki = async (
   searchText: string,
-  limit = 15,
+  limit = 5,
   onlyCoords = false
 ) => {
   try {

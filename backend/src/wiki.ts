@@ -6,24 +6,70 @@ export const getWikiPage = async (page: string) => {
   return (await wiki().page(page)) as Page | undefined;
 };
 
-export const searchWiki = async (query: string, limit = 15, onlyCoords = false) => {
-  if (!onlyCoords) {
-    const result = await wiki().search(query, limit);
-    return result.results;
-
-  } else {
-    console.log(onlyCoords);
-    let currentLimit = limit;
-    let results: string[] = [];
-    let coordsResults: string[] = [];
-    do {
-      const result = await wiki().search(query, limit);
-      results = result.results;
-      coordsResults = await Promise.all(results.filter(async (item) => ((await (await wiki().page(item)).coordinates()) as Coordinates | undefined)));
-      currentLimit += limit;
+export const getWikiPageCoordinates = async (pageName: string) => {
+  const page = await getWikiPage(pageName);
+  if (page) {
+    const coordinates = (await page.coordinates()) as Coordinates | undefined;
+    if (coordinates && coordinates.lat !== null && coordinates.lon !== null) {
+      return coordinates;
     }
-    while (results.length === currentLimit && coordsResults.length < limit)
-    return coordsResults.slice(0, limit);
+  }
+  return null;
+};
+
+const getGeoWikis = async (query: string, currentLimit = 5) => {
+  const result = await wiki().prefixSearch(query, currentLimit);
+  if (!result) {
+    return null;
   }
 
+  const results = result.results;
+  const coordsResults = (
+    await Promise.all(
+      results.map(async (item) => ({
+        coords: await getWikiPageCoordinates(item),
+        name: item,
+      }))
+    )
+  )
+    .filter((item) => item.coords)
+    .map((item) => item.name);
+
+  return { results, coordsResults };
+};
+
+const recurseGeoWikis = async (
+  query: string,
+  limit = 5,
+  currentLimit = 5,
+  runs = 3
+): Promise<string[]> => {
+  const result = await getGeoWikis(query, currentLimit);
+  if (!result) {
+    return [];
+  }
+  if (
+    runs > 1 &&
+    result.results.length === currentLimit &&
+    result.coordsResults.length < limit
+  ) {
+    return await recurseGeoWikis(query, limit, currentLimit + limit, runs - 1);
+  }
+  return result.coordsResults;
+};
+
+export const searchWiki = async (
+  query: string,
+  limit = 5,
+  onlyCoords = false
+) => {
+  if (!onlyCoords) {
+    const result = await wiki().prefixSearch(query, limit);
+    if (!result) {
+      return [];
+    }
+    return result.results;
+  } else {
+    return await recurseGeoWikis(query, limit, limit, 2);
+  }
 };

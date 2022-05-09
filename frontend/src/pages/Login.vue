@@ -120,7 +120,7 @@
     try {
       message.value = '';
       if (!newPassword.value && !name.value) {
-        message.value = 'New password and name cannot both be empty';
+        message.value = 'None of the fields can be empty';
         return;
       }
       const result = await set(
@@ -181,7 +181,7 @@
         fail = true;
       }
       if (!newPassword.value && !name.value) {
-        message.value = 'New password and name cannot both be empty';
+        message.value = 'New password cannot be empty';
         fail = true;
       }
       if (fail) {
@@ -214,7 +214,7 @@
   const newPassword = ref('');
   const name = ref('');
   const dateOfBirth = ref(null as Date | null);
-  const idImage = ref('');
+  const idImage = ref(null as FileList | null);
   const city = ref('');
   const location = ref('');
 
@@ -234,7 +234,7 @@
     try {
       let fail = false;
       if (!email.value || !email.value.match(EMAIL_REGEX)) {
-        emailMessage.value = 'E-Mail needs to be a valid student address';
+        emailMessage.value = 'E-Mail needs to be a valid address';
         fail = true;
       }
       if (showCaptcha.value && captchaSitekey && !captchaToken) {
@@ -288,7 +288,7 @@
       }
       if (email.value && !email.value.match(EMAIL_REGEX)) {
         emailMessage.value =
-          'E-Mail needs to either be a valid student address or empty';
+          'E-Mail needs to either be a valid address or empty';
         fail = true;
       }
       if (showCaptcha.value && captchaSitekey && !captchaToken) {
@@ -371,6 +371,8 @@
   const captchaExpired = () => {
     captchaToken = '';
   };
+
+  const fileInput = ref(null as HTMLInputElement | null);
 </script>
 
 <template>
@@ -386,7 +388,7 @@
       "
     >
       <label class="label email-label login-item" for="email"
-        >Please enter your student E-Mail address{{
+        >Please enter your E-Mail address{{
           emailMessage ? ': ' + emailMessage : ''
         }}<template v-if="type === LoginType.emailLogIn">
           <br />
@@ -513,11 +515,13 @@
       </label>
       <input
         id="id-image"
-        v-model="idImage"
-        type="type"
+        ref="fileInput"
         class="field id-image login-item"
+        type="file"
         name="id-image"
         accept="image/jpeg"
+        capture="user"
+        @change="idImage = fileInput?.files ?? null"
         @keyup.enter="triggerAction()"
       />
     </template>
