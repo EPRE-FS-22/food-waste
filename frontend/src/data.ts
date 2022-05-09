@@ -4,7 +4,6 @@ import { createTRPCClient } from '@trpc/client';
 import type { Dish, DishInfo, UserInfoPrivate } from '../../backend/src/model';
 import { ReplaySubject, Subject } from 'rxjs';
 import type { DisplayDish } from './model';
-//import { searchWikiJs } from '../../backend/src/dishes';
 
 const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
 const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
@@ -614,7 +613,7 @@ export const verify = async (userId: string, code: string) => {
 export const set = async (
   newPassword: string,
   name: string,
-  age: number,
+  dateOfBirth: Date,
   locationCity: string,
   exactLocation: string,
   idBase64: string
@@ -634,7 +633,7 @@ export const set = async (
       userId: sessionUserId,
       password: newPassword,
       name,
-      age,
+      dateOfBirth: dateOfBirth.getTime(),
       locationCity,
       exactLocation,
       code: setCode,
@@ -810,16 +809,22 @@ export const logOut = async () => {
   }
 };
 
-export const searchWikiJs = async (searchText: string) => {
+export const searchWiki = async (
+  searchText: string,
+  limit = 15,
+  onlyCoords = false
+) => {
   try {
     if (!hasSession()) {
       authFailure.next();
       return false;
     }
-    const result = await client.mutation('searchWikiJs', {
+    const result = await client.mutation('searchWiki', {
       searchText,
       sessionId,
       userId: sessionUserId,
+      limit,
+      onlyCoords,
     });
     return result;
   } catch (e: unknown) {

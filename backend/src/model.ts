@@ -10,7 +10,7 @@ export interface DishPlan extends DishBase {
   customId: string;
 }
 
-export interface Dish extends DishPlan, UserInfo {
+export interface Dish extends DishPlan, UserInfoDish {
   date: Date;
   slots: number;
   filled: number;
@@ -92,9 +92,12 @@ export interface SubSetting extends BaseSetting {
 
 export interface UserInfo {
   name?: string;
-  age?: number;
   locationCity?: string;
   locationCityCoords?: [number, number];
+}
+
+export interface UserInfoDish extends UserInfo {
+  age?: number;
 }
 
 export interface UserInfoBasePrivate extends UserInfo {
@@ -102,6 +105,7 @@ export interface UserInfoBasePrivate extends UserInfo {
 }
 
 export interface UserInfoPrivate extends UserInfoBasePrivate {
+  dateOfBirth?: Date;
   infosSet: boolean;
   identityConfirmed: boolean;
   preferencesSet: boolean;

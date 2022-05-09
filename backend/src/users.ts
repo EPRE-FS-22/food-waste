@@ -114,7 +114,7 @@ export const setUserInfo = async (
   code: string,
   newPassword: string,
   name: string,
-  age: number,
+  dateOfBirth: Date,
   locationCity: string,
   exactLocation: string,
   idImageBase64: string
@@ -122,7 +122,7 @@ export const setUserInfo = async (
   if (
     !newPassword ||
     !name ||
-    !age ||
+    !dateOfBirth ||
     !locationCity ||
     !exactLocation ||
     !idImageBase64
@@ -175,7 +175,7 @@ export const setUserInfo = async (
         $set: {
           hash: passwordHashed,
           name,
-          age,
+          dateOfBirth,
           locationCity,
           exactLocation,
           identityConfirmed: true,
@@ -189,7 +189,7 @@ export const setUserInfo = async (
     const [changesString, changesNumber] = listChanges({
       password: passwordHashed,
       name,
-      age,
+      'date of birth': dateOfBirth,
       'approximate location': locationCityCoords,
       'exact address': exactLocation,
       identification: identityConfirmed,
@@ -614,7 +614,7 @@ export const getUserInfo = async (
   if (user) {
     return {
       name: user.name ?? user.email,
-      age: user.age,
+      dateOfBirth: user.dateOfBirth,
       locationCity: user.locationCity,
       locationCityCoords: user.locationCityCoords,
       exactLocation: user.exactLocation,

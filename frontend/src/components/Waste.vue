@@ -35,10 +35,8 @@
     );
   };
 
-  const clickDish = (index) => {
+  const clickDish = (index: number) => {
     lastDish.next(dishes.value[index]);
-    console.log(index);
-    console.log(dishes.value[index]);
     router.push('/detail/' + index);
   };
 
@@ -66,8 +64,6 @@
                       } as DisplayDish)
                   );
             }
-            console.log('lastDish');
-            lastDish.next(dishes.value[0]);
             break;
 
           case DisplayType.recommended:
@@ -89,8 +85,6 @@
                       } as DisplayDish)
                   );
             }
-            console.log('lastDish');
-            lastDish.next(dishes.value[0]);
             break;
 
           case DisplayType.plans:

@@ -25,7 +25,6 @@
   const currentDish = ref(null as null | DisplayDish);
 
   lastDish.subscribe((item) => {
-    console.log(item);
     currentDish.value = item;
   });
 
@@ -33,7 +32,6 @@
     'I bought too much flour, so I opened this offer. I expect 2 person who could eat with me.';
 
   const personCount = 2;
-  console.log(route.params.id);
 
   const acceptOffer = () => {
     addDishRequest(route.params.id.toString());

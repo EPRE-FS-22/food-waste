@@ -31,7 +31,6 @@ import {
   unacceptDishEvent,
 } from './dishes.js';
 import { searchWiki } from './wiki.js';
-import type { Result } from 'wikijs';
 
 let adminSessions: {
   [key: string]: { expirationDate: Date; ip: string; adminId: string };
@@ -559,7 +558,7 @@ export const appRouter = trpc
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20),
       name: z.string().nonempty().max(200),
-      age: z.number().nonnegative().min(18).max(200),
+      dateOfBirth: z.number().nonnegative(),
       locationCity: z.string().nonempty().max(100),
       exactLocation: z.string().nonempty().max(1000),
       idBase64: z.string().nonempty().max(1000000),
@@ -568,20 +567,23 @@ export const appRouter = trpc
       try {
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
-          const result = await setUserInfo(
-            input.userId,
-            input.code,
-            input.password,
-            input.name,
-            input.age,
-            input.locationCity,
-            input.exactLocation,
-            input.idBase64
-          );
+          const date = new Date(input.dateOfBirth);
+          if (date && !isNaN(date.getTime()) && date.getTime() < Date.now() - 1000 * 60 * 60 * 24 * 365 * 18) {
+            const result = await setUserInfo(
+              input.userId,
+              input.code,
+              input.password,
+              input.name,
+              date,
+              input.locationCity,
+              input.exactLocation,
+              input.idBase64
+            );
 
-          if (result) {
-            updateSessionData(input.sessionId, true, true);
-            return await getUserInfo(input.userId);
+            if (result) {
+              updateSessionData(input.sessionId, true, true);
+              return await getUserInfo(input.userId);
+            }
           }
         }
         return false;
@@ -762,20 +764,21 @@ export const appRouter = trpc
       }
     },
   })
-  .mutation('searchWikiJs', {
+  .mutation('searchWiki', {
     input: z.object({
-      searchText: z.string().nonempty().max(20),
+      searchText: z.string().nonempty().max(100),
       sessionId: z.string().length(20),
       userId: z.string().length(20),
+      limit: z.number().nonnegative().min(1).max(50).default(15),
+      onlyCoords: z.boolean().optional(),
     }),
     async resolve({ input, ctx }) {
       try {
         const ip = getIp(ctx as Context);
-        if (getConfirmedSession(input.sessionId, ip, input.userId)) {
-          const searchResult = await searchWiki(input.searchText);
-          return searchResult;
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await searchWiki(input.searchText, input.limit, !!input.onlyCoords);
         }
-        return [] as Result[];
+        return false;
       } catch (e: unknown) {
         throw internalServerError(e);
       }

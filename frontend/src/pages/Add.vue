@@ -78,6 +78,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    overflow-y: auto;
     margin-bottom: 100px;
   }
 

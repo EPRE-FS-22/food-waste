@@ -25,6 +25,7 @@
     userConfirmedWithPreferences,
     userLoggedIn,
   } from '../settings';
+  import SearchWiki from '../components/SearchWiki.vue';
 
   enum LoginType {
     logIn,
@@ -125,7 +126,7 @@
       const result = await set(
         newPassword.value,
         name.value,
-        18,
+        new Date(Date.now() - 1000 * 60 * 60 * 24 * 365 * 20),
         'Baar',
         'Teststrasse 1, Zug',
         'a'
@@ -212,12 +213,18 @@
   const password = ref('');
   const newPassword = ref('');
   const name = ref('');
-  const age = ref(18);
-  const plz = ref(8000);
+  const dateOfBirth = ref(null as Date | null);
+  const idImage = ref('');
+  const city = ref('');
+  const location = ref('');
 
   const emailMessage = ref('');
   const passwordMessage = ref('');
   const captchaMessage = ref('');
+  const dateOfBirthMessage = ref('');
+  const idImageMessage = ref('');
+  const cityMessage = ref('');
+  const locationMessage = ref('');
 
   const showCaptcha = ref(false);
 
@@ -452,7 +459,7 @@
         type === LoginType.change
       "
     >
-      <label class="label name-label login-item" for="name"
+      <label class="label new-password-label login-item" for="new-password"
         >Please{{ type === LoginType.set ? '' : ' (optionally)' }} enter a new
         password
       </label>
@@ -484,37 +491,71 @@
         @keyup.enter="triggerAction()"
       />
 
-      <label class="label name-label login-item" for="name"
-        >Please enter your age
+      <label class="label date-of-birth-label login-item" for="date-of-birth"
+        >Please enter your date of birth{{
+          dateOfBirthMessage ? ': ' + dateOfBirthMessage : ''
+        }}
       </label>
       <input
-        id="age"
-        v-model="age"
-        type="number"
-        class="field name login-item"
-        name="age"
-        placeholder="18"
-        maxlength="3"
-        min="18"
-        max="130"
-        autocomplete="name"
+        id="date-of-birth"
+        v-model="dateOfBirth"
+        type="date"
+        class="field date-of-birth login-item"
+        name="date-of-birth"
+        placeholder="20.01.2000"
         @keyup.enter="triggerAction()"
       />
 
-      <label class="label name-label login-item" for="name"
-        >Please enter your PLZ
+      <label class="label id-image-label login-item" for="id-image"
+        >Please upload the front of your swiss identification card{{
+          idImageMessage ? ': ' + idImageMessage : ''
+        }}
       </label>
       <input
-        id="plz"
-        v-model="plz"
-        type="number"
-        class="field name login-item"
-        name="plz"
-        placeholder="8000"
-        maxlength="4"
-        autocomplete="name"
-        min="1000"
-        max="9999"
+        id="id-image"
+        v-model="idImage"
+        type="type"
+        class="field id-image login-item"
+        name="id-image"
+        accept="image/jpeg"
+        @keyup.enter="triggerAction()"
+      />
+    </template>
+    <template
+      v-if="
+        type === LoginType.set ||
+        type === LoginType.setAgain ||
+        type === LoginType.change
+      "
+    >
+      <label class="label city-label login-item" for="city"
+        >Please enter the city you live in{{
+          cityMessage ? ': ' + cityMessage : ''
+        }}
+      </label>
+      <SearchWiki
+        id="city"
+        v-model="city"
+        :only-coords="true"
+        name="city"
+        placeholder="Zug"
+        class="field city login-item"
+        :maxlength="200"
+        @keyup.enter="triggerAction()"
+      ></SearchWiki>
+      <label class="label location-label login-item" for="location"
+        >Please enter your exact address{{
+          locationMessage ? ': ' + locationMessage : ''
+        }}
+      </label>
+      <input
+        id="location"
+        v-model="location"
+        type="text"
+        class="field location login-item"
+        name="location"
+        placeholder="Teststrasse 1, 6300 Zug"
+        maxlength="1000"
         @keyup.enter="triggerAction()"
       />
     </template>
@@ -579,7 +620,8 @@
   .login {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
     align-items: center;
   }
 

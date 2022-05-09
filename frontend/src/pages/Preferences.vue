@@ -30,9 +30,10 @@
 <style lang="scss">
   .preferences {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
+    overflow-y: auto;
     font-size: 2rem;
   }
 </style>

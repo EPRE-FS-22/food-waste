@@ -1,32 +1,112 @@
 <script setup lang="ts">
-  import { ref, watch } from 'vue';
-  import { searchWikiJs } from '../data';
+  import { onUnmounted, ref, watch } from 'vue';
+  import { searchWiki } from '../data';
 
-  const searchText = ref('');
-  let searchResults = ref([]);
+  const props = defineProps({
+    id: {
+      type: String,
+      default: '',
+    },
+    name: {
+      type: String,
+      default: '',
+    },
+    class: {
+      type: String,
+      default: '',
+    },
+    placeholder: {
+      type: String,
+      default: '',
+    },
+    maxlength: {
+      type: Number,
+      default: 100,
+    },
+    value: {
+      type: String,
+      default: '',
+    },
+    onlyCoords: {
+      type: Boolean,
+      default: true,
+    },
+  });
+
+  const emit = defineEmits<{
+    (e: 'input', value: string): void;
+  }>();
+
+  const searchText = ref(props.value);
+  let searchResults = ref([] as string[]);
   let showResult = ref(false);
 
+  let timeoutId = 0;
+
   const selectResult = (selectedText: string) => {
-    console.log(selectedText);
+    searchText.value = selectedText;
+    emit('input', selectedText);
   };
+
+  watch(
+    () => props.value,
+    (previous, current) => {
+      searchText.value = props.value;
+      console.log(
+        'Watch props.selected function called with args:',
+        previous,
+        current
+      );
+    }
+  );
 
   watch(searchText, async () => {
     if (searchText.value.length > 1) {
-      showResult.value = true;
-      const resultsSearch = await searchWikiJs(searchText.value);
-      searchResults.value = resultsSearch.results;
-      console.log(searchResults);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      timeoutId = window.setTimeout(async () => {
+        await listWiki();
+      }, 300);
     } else {
       searchResults.value = [];
       showResult.value = false;
     }
-    //wiki().search(searchText.value, 10).then(data => console.log(data.results.length));
+  });
+
+  const listWiki = async () => {
+    try {
+      const results = await searchWiki(searchText.value);
+      if (results) {
+        searchResults.value = results;
+        showResult.value = true;
+      } else {
+        searchResults.value = [];
+        showResult.value = false;
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  onUnmounted(() => {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
+    }
   });
 </script>
 
 <template>
   <div class="searchWiki">
-    <input v-model="searchText" />
+    <input
+      :id="id"
+      v-model="searchText"
+      :name="name"
+      :class="$props.class"
+      :placeholder="placeholder"
+      :maxlength="maxlength"
+    />
     <div v-if="showResult" class="resultSection">
       <div
         v-for="(searchResult, index) in searchResults"

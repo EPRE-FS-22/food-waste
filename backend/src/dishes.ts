@@ -150,7 +150,7 @@ export const getAvailableDishes = async (
     const userInfo = await getUserInfo(userId);
     if (userInfo && !locationCityCoords) {
       locationCityCoords = userInfo.locationCityCoords;
-      agePreference = userInfo.age;
+      agePreference = Math.floor(((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) + (dateStart ? (dateStart.getTime() - Date.now()) : 0)) / (1000 * 60 * 60 * 24 * 365));
     }
   }
 
@@ -244,7 +244,7 @@ export const getRecommendedDishes = async (
     const userInfo = await getUserInfo(userId);
     if (userInfo && !locationCityCoords) {
       locationCityCoords = userInfo.locationCityCoords;
-      agePreference = userInfo.age;
+      agePreference = Math.floor(((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) + (dateStart ? (dateStart.getTime() - Date.now()) : 0)) / (1000 * 60 * 60 * 24 * 365));
     }
   }
 
@@ -541,7 +541,7 @@ export const addDish = async (
         filled: 0,
         date: date,
         createdDate: new Date(),
-        age: userInfo.age,
+        age: Math.floor(((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) + (date.getTime() - Date.now())) / (1000 * 60 * 60 * 24 * 365)),
         locationCity: locationCityCoords
           ? locationCity ?? userInfo.locationCity
           : undefined,
