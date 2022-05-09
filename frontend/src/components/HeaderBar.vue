@@ -29,7 +29,8 @@
       </router-link>
       <router-link
         v-if="
-          $router.currentRoute.value.path === '/login' ||
+          ($router.currentRoute.value.path === '/login' &&
+            userConfirmedWithPreferences) ||
           $router.currentRoute.value.path === '/admin'
         "
         :to="userLoggedIn ? '/user' : '/'"
