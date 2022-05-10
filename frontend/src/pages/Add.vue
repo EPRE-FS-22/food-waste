@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { useRouter } from 'vue-router';
   import {
+    addDish,
     authFailure,
     checkSession,
     hasConfirmedUserSession,
@@ -9,6 +10,7 @@
   } from '../data';
   import SearchWiki from '../components/SearchWiki.vue';
   import { ref } from 'vue';
+  import moment from 'moment';
   import { resetState } from '../settings';
   const router = useRouter();
 
@@ -27,11 +29,54 @@
     checkSession();
   }
 
+  const userInputEvent = ref('');
   const personNr = ref(1);
   const description = ref('');
+  const dateOfEvent = ref(null as Date | null);
 
-  const addInvite = () => {
-    console.log('addInvite');
+  const addInvite = async () => {
+    let date: Date | null = null;
+    console.log(personNr.value);
+    if (dateOfEvent.value) {
+      date = moment(dateOfEvent.value).toDate();
+    }
+    if (
+      !(
+        userInputEvent.value === '' ||
+        personNr.value === null ||
+        description.value === '' ||
+        !date ||
+        isNaN(date.getTime())
+      )
+    ) {
+      try {
+        const result = await addDish(
+          userInputEvent.value,
+          personNr.value,
+          date,
+          description.value
+        );
+        console.log(result);
+        router.push('/user');
+      } catch (e: unknown) {
+        console.error(e);
+        throw e;
+      }
+    } else {
+      if (!date || isNaN(date.getTime())) {
+        console.log('date error');
+      }
+      if (userInputEvent.value === '') {
+        console.log('userinput');
+      }
+      if (description.value === '') {
+        console.log('description');
+      }
+      if (personNr.value === null) {
+        console.log('personNr');
+      }
+      console.log('error');
+    }
   };
 </script>
 
@@ -40,7 +85,7 @@
     <label class="label name-label add-item" for="name"
       >Search your Dish
     </label>
-    <SearchWiki></SearchWiki>
+    <SearchWiki v-model="userInputEvent"></SearchWiki>
     <label class="label name-label add-item" for="name"
       >How many Persons?
     </label>
@@ -54,6 +99,18 @@
       maxlength="2"
       min="1"
       max="20"
+    />
+
+    <label class="label date-of-birth-label" for="date-of-event"
+      >Please enter the Date
+    </label>
+    <input
+      id="date-of-event"
+      v-model="dateOfEvent"
+      type="date"
+      class="field date-of-event"
+      name="date-of-event"
+      placeholder="20.06.2022"
     />
 
     <label class="label name-label add-item" for="name"
