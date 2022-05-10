@@ -61,17 +61,12 @@ export const hasSetCode = () => {
 };
 
 export const checkHasSetCode = async () => {
-  (async () => {
-    try {
-      if (!hasSetCode()) {
-        await logOut();
-        authFailure.next();
-      }
-    } catch (e: unknown) {
-      console.error(e);
-      throw e;
-    }
-  })();
+  if (!hasSetCode()) {
+    await logOut();
+    authFailure.next();
+    return false;
+  }
+  return true;
 };
 
 export const clearSetCode = () => {
@@ -451,35 +446,41 @@ export const unacceptDishRequest = async (eventId: string) => {
   }
 };
 
+export const checkSessionAsync = async (admin = false) => {
+  if (!hasSession(admin)) {
+    authFailure.next();
+    return false;
+  }
+  const data = await client.mutation('checkSession', {
+    sessionId,
+    userId: sessionUserId,
+    admin: admin || isAdmin || undefined,
+  });
+  if (!data) {
+    sessionId = '';
+    sessionUserId = '';
+    isAdmin = false;
+    sessionExpires = 0;
+    identityConfirmed = false;
+    infosSet = false;
+    preferencesSet = false;
+    localStorage.setItem('session', '');
+    localStorage.setItem('sessionUserId', '');
+    localStorage.setItem('sessionExpires', '');
+    localStorage.setItem('admin', '');
+    localStorage.setItem('identityConfirmed', '');
+    localStorage.setItem('infosSet', '');
+    localStorage.setItem('preferencesSet', '');
+    authFailure.next();
+    return false;
+  }
+  return true;
+};
+
 export const checkSession = (admin = false) => {
   (async () => {
     try {
-      if (!hasSession(admin)) {
-        authFailure.next();
-        return;
-      }
-      const data = await client.mutation('checkSession', {
-        sessionId,
-        userId: sessionUserId,
-        admin: admin || isAdmin || undefined,
-      });
-      if (!data) {
-        sessionId = '';
-        sessionUserId = '';
-        isAdmin = false;
-        sessionExpires = 0;
-        identityConfirmed = false;
-        infosSet = false;
-        preferencesSet = false;
-        localStorage.setItem('session', '');
-        localStorage.setItem('sessionUserId', '');
-        localStorage.setItem('sessionExpires', '');
-        localStorage.setItem('admin', '');
-        localStorage.setItem('identityConfirmed', '');
-        localStorage.setItem('infosSet', '');
-        localStorage.setItem('preferencesSet', '');
-        authFailure.next();
-      }
+      await checkSessionAsync(admin);
     } catch (e: unknown) {
       console.error(e);
       throw e;

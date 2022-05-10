@@ -561,7 +561,7 @@ export const appRouter = trpc
       dateOfBirth: z.number().nonnegative(),
       locationCity: z.string().nonempty().max(100),
       exactLocation: z.string().nonempty().max(1000),
-      idBase64: z.string().nonempty().max(1000000),
+      idBase64: z.string().nonempty().max(10000000),
     }),
     async resolve({ input, ctx }) {
       try {

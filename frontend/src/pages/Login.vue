@@ -4,9 +4,10 @@
     authFailure,
     change,
     checkHasSetCode,
-    checkSession,
+    checkSessionAsync,
     clearSetCode,
     emailLogIn,
+    getUserInfo,
     logIn,
     register,
     reset,
@@ -17,7 +18,7 @@
   import moment from 'moment';
   import Captcha from '../components/Captcha.vue';
   import { EMAIL_REGEX } from '../../../backend/src/constants';
-  import { base64Decode } from '../helpers';
+  import { base64Decode, getBase64 } from '../helpers';
   import {
     loggedIn,
     resetState,
@@ -54,17 +55,42 @@
       : LoginType.logIn
   );
 
-  if (type.value === LoginType.set) {
-    checkHasSetCode();
-  }
-
   onUnmounted(() => {
     if (type.value === LoginType.setAgain) {
       clearSetCode();
     }
   });
 
-  checkSession();
+  const setFieldsWithPrevious = async (correctType: LoginType) => {
+    if (type.value === correctType) {
+      const userInfo = await getUserInfo();
+      if (userInfo && type.value === correctType) {
+        if (!city.value && userInfo.locationCity) {
+          previousCity.value = userInfo.locationCity;
+          city.value = userInfo.locationCity;
+        }
+        if (!location.value && userInfo.exactLocation) {
+          previousLocation.value = userInfo.exactLocation;
+          location.value = userInfo.exactLocation;
+        }
+      }
+    }
+  };
+
+  (async () => {
+    try {
+      if (
+        (await checkSessionAsync()) &&
+        (type.value !== LoginType.set || (await checkHasSetCode()))
+      ) {
+        await setFieldsWithPrevious(LoginType.change);
+      }
+    } catch (e: unknown) {
+      console.error(e);
+      throw e;
+    }
+  })();
+
   authFailure.subscribe(() => {
     resetState();
     type.value = LoginType.logIn;
@@ -102,6 +128,7 @@
             type.value = LoginType.set;
           } else {
             type.value = LoginType.setAgain;
+            await setFieldsWithPrevious(LoginType.setAgain);
           }
         }
       } else {
@@ -119,17 +146,74 @@
   const setAction = async () => {
     try {
       message.value = '';
-      if (!newPassword.value && !name.value) {
-        message.value = 'None of the fields can be empty';
+      newPasswordMessage.value = '';
+      dateOfBirthMessage.value = '';
+      idImageMessage.value = '';
+      cityMessage.value = '';
+      locationMessage.value = '';
+      let fail = false;
+      if (!newPassword.value) {
+        newPasswordMessage.value = 'The password cannot be empty';
+        fail = true;
+      }
+      let date: Date | null = null;
+      if (!dateOfBirth.value) {
+        dateOfBirthMessage.value = 'The date of birth cannot be empty';
+        fail = true;
+      } else {
+        if (dateOfBirth.value) {
+          date = moment(dateOfBirth.value).toDate();
+          if (!date || isNaN(date.getTime())) {
+            dateOfBirthMessage.value = 'Please enter a valid date';
+            fail = true;
+          } else if (
+            date.getTime() >=
+            Date.now() - 1000 * 60 * 60 * 24 * 365 * 18
+          ) {
+            dateOfBirthMessage.value = 'You need to be 18 or older';
+            fail = true;
+          }
+        }
+      }
+      let idImageBase64 = '';
+      if (!idImage.value || !idImage.value[0]) {
+        idImageMessage.value = 'Please upload an image';
+        fail = true;
+      } else {
+        const file = idImage.value[0];
+        if (file.size > 1024 * 1024 * 5) {
+          idImageMessage.value = 'Image file size is too big';
+          fail = true;
+        } else {
+          idImageBase64 = await getBase64(file);
+          if (!idImageBase64) {
+            idImageMessage.value = 'This image is not sendable';
+            fail = true;
+          } else if (idImageBase64.length > 10000000) {
+            idImageMessage.value = 'This image is too big after conversion';
+            fail = true;
+          }
+        }
+      }
+      if (!city.value) {
+        cityMessage.value =
+          'Please enter your city, find a city for which a dropdown appears and pick one of the options, it may take some time for the dropdown to appear';
+        fail = true;
+      }
+      if (!location.value) {
+        locationMessage.value = 'Please enter your address';
+        fail = true;
+      }
+      if (fail || !date || !idImageBase64) {
         return;
       }
       const result = await set(
         newPassword.value,
         name.value,
-        new Date(Date.now() - 1000 * 60 * 60 * 24 * 365 * 20),
-        'Baar',
-        'Teststrasse 1, Zug',
-        'a'
+        date,
+        city.value,
+        location.value,
+        idImageBase64
       );
       resetState();
       if (result) {
@@ -150,11 +234,18 @@
   const resetAction = async () => {
     try {
       message.value = '';
-      if (!newPassword.value) {
-        message.value = 'New password cannot be empty';
+      if (
+        !newPassword.value &&
+        (!city.value || city.value === previousCity.value) &&
+        (!location.value || location.value === previousLocation.value)
+      ) {
+        message.value =
+          'New password, city and address cannot all be empty or the same as before';
         return;
       }
-      const result = await reset(newPassword.value);
+      previousCity.value = city.value;
+      previousLocation.value = location.value;
+      const result = await reset(newPassword.value, city.value, location.value);
       resetState();
       if (result) {
         if (userConfirmedWithPreferences.value) {
@@ -180,14 +271,26 @@
         passwordMessage.value = 'Password cannot be empty';
         fail = true;
       }
-      if (!newPassword.value && !name.value) {
-        message.value = 'New password cannot be empty';
+      if (
+        !newPassword.value &&
+        (!city.value || city.value === previousCity.value) &&
+        (!location.value || location.value === previousLocation.value)
+      ) {
+        message.value =
+          'New password, city and address cannot all be empty or the same as before';
         fail = true;
       }
       if (fail) {
         return;
       }
-      const result = await change(password.value, newPassword.value);
+      previousCity.value = city.value;
+      previousLocation.value = location.value;
+      const result = await change(
+        password.value,
+        newPassword.value,
+        city.value,
+        location.value
+      );
       resetState();
       if (result) {
         if (userConfirmedWithPreferences.value) {
@@ -215,11 +318,14 @@
   const name = ref('');
   const dateOfBirth = ref(null as Date | null);
   const idImage = ref(null as FileList | null);
+  const previousCity = ref('');
   const city = ref('');
+  const previousLocation = ref('');
   const location = ref('');
 
   const emailMessage = ref('');
   const passwordMessage = ref('');
+  const newPasswordMessage = ref('');
   const captchaMessage = ref('');
   const dateOfBirthMessage = ref('');
   const idImageMessage = ref('');
@@ -479,7 +585,9 @@
     </template>
     <template v-if="type === LoginType.set">
       <label class="label name-label login-item" for="name"
-        >Please enter your name
+        >Please enter your name{{
+          newPasswordMessage ? ': ' + newPasswordMessage : ''
+        }}
       </label>
       <input
         id="name"
@@ -545,6 +653,7 @@
         placeholder="Zug"
         class="field city login-item"
         :maxlength="200"
+        :previous-value="previousCity"
         @keyup.enter="triggerAction()"
       ></SearchWiki>
       <label class="label location-label login-item" for="location"
@@ -626,7 +735,6 @@
     flex-direction: column;
     align-items: center;
     overflow-y: auto;
-    align-items: center;
   }
 
   .login-item {

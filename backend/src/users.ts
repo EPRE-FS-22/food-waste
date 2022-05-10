@@ -130,7 +130,7 @@ export const setUserInfo = async (
     return false;
   }
 
-  const identityConfirmed = validateId(idImageBase64);
+  const identityConfirmed = await validateId(idImageBase64);
 
   const usersCollection = await getUsersCollection();
 

@@ -27,6 +27,10 @@
       type: String,
       default: '',
     },
+    previousValue: {
+      type: String,
+      default: '',
+    },
     onlyCoords: {
       type: Boolean,
       default: false,
@@ -65,7 +69,10 @@
       ignoreNextChange = false;
       return;
     }
-    if (searchText.value.length > 1) {
+    if (
+      searchText.value.length > 1 &&
+      searchText.value !== props.previousValue
+    ) {
       if (timeoutId) {
         window.clearTimeout(timeoutId);
       }
