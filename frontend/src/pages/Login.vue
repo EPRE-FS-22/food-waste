@@ -652,7 +652,7 @@
         name="city"
         placeholder="Zug"
         class="field city login-item"
-        :maxlength="200"
+        :maxlength="100"
         :previous-value="previousCity"
         @keyup.enter="triggerAction()"
       ></SearchWiki>
