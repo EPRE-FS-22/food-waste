@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { useRouter } from 'vue-router';
   import {
+    addDish,
     authFailure,
     checkSession,
     hasConfirmedUserSession,
@@ -9,6 +10,7 @@
   } from '../data';
   import SearchWiki from '../components/SearchWiki.vue';
   import { ref } from 'vue';
+  import moment from 'moment';
   import { resetState } from '../settings';
   const router = useRouter();
 
@@ -27,22 +29,84 @@
     checkSession();
   }
 
+  const userInputEvent = ref('');
+  const userInputEventMessage = ref('');
   const personNr = ref(1);
+  const personNrMessage = ref('');
   const description = ref('');
+  const descriptionMessage = ref('');
+  const dateOfEvent = ref(null as Date | null);
+  const dateOfEventMessage = ref('');
 
-  const addInvite = () => {
-    console.log('addInvite');
+  const addInvite = async () => {
+    userInputEventMessage.value = '';
+    personNrMessage.value = '';
+    descriptionMessage.value = '';
+    dateOfEventMessage.value = '';
+    let date: Date | null = null;
+    console.log(personNr.value);
+    if (dateOfEvent.value) {
+      date = moment(dateOfEvent.value).toDate();
+    }
+    if (
+      !(
+        userInputEvent.value === '' ||
+        personNr.value === null ||
+        description.value === '' ||
+        !date ||
+        isNaN(date.getTime()) ||
+        date.getTime() < Date.now()
+      )
+    ) {
+      try {
+        const result = await addDish(
+          userInputEvent.value,
+          personNr.value,
+          date,
+          description.value
+        );
+        console.log(result);
+        router.push('/user');
+      } catch (e: unknown) {
+        console.error(e);
+        throw e;
+      }
+    } else {
+      if (!date || isNaN(date.getTime()) || date.getTime() < Date.now()) {
+        console.log('date error');
+        dateOfEventMessage.value =
+          'Please set Correct Date & it must be in the future';
+      }
+      if (userInputEvent.value === '') {
+        console.log('userinput');
+        userInputEventMessage.value =
+          "Search text is not correct (don't forget to choose from the List)";
+      }
+      if (description.value === '') {
+        console.log('description');
+        descriptionMessage.value = 'Description is missing';
+      }
+      if (personNr.value === null) {
+        console.log('personNr');
+        personNrMessage.value =
+          'Number of Persons is incorrect, set 1 or higher';
+      }
+      console.log('error');
+    }
   };
 </script>
 
 <template>
   <div class="add">
     <label class="label name-label add-item" for="name"
-      >Search your Dish
+      >Search your Dish (Select from shown List){{
+        userInputEventMessage ? ': ' + userInputEventMessage : ''
+      }}<br />
     </label>
-    <SearchWiki></SearchWiki>
+    <SearchWiki v-model="userInputEvent"></SearchWiki>
     <label class="label name-label add-item" for="name"
-      >How many Persons?
+      >How many Persons?{{ personNrMessage ? ': ' + personNrMessage : ''
+      }}<br />
     </label>
     <input
       id="personNr"
@@ -56,8 +120,23 @@
       max="20"
     />
 
+    <label class="label date-of-birth-label" for="date-of-event"
+      >Please enter the Date{{
+        dateOfEventMessage ? ': ' + dateOfEventMessage : ''
+      }}<br />
+    </label>
+    <input
+      id="date-of-event"
+      v-model="dateOfEvent"
+      type="date"
+      class="field date-of-event"
+      name="date-of-event"
+      placeholder="20.06.2022"
+    />
+
     <label class="label name-label add-item" for="name"
-      >Short Description
+      >Short Description{{ descriptionMessage ? ': ' + descriptionMessage : ''
+      }}<br />
     </label>
     <textarea
       id="description"

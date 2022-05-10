@@ -436,6 +436,7 @@ export const appRouter = trpc
           if (!sessionData.preferencesSet && dishPreferences.length > 0) {
             updateSessionData(input.sessionId, true, true, true);
           }
+          return dishPreferences;
         }
         return false;
       } catch (e: unknown) {
