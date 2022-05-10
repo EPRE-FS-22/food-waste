@@ -3,7 +3,18 @@ const wiki = (wikiImport as unknown as { default: typeof wikiImport })
   .default as unknown as typeof wikiImport;
 
 export const getWikiPage = async (page: string) => {
-  return (await wiki().page(page)) as Page | undefined;
+  try {
+    return (await wiki().page(page)) as Page;
+  } catch (err: unknown) {
+    if (
+      typeof err !== 'object' ||
+      !(err instanceof Error) ||
+      err.message !== 'No article found'
+    ) {
+      throw err;
+    }
+    return;
+  }
 };
 
 export const getWikiPageCoordinates = async (pageName: string) => {

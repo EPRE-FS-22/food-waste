@@ -14,7 +14,7 @@ const mailUseTLS =
   true;
 const mailUsername = process.env.FOOD_WASTE_MAIL_USERNAME;
 const mailPassword = process.env.FOOD_WASTE_MAIL_PASSWORD;
-const mailAddress = process.env.FOOD_WASTE_MAIL_ADDRESS;
+export const mailAddress = process.env.FOOD_WASTE_MAIL_ADDRESS;
 
 const mailTransporter =
   mailHostname && mailHostname && mailPassword && mailAddress

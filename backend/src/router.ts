@@ -31,6 +31,7 @@ import {
   unacceptDishEvent,
 } from './dishes.js';
 import { searchWiki } from './wiki.js';
+import { populateWithData } from './populate.js';
 
 let adminSessions: {
   [key: string]: { expirationDate: Date; ip: string; adminId: string };
@@ -740,9 +741,9 @@ export const appRouter = trpc
       userId: z.string().length(20),
       slots: z.number().min(1).max(10).int(),
       date: z.number().nonnegative(),
+      locationCity: z.string().nonempty().max(100),
+      exactLocation: z.string().nonempty().max(1000),
       dishDescription: z.string().nonempty().max(1000).optional(),
-      locationCity: z.string().nonempty().max(100).optional(),
-      exactLocation: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {
       try {
@@ -755,9 +756,9 @@ export const appRouter = trpc
               input.userId,
               input.slots,
               date,
-              input.dishDescription,
               input.locationCity,
-              input.exactLocation
+              input.exactLocation,
+              input.dishDescription
             );
             return dishId;
           }
@@ -976,6 +977,32 @@ export const appRouter = trpc
       try {
         const ip = getIp(ctx as Context);
         return deleteSessions(input.sessionId, ip, input.userId, input.all);
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('populate', {
+    input: z.object({
+      usersNumber: z.number().nonnegative().min(1).max(100).default(10),
+      preferencesPerUser: z.number().nonnegative().min(1).max(10).default(3),
+      dishesPerUser: z.number().nonnegative().min(1).max(10).default(5),
+      dishEventsPerUser: z.number().nonnegative().min(1).max(10).default(3),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId, true)) {
+          return await populateWithData(
+            input.usersNumber,
+            input.preferencesPerUser,
+            input.dishesPerUser,
+            input.dishEventsPerUser
+          );
+        }
+        return false;
       } catch (e: unknown) {
         throw internalServerError(e);
       }

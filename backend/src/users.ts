@@ -4,7 +4,7 @@ import type { StringSetting, UserInfoPrivate } from './model';
 import { getSettingsCollection, getUsersCollection } from './data.js';
 import { makeId } from './id.js';
 import { base64Encode } from './base64.js';
-import { sendMail } from './mailer.js';
+import { mailAddress, sendMail } from './mailer.js';
 import { timeOutCaptchaAndResponse } from './spamPrevention.js';
 import 'dotenv/config';
 import { APP_NAME, EMAIL_REGEX } from './constants.js';
@@ -12,7 +12,7 @@ import { getCoords } from './geo.js';
 import { validateId } from './validateId.js';
 
 export const checkEmail = (email?: string): boolean =>
-  !!email && !!email.match(EMAIL_REGEX);
+  !!email && !!email.match(EMAIL_REGEX) && email !== mailAddress;
 
 export const hashPassword = async (password: string) => {
   return await hash(password);
@@ -109,6 +109,90 @@ If this was not you use the site to reset it: ${generateFrontendLink(
   return false;
 };
 
+export const setUserInfoInternal = async (
+  userId: string,
+  code: string,
+  newPassword: string,
+  name: string,
+  dateOfBirth: Date,
+  locationCity: string,
+  exactLocation: string
+) => {
+  if (
+    !newPassword ||
+    !name ||
+    !dateOfBirth ||
+    !locationCity ||
+    !exactLocation
+  ) {
+    return { success: false };
+  }
+
+  const usersCollection = await getUsersCollection();
+
+  const registeredUser = await usersCollection.findOne({
+    customId: userId,
+    $or: [{ identityConfirmed: false }, { infosSet: false }],
+  });
+  if (
+    !registeredUser ||
+    !registeredUser.resetHash ||
+    !registeredUser.resetExpiration
+  ) {
+    return { success: false };
+  }
+
+  if (registeredUser.resetExpiration < new Date()) {
+    await usersCollection.updateOne(
+      {
+        customId: userId,
+      },
+      {
+        $unset: { resetHash: true, resetExpiration: true },
+      }
+    );
+    return { success: false };
+  }
+
+  if (code && (await verifyPassword(registeredUser.resetHash, code))) {
+    const passwordHashed = newPassword ? await hashPassword(newPassword) : '';
+
+    const locationCityCoords = await getCoords(locationCity);
+
+    if (!locationCityCoords) {
+      return { success: false };
+    }
+
+    await usersCollection.updateOne(
+      {
+        customId: userId,
+      },
+      {
+        $set: {
+          hash: passwordHashed,
+          name,
+          dateOfBirth,
+          locationCity,
+          exactLocation,
+          identityConfirmed: true,
+          infosSet: true,
+        },
+        $unset: { resetHash: true, resetExpiration: true },
+        $currentDate: { changedDate: true },
+      }
+    );
+    return {
+      success: true,
+      passwordHashed,
+      locationCityCoords,
+      previousName: registeredUser.name,
+      email: registeredUser.email,
+    };
+  } else {
+    return { success: false };
+  }
+};
+
 export const setUserInfo = async (
   userId: string,
   code: string,
@@ -132,81 +216,39 @@ export const setUserInfo = async (
 
   const identityConfirmed = await validateId(idImageBase64);
 
-  const usersCollection = await getUsersCollection();
-
-  const registeredUser = await usersCollection.findOne({
-    customId: userId,
-    $or: [{ identityConfirmed: false }, { infosSet: false }],
-  });
-  if (
-    !registeredUser ||
-    !registeredUser.resetHash ||
-    !registeredUser.resetExpiration
-  ) {
-    return false;
-  }
-
-  if (registeredUser.resetExpiration < new Date()) {
-    await usersCollection.updateOne(
-      {
-        customId: userId,
-      },
-      {
-        $unset: { resetHash: true, resetExpiration: true },
-      }
-    );
-    return false;
-  }
-
-  if (code && (await verifyPassword(registeredUser.resetHash, code))) {
-    const passwordHashed = newPassword ? await hashPassword(newPassword) : '';
-
-    const locationCityCoords = await getCoords(locationCity);
-
-    if (!locationCityCoords) {
-      return false;
-    }
-
-    await usersCollection.updateOne(
-      {
-        customId: userId,
-      },
-      {
-        $set: {
-          hash: passwordHashed,
-          name,
-          dateOfBirth,
-          locationCity,
-          exactLocation,
-          identityConfirmed: true,
-          infosSet: true,
-        },
-        $unset: { resetHash: true, resetExpiration: true },
-        $currentDate: { changedDate: true },
-      }
-    );
-
-    const [changesString, changesNumber] = listChanges({
-      password: passwordHashed,
+  if (identityConfirmed) {
+    const result = await setUserInfoInternal(
+      userId,
+      code,
+      newPassword,
       name,
-      'date of birth': dateOfBirth,
-      'approximate location': locationCityCoords,
-      'exact address': exactLocation,
-      identification: identityConfirmed,
-    });
+      dateOfBirth,
+      locationCity,
+      exactLocation
+    );
+    if (result.success && result.email) {
+      const [changesString, changesNumber] = listChanges({
+        password: result.passwordHashed,
+        name,
+        'date of birth': dateOfBirth,
+        'approximate location': result.locationCityCoords,
+        'exact address': exactLocation,
+        identification: identityConfirmed,
+      });
 
-    const body = `Hello ${registeredUser.name}
+      const body = `Hello ${result.email}
 
-Thank your for using the ${APP_NAME} App.
+  Thank your for using the ${APP_NAME} App.
 
-Your ${changesString} ${changesNumber > 0 ? 'have' : 'has'} been set.
+  Your ${changesString} ${changesNumber > 0 ? 'have' : 'has'} been set.
 
-If this was not you contact our support via our site: ${generateFrontendLink(
-      '/login'
-    )}`;
-    sendMail(registeredUser.email, APP_NAME + ' account set', body);
+  If this was not you contact our support via our site: ${generateFrontendLink(
+    '/login'
+  )}`;
+      sendMail(result.email, APP_NAME + ' account set', body);
 
-    return true;
+      return true;
+    }
   } else {
     return false;
   }
@@ -398,6 +440,81 @@ export const createLoginLink = async (userId: string, stay = false) => {
   return link;
 };
 
+export const registerOrEmailLoginInternal = async (
+  email: string,
+  stay = false,
+  isRegister = true
+) => {
+  if (!checkEmail(email)) {
+    return { success: false };
+  }
+
+  const lowercaseEmail = email.toLocaleLowerCase();
+
+  const usersCollection = await getUsersCollection();
+
+  const registeredUser = await usersCollection.findOne({
+    email: lowercaseEmail,
+  });
+  if (isRegister) {
+    if (
+      registeredUser &&
+      (registeredUser.verifyDate ||
+        !registeredUser.verifyExpiration ||
+        registeredUser.verifyExpiration < new Date())
+    )
+      return { success: false };
+  } else {
+    if (!registeredUser || !registeredUser.verifyDate) {
+      return { success: false };
+    }
+  }
+
+  let userId = registeredUser?.customId;
+
+  const passwordNew = makeId(15);
+  const passwordHashed = await hashPassword(passwordNew);
+  if (isRegister) {
+    userId = makeId(20);
+    await usersCollection.insertOne({
+      customId: userId,
+      email: lowercaseEmail,
+      verifyHash: passwordHashed,
+      verifyExpiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      verifyStay: stay,
+      registerDate: new Date(),
+      identityConfirmed: false,
+      infosSet: false,
+      preferencesSet: false,
+    });
+    await usersCollection.deleteMany({
+      email: lowercaseEmail,
+      verifyExpiration: { $lte: new Date() },
+      verifyHash: { $exists: true },
+      verifyDate: { $exists: false },
+    });
+  } else {
+    await usersCollection.updateOne(
+      {
+        email: lowercaseEmail,
+      },
+      {
+        $set: {
+          verifyHash: passwordHashed,
+          verifyExpiration: new Date(Date.now() + 1000 * 60 * 60),
+          verifyStay: stay,
+        },
+        $currentDate: { lastChanged: true },
+      }
+    );
+  }
+  return {
+    success: userId ? true : false,
+    userId: userId ? userId : undefined,
+    passwordNew: passwordNew ? passwordNew : undefined,
+  };
+};
+
 export const registerOrEmailLogin = async (
   email: string,
   ip: string,
@@ -405,83 +522,28 @@ export const registerOrEmailLogin = async (
   stay = false,
   isRegister = true
 ) => {
-  if (!checkEmail(email)) {
-    return await timeOutCaptchaAndResponse(ip, captchaToken, undefined, false);
-  }
-
   return await timeOutCaptchaAndResponse(ip, captchaToken, async () => {
-    const usersCollection = await getUsersCollection();
+    const result = await registerOrEmailLoginInternal(email, stay, isRegister);
 
-    const registeredUser = await usersCollection.findOne({ email });
-    if (isRegister) {
-      if (
-        registeredUser &&
-        (registeredUser.verifyDate ||
-          !registeredUser.verifyExpiration ||
-          registeredUser.verifyExpiration < new Date())
-      )
-        return { success: false };
-    } else {
-      if (!registeredUser || !registeredUser.verifyDate) {
-        return { success: false };
-      }
-    }
-
-    let userId = registeredUser?.customId;
-
-    const passwordNew = makeId(15);
-    const passwordHashed = await hashPassword(passwordNew);
-    if (isRegister) {
-      userId = makeId(20);
-      await usersCollection.insertOne({
-        customId: userId,
-        email,
-        verifyHash: passwordHashed,
-        verifyExpiration: new Date(Date.now() + 1000 * 60 * 60 * 24),
-        verifyStay: stay,
-        registerDate: new Date(),
-        identityConfirmed: false,
-        infosSet: false,
-        preferencesSet: false,
-      });
-      await usersCollection.deleteMany({
-        email,
-        verifyExpiration: { $lte: new Date() },
-        verifyHash: { $exists: true },
-        verifyDate: { $exists: false },
-      });
-    } else {
-      await usersCollection.updateOne(
-        {
-          email,
-        },
-        {
-          $set: {
-            verifyHash: passwordHashed,
-            verifyExpiration: new Date(Date.now() + 1000 * 60 * 60),
-            verifyStay: stay,
-          },
-          $currentDate: { lastChanged: true },
-        }
-      );
-    }
-
-    if (userId) {
+    if (result.success && result.userId && result.passwordNew) {
       const body = isRegister
         ? `Welcome to the ${APP_NAME} app.
 
 To confirm your account just press the following link within the next 24 hours: ${generateFrontendLink(
             '/login?register=true&id=' +
-              userId +
+              result.userId +
               '&code=' +
-              base64Encode(passwordNew)
+              base64Encode(result.passwordNew)
           )}
 
 If you did not request this email, simply ignore it.`
         : `Welcome back to the ${APP_NAME} App.
 
 To log in just press the following link within the next hour: ${generateFrontendLink(
-            '/login?id=' + userId + '&code=' + base64Encode(passwordNew)
+            '/login?id=' +
+              result.userId +
+              '&code=' +
+              base64Encode(result.passwordNew)
           )}
 
 If you did not request this email, simply ignore it.`;
@@ -534,11 +596,13 @@ export const loginUser = async (
     return await timeOutCaptchaAndResponse(ip, captchaToken, undefined, false);
   }
 
+  const lowercaseEmail = email.toLocaleLowerCase();
+
   return await timeOutCaptchaAndResponse(ip, captchaToken, async () => {
     const usersCollection = await getUsersCollection();
 
     const user = await usersCollection.findOne({
-      email,
+      email: lowercaseEmail,
     });
     if (user && user.hash) {
       const result = await verifyPassword(user.hash, password);

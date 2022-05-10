@@ -520,9 +520,9 @@ export const addDish = async (
   userId: string,
   slots: number,
   date: Date,
-  dishDescription?: string,
-  locationCity?: string,
-  exactLocation?: string
+  locationCity: string,
+  exactLocation: string,
+  dishDescription?: string
 ) => {
   const description = await getDishDescription(dish);
 
@@ -641,7 +641,7 @@ If you do not agree with this decision use the contact option on our site: ${gen
   return false;
 };
 
-export const addDishEvent = async (
+export const addDishEventInternal = async (
   customId: string,
   userId: string,
   message?: string
@@ -673,18 +673,47 @@ export const addDishEvent = async (
       signupDate: new Date(),
     });
 
-    if (result.insertedId) {
-      const body = `Congratulations ${dish.name}
+    const success = !!result.insertedId;
+    if (success) {
+      return {
+        success: true,
+        dish: dish.dish,
+        dishName: dish.name,
+        dishDate: dish.date,
+        participantName,
+        customId: id,
+      };
+    }
+  }
+  return { success: false };
+};
 
-Your plan on ${APP_NAME} for eating ${dish.dish} on ${moment(
-        dish.date
-      ).calendar()} has received a new guest request from ${participantName}.
+export const addDishEvent = async (
+  customId: string,
+  userId: string,
+  message?: string
+) => {
+  const result = await addDishEventInternal(customId, userId, message);
+
+  if (
+    result &&
+    result.dish &&
+    result.dishName &&
+    result.dishDate &&
+    result.participantName
+  ) {
+    const body = `Congratulations ${result.dishName}
+
+Your plan on ${APP_NAME} for eating ${result.dish} on ${moment(
+      result.dishDate
+    ).calendar()} has received a new guest request from ${
+      result.participantName
+    }.
 
 Use the site to accept it: ${generateFrontendLink('/plans')}`;
-      sendUserMail(userId, APP_NAME + ' new guest request', body);
+    sendUserMail(userId, APP_NAME + ' new guest request', body);
 
-      return true;
-    }
+    return true;
   }
   return false;
 };
@@ -747,7 +776,7 @@ Use the site to see and accept other requests: ${generateFrontendLink(
   return false;
 };
 
-export const acceptDishEvent = async (
+export const acceptDishEventInternal = async (
   customId: string,
   userId: string,
   response?: string
@@ -786,7 +815,7 @@ export const acceptDishEvent = async (
     ) {
       const result = await dishesCollection.updateOne(
         {
-          customId,
+          customId: dishEvent.dishId,
         },
         {
           $inc: {
@@ -797,22 +826,45 @@ export const acceptDishEvent = async (
       );
 
       if (result.modifiedCount > 0) {
-        const body = `Congratulations ${dishEvent.participantName}
-
-Your request on ${APP_NAME} for eating ${dish.dish} on ${moment(
-          dish.date
-        ).calendar()} with ${dish.name} has been accepted.
-
-Use the site to see more details: ${generateFrontendLink('/plans')}`;
-        sendUserMail(
-          dishEvent.participantId,
-          APP_NAME + ' request accepted',
-          body
-        );
-
-        return true;
+        return {
+          success: true,
+          participantName: dishEvent.participantName,
+          dish: dish.dish,
+          dishDate: dish.date,
+          dishName: dish.name,
+          participantId: dishEvent.participantId,
+        };
       }
     }
+  }
+  return { success: false };
+};
+
+export const acceptDishEvent = async (
+  customId: string,
+  userId: string,
+  response?: string
+) => {
+  const result = await acceptDishEventInternal(customId, userId, response);
+
+  if (
+    result.success &&
+    result.participantName &&
+    result.dish &&
+    result.dishDate &&
+    result.dishName &&
+    result.participantId
+  ) {
+    const body = `Congratulations ${result.participantName}
+
+Your request on ${APP_NAME} for eating ${result.dish} on ${moment(
+      result.dishDate
+    ).calendar()} with ${result.dishName} has been accepted.
+
+Use the site to see more details: ${generateFrontendLink('/plans')}`;
+    sendUserMail(result.participantId, APP_NAME + ' request accepted', body);
+
+    return true;
   }
   return false;
 };

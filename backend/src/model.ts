@@ -4,6 +4,7 @@ export interface DishBase {
 
 export interface DBDishBase extends DishBase {
   description: string;
+  fake?: boolean;
 }
 
 export interface DishPlan extends DishBase {
@@ -124,6 +125,11 @@ export interface User extends UserInfoPrivate {
   lastLogin?: Date;
   verifyDate?: Date;
   changedDate?: Date;
+}
+
+export interface DBUser extends User {
+  fake?: boolean;
+  showFake?: boolean;
 }
 
 export type Setting = StringSetting | NumberSetting | DateSetting | SubSetting;

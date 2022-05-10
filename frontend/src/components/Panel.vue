@@ -1,10 +1,38 @@
 <script setup lang="ts">
-  import { settings } from '../settings';
+  import { ref } from 'vue';
+  import { hasSession, populate } from '../data';
+  import { loggedIn, userLoggedIn /*settings*/ } from '../settings';
+  const populateOnClick = async () => {
+    try {
+      if (hasSession(true)) {
+        buttonDisabled.value = true;
+        const result = await populate();
+        buttonDisabled.value = false;
+        if (result) {
+          alert('Success');
+        } else {
+          alert('Error');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+  const buttonDisabled = ref(false);
 </script>
 
 <template>
   <div class="panel">
-    <div class="amount-container input-container">
+    <button
+      v-if="loggedIn && !userLoggedIn"
+      class="populate-button"
+      :disabled="buttonDisabled"
+      @click="populateOnClick()"
+    >
+      Populate
+    </button>
+    <!-- <div class="amount-container input-container">
       <label for="amount">Amount</label>
       <input
         id="amount"
@@ -86,7 +114,7 @@
         />
         <label for="keepReason">Keep</label>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -94,6 +122,7 @@
   .panel {
     display: flex;
     flex-direction: row;
+    justify-content: center;
     width: calc(100% - 1rem);
     height: calc(15vh - 1rem);
     height: calc((15 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
@@ -101,169 +130,189 @@
     margin: 0;
     border: none;
 
-    .input-container {
-      display: flex;
-      flex-direction: column;
-      width: 25%;
-      padding: 0.5rem;
-      font-size: 3vh;
-      font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
-      line-height: 3vh;
-      line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
-
-      label {
-        margin-left: 0.5vh;
-        margin-left: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        font-weight: bold;
-      }
-
-      > * {
-        margin-top: 1vh;
-        margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
-      }
-
-      > *:first-child {
-        margin-top: 0;
-      }
-
-      input {
-        height: 2vh;
-        height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        font-size: 2vh;
-        font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        line-height: 2vh;
-        line-height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        width: 90%;
-        padding: 0.5vh;
-        padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        margin: 0.5vh;
-        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        margin-top: 1.5vh;
-        margin-top: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
-        border: solid 0.2vh rgb(179, 179, 179);
-        border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
-          rgb(179, 179, 179);
-        border-radius: 2vh;
-        border-radius: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-
-        &.warning {
-          border: solid 0.3vh rgb(194, 0, 0);
-          border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
-            rgb(194, 0, 0);
-        }
-
-        &#date {
-          margin: 0;
-          margin-top: 0;
-        }
-      }
-
-      .date-inner-container {
-        margin: 0.5vh;
-        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        margin-top: 1.5vh;
-        margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
-        padding: 0;
-        border: none;
-      }
-
-      .keep-container {
-        display: flex;
-        flex-direction: row;
-
-        label {
-          font-size: 2.5vh;
-          font-size: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-          line-height: 2.5vh;
-          line-height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-          margin-top: 0.5vh;
-          margin-top: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-          font-weight: normal;
-        }
-
-        input {
-          height: 2.5vh;
-          height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-          width: 2.5vh;
-          width: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-          padding: 0.5vh;
-          padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-          margin: 0.5vh;
-          margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-          border: solid 0.2vh rgb(179, 179, 179);
-          border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
-            rgb(179, 179, 179);
-          box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-        }
-      }
+    .populate-button {
+      display: block;
+      box-sizing: border-box;
+      margin-left: none;
+      margin-right: none;
+      margin-top: 0;
+      margin-bottom: 0.6rem;
+      height: 2.1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      font-weight: bold;
+      padding: 0.45rem;
+      background-color: #ffffff;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+      text-decoration: none;
+      color: #000000;
     }
-  }
 
-  @media (max-aspect-ratio: 1/1) {
-    .panel {
-      padding: 0.125rem;
-      width: calc(100% - 0.25rem);
-      height: calc(15vw - 1rem);
+    //   .input-container {
+    //     display: flex;
+    //     flex-direction: column;
+    //     width: 25%;
+    //     padding: 0.5rem;
+    //     font-size: 3vh;
+    //     font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+    //     line-height: 3vh;
+    //     line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
 
-      .input-container {
-        padding: 0.1rem;
-        font-size: 3vw;
-        line-height: 3vw;
+    //     label {
+    //       margin-left: 0.5vh;
+    //       margin-left: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       font-weight: bold;
+    //     }
 
-        label {
-          margin-left: 0.5vw;
-        }
+    //     > * {
+    //       margin-top: 1vh;
+    //       margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
+    //     }
 
-        > * {
-          margin-top: 1vw;
-        }
+    //     > *:first-child {
+    //       margin-top: 0;
+    //     }
 
-        > *:first-child {
-          margin-top: 0;
-        }
+    //     input {
+    //       height: 2vh;
+    //       height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       font-size: 2vh;
+    //       font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       line-height: 2vh;
+    //       line-height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       width: 90%;
+    //       padding: 0.5vh;
+    //       padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       margin: 0.5vh;
+    //       margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       margin-top: 1.5vh;
+    //       margin-top: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       border: solid 0.2vh rgb(179, 179, 179);
+    //       border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
+    //         rgb(179, 179, 179);
+    //       border-radius: 2vh;
+    //       border-radius: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
 
-        input {
-          height: 2vw;
-          font-size: 2vw;
-          line-height: 2vw;
-          padding: 0.5vw;
-          margin: 0.5vw;
-          margin-top: 1.5vw;
-          border: solid 0.2vw rgb(179, 179, 179);
-          border-radius: 2vw;
+    //       &.warning {
+    //         border: solid 0.3vh rgb(194, 0, 0);
+    //         border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
+    //           rgb(194, 0, 0);
+    //       }
 
-          &.warning {
-            border: solid 0.3vw rgb(194, 0, 0);
-          }
+    //       &#date {
+    //         margin: 0;
+    //         margin-top: 0;
+    //       }
+    //     }
 
-          &#date {
-            margin: 0;
-            margin-top: 0;
-          }
-        }
+    //     .date-inner-container {
+    //       margin: 0.5vh;
+    //       margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       margin-top: 1.5vh;
+    //       margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //       padding: 0;
+    //       border: none;
+    //     }
 
-        .date-inner-container {
-          margin: 0.5vw;
-          margin-top: 1.5vw;
-        }
+    //     .keep-container {
+    //       display: flex;
+    //       flex-direction: row;
 
-        .keep-container {
-          label {
-            font-size: 2.5vw;
-            line-height: 2.5vw;
-            margin-top: 0.5vw;
-          }
+    //       label {
+    //         font-size: 2.5vh;
+    //         font-size: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //         line-height: 2.5vh;
+    //         line-height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //         margin-top: 0.5vh;
+    //         margin-top: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //         font-weight: normal;
+    //       }
 
-          input {
-            height: 2.5vw;
-            width: 2.5vw;
-            padding: 0.5vw;
-            margin: 0.5vw;
-            border: solid 0.2vw rgb(179, 179, 179);
-          }
-        }
-      }
-    }
+    //       input {
+    //         height: 2.5vh;
+    //         height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //         width: 2.5vh;
+    //         width: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //         padding: 0.5vh;
+    //         padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //         margin: 0.5vh;
+    //         margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+    //         border: solid 0.2vh rgb(179, 179, 179);
+    //         border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
+    //           rgb(179, 179, 179);
+    //         box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    //       }
+    //     }
+    //   }
+    // }
+
+    // @media (max-aspect-ratio: 1/1) {
+    //   .panel {
+    //     padding: 0.125rem;
+    //     width: calc(100% - 0.25rem);
+    //     height: calc(15vw - 1rem);
+
+    //     .input-container {
+    //       padding: 0.1rem;
+    //       font-size: 3vw;
+    //       line-height: 3vw;
+
+    //       label {
+    //         margin-left: 0.5vw;
+    //       }
+
+    //       > * {
+    //         margin-top: 1vw;
+    //       }
+
+    //       > *:first-child {
+    //         margin-top: 0;
+    //       }
+
+    //       input {
+    //         height: 2vw;
+    //         font-size: 2vw;
+    //         line-height: 2vw;
+    //         padding: 0.5vw;
+    //         margin: 0.5vw;
+    //         margin-top: 1.5vw;
+    //         border: solid 0.2vw rgb(179, 179, 179);
+    //         border-radius: 2vw;
+
+    //         &.warning {
+    //           border: solid 0.3vw rgb(194, 0, 0);
+    //         }
+
+    //         &#date {
+    //           margin: 0;
+    //           margin-top: 0;
+    //         }
+    //       }
+
+    //       .date-inner-container {
+    //         margin: 0.5vw;
+    //         margin-top: 1.5vw;
+    //       }
+
+    //       .keep-container {
+    //         label {
+    //           font-size: 2.5vw;
+    //           line-height: 2.5vw;
+    //           margin-top: 0.5vw;
+    //         }
+
+    //         input {
+    //           height: 2.5vw;
+    //           width: 2.5vw;
+    //           padding: 0.5vw;
+    //           margin: 0.5vw;
+    //           border: solid 0.2vw rgb(179, 179, 179);
+    //         }
+    //       }
+    //     }
+    //   }
   }
 </style>

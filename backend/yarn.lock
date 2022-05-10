@@ -1254,6 +1254,11 @@ extend@^3.0.0:
   resolved "https://registry.yarnpkg.com/extend/-/extend-3.0.2.tgz#f8b1136b4071fbd8eb140aff858b1019ec2915fa"
   integrity sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==
 
+fakerator@^0.3.5:
+  version "0.3.5"
+  resolved "https://registry.yarnpkg.com/fakerator/-/fakerator-0.3.5.tgz#8e82b80621b83550cf3b5abb44f12d3004ab3777"
+  integrity sha512-D2AY1kFjUhE//vG0iwvpcrex/DVtlU/9Ss3dnkD25vwNm8+z61UoP4FNr151FbBQ6IZ/oCUa9YDD5YsGw/LLHA==
+
 fancy-log@^1.3.3:
   version "1.3.3"
   resolved "https://registry.yarnpkg.com/fancy-log/-/fancy-log-1.3.3.tgz#dbc19154f558690150a23953a0adbd035be45fc7"

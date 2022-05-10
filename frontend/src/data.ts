@@ -261,6 +261,8 @@ export const addDish = async (
   dish: string,
   slots: number,
   date: Date,
+  locationCity: string,
+  exactLocation: string,
   dishDescription?: string
 ) => {
   try {
@@ -275,6 +277,8 @@ export const addDish = async (
       sessionId: sessionId,
       userId: sessionUserId,
       date: date.getTime(),
+      locationCity,
+      exactLocation,
     });
     if (!result) {
       authFailure.next();
@@ -287,7 +291,7 @@ export const addDish = async (
   }
 };
 
-export const removeDish = async (dishId: string) => {
+export const removeDish = async (dishId: string, admin = false) => {
   try {
     if (!hasSession()) {
       authFailure.next();
@@ -297,6 +301,7 @@ export const removeDish = async (dishId: string) => {
       dishId,
       sessionId: sessionId,
       userId: sessionUserId,
+      admin,
     });
     if (!result) {
       authFailure.next();
@@ -804,6 +809,30 @@ export const logOut = async () => {
     localStorage.setItem('preferencesSet', '');
     loggingOut = false;
   } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const populate = async (
+  preferencesPerUser = 3,
+  dishesPerUser = 5,
+  dishEventsPerUser = 3
+) => {
+  try {
+    if (!hasSession(true)) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('populate', {
+      sessionId: sessionId,
+      userId: sessionUserId,
+      preferencesPerUser,
+      dishesPerUser,
+      dishEventsPerUser,
+    });
+    return result;
+  } catch (e: unknown) {
     console.error(e);
     throw e;
   }

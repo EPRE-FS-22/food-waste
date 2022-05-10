@@ -180,7 +180,7 @@
 
   .dish {
     position: relative;
-    background-color: rgb(238, 238, 238);
+    background-color: rgb(196, 196, 196);
     height: auto;
     width: auto;
     display: flex;
