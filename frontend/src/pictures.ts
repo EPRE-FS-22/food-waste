@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { ReplaySubject } from 'rxjs';
 
 const previousPictures: Record<string, ReplaySubject<string>> = {};
@@ -44,11 +44,18 @@ export const getPicture = (search: string) =>
             previousPictures[search].next(photo.src.large);
             resolve(photo.src.large);
             return;
+          } else {
+            previousPictures[search].next('');
           }
           resolve('');
         }
       } catch (err) {
-        reject(err);
+        if (typeof err === 'object' && err instanceof AxiosError) {
+          previousPictures[search].next('');
+          resolve('');
+        } else {
+          reject(err);
+        }
       }
     })();
   });

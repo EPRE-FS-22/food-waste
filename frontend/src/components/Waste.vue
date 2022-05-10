@@ -181,7 +181,7 @@
 
   .dish {
     position: relative;
-    background-color: rgb(196, 196, 196);
+    background-color: rgb(171, 171, 171);
     height: auto;
     width: auto;
     display: flex;
