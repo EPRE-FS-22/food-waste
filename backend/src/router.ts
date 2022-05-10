@@ -1027,12 +1027,21 @@ export const appRouter = trpc
     },
   });
 
-setInterval(async () => {
-  try {
-    train();
-  } catch (e: unknown) {
-    throw internalServerError(e);
-  }
+const trainAsync = () => {
+  console.log('retraining recommender');
+  (async () => {
+    try {
+      await train();
+    } catch (e: unknown) {
+      throw internalServerError(e);
+    }
+  })();
+};
+
+setInterval(() => {
+  trainAsync();
 }, TRAIN_INTERVAL);
+
+trainAsync();
 
 export type AppRouter = typeof appRouter;

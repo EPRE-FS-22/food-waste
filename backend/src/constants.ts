@@ -13,7 +13,7 @@ export const DEFAULT_SEARCH_LOCATION_RANGE = 50;
 
 export const DEFAULT_SEARCH_AGE_RANGE = 10;
 
-export const TRAIN_INTERVAL = 60 * 1000 * 5;
+export const TRAIN_INTERVAL = 60 * 1000 * 1;
 
 export const EMAIL_REGEX =
   // eslint-disable-next-line no-control-regex
