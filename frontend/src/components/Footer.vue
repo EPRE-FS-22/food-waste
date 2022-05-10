@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { useRouter } from 'vue-router';
   import { APP_NAME } from '../../../backend/src/constants';
   import { logOut } from '../data';
   import {
@@ -7,6 +8,9 @@
     userConfirmedWithPreferences,
     userLoggedIn,
   } from '../settings';
+
+  const router = useRouter();
+
   const logOutOnclick = async () => {
     try {
       loggedIn.value = false;
@@ -14,6 +18,7 @@
       userConfirmed.value = false;
       userConfirmedWithPreferences.value = false;
       await logOut();
+      router.push('/');
     } catch (e) {
       console.error(e);
       throw e;
@@ -36,13 +41,14 @@
         loggedIn ? (userLoggedIn ? 'User menu' : 'Admin panel') : 'Log in'
       }}</router-link
     >
-    <router-link
+    <div
       v-else-if="$router.currentRoute.value.path === '/login' && loggedIn"
       to="/"
       class="action-link footer-item"
       @click="logOutOnclick()"
-      >Log out</router-link
     >
+      Log out
+    </div>
     <router-link
       v-else-if="$router.currentRoute.value.path !== '/login'"
       to="/login"
@@ -72,6 +78,7 @@
     line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
     color: unset;
     text-decoration: none;
+    cursor: pointer;
   }
 
   .subtitle,

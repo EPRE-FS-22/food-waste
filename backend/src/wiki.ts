@@ -72,15 +72,18 @@ const recurseGeoWikis = async (
 export const searchWiki = async (
   query: string,
   limit = 5,
-  onlyCoords = false
+  onlyCoords = false,
+  lengthLimit = 50
 ) => {
   if (!onlyCoords) {
     const result = await wiki().prefixSearch(query, limit);
     if (!result) {
       return [];
     }
-    return result.results;
+    return result.results.filter((item) => item.length <= lengthLimit);
   } else {
-    return await recurseGeoWikis(query, limit, limit, 2);
+    return (await recurseGeoWikis(query, limit, limit, 2)).filter(
+      (item) => item.length <= lengthLimit
+    );
   }
 };

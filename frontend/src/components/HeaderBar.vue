@@ -29,9 +29,8 @@
       </router-link>
       <router-link
         v-if="
-          ($router.currentRoute.value.path === '/login' &&
-            userConfirmedWithPreferences) ||
-          $router.currentRoute.value.path === '/admin'
+          $router.currentRoute.value.path === '/login' &&
+          userConfirmedWithPreferences
         "
         :to="userLoggedIn ? '/user' : '/'"
         class="view-toggle"

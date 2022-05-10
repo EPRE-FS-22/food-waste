@@ -44,9 +44,16 @@
 
   watch(userInputPreference, async () => {
     try {
-      const result = await addDishPreference(userInputPreference.value, true);
-      if (result) {
-        dishPreferences.value = result;
+      if (
+        userInputPreference.value &&
+        !dishPreferences.value.find(
+          (item) => item.dish === userInputPreference.value
+        )
+      ) {
+        const result = await addDishPreference(userInputPreference.value, true);
+        if (result) {
+          dishPreferences.value = result;
+        }
       }
     } catch (e: unknown) {
       console.error(e);

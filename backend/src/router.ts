@@ -535,7 +535,15 @@ export const appRouter = trpc
         const result = await verifyUserEmail(input.userId, input.code);
         if (result.success) {
           const ip = getIp(ctx as Context);
-          const sessionId = addSession(ip, input.userId, result.stay);
+          const sessionId = addSession(
+            ip,
+            input.userId,
+            result.stay,
+            result.admin,
+            result.identityConfirmed,
+            result.infosSet,
+            result.preferencesSet
+          );
           return {
             success: result.success,
             userId: input.userId,
@@ -712,7 +720,15 @@ export const appRouter = trpc
               preferencesSet: result.preferencesSet,
             };
           } else {
-            const sessionId = addSession(ip, result.userId, input.stay);
+            const sessionId = addSession(
+              ip,
+              result.userId,
+              input.stay,
+              false,
+              result.identityConfirmed,
+              result.infosSet,
+              result.preferencesSet
+            );
             return {
               success: true,
               sessionId,
@@ -776,6 +792,7 @@ export const appRouter = trpc
       sessionId: z.string().length(20),
       userId: z.string().length(20),
       limit: z.number().nonnegative().min(1).max(50).default(15),
+      lengthLimit: z.number().nonnegative().min(1).max(100).default(50),
       onlyCoords: z.boolean().optional(),
     }),
     async resolve({ input, ctx }) {

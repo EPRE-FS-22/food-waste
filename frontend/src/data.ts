@@ -93,7 +93,7 @@ export const getAvailableDishes = async (
 ) => {
   try {
     if (!next) {
-      if (dishes && dishesDate.getTime() > Date.now() - 1000 * 60 * 1) {
+      if (dishes.length && dishesDate.getTime() > Date.now() - 1000 * 60 * 1) {
         return dishes;
       }
       dishesIndex = dishesPreviousIndex;
@@ -141,7 +141,7 @@ export const getRecommendedDishes = async (
     }
     if (!next) {
       if (
-        recommendedDishes &&
+        recommendedDishes.length &&
         recommendedDishesDate.getTime() > Date.now() - 1000 * 60 * 5
       ) {
         return recommendedDishes;
@@ -181,7 +181,10 @@ export const getMyDishes = async () => {
       authFailure.next();
       return false;
     }
-    if (myDishes && myDishesDate.getTime() > Date.now() - 1000 * 60 * 1) {
+    if (
+      myDishes.length &&
+      myDishesDate.getTime() > Date.now() - 1000 * 60 * 1
+    ) {
       return myDishes;
     }
     const data = await client.query('getMyDishes', {
@@ -212,7 +215,7 @@ export const getSignedUpDishes = async () => {
       return false;
     }
     if (
-      signedUpDishes &&
+      signedUpDishes.length &&
       signedUpDishesDate.getTime() > Date.now() - 1000 * 60 * 1
     ) {
       return signedUpDishes;
@@ -841,7 +844,8 @@ export const populate = async (
 export const searchWiki = async (
   searchText: string,
   limit = 5,
-  onlyCoords = false
+  onlyCoords = false,
+  lengthLimit = 50
 ) => {
   try {
     if (!hasSession()) {
@@ -854,6 +858,7 @@ export const searchWiki = async (
       userId: sessionUserId,
       limit,
       onlyCoords,
+      lengthLimit,
     });
     return result;
   } catch (e: unknown) {

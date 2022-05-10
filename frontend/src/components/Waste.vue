@@ -5,6 +5,7 @@
   import {
     getAvailableDishes,
     getMyDishes,
+    getRecommendedDishes,
     getSignedUpDishes,
     lastDish,
   } from '../data';
@@ -67,7 +68,7 @@
             break;
 
           case DisplayType.recommended:
-            const recommendedResult = await getAvailableDishes();
+            const recommendedResult = await getRecommendedDishes();
             if (recommendedResult) {
               success = true;
               dishes.value = recommendedResult.length

@@ -31,6 +31,10 @@
       type: String,
       default: '',
     },
+    limit: {
+      type: Number,
+      default: 5,
+    },
     onlyCoords: {
       type: Boolean,
       default: false,
@@ -91,7 +95,12 @@
 
   const listWiki = async (searchString: string) => {
     try {
-      const results = await searchWiki(searchString, 5, props.onlyCoords);
+      const results = await searchWiki(
+        searchString,
+        props.limit,
+        props.onlyCoords,
+        props.maxlength
+      );
       if (results) {
         searchResults.value = results;
         showResult.value = true;
