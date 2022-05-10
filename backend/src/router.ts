@@ -758,8 +758,8 @@ export const appRouter = trpc
       userId: z.string().length(20),
       slots: z.number().min(1).max(10).int(),
       date: z.number().nonnegative(),
-      locationCity: z.string().nonempty().max(100),
-      exactLocation: z.string().nonempty().max(1000),
+      locationCity: z.string().nonempty().max(100).optional(),
+      exactLocation: z.string().nonempty().max(1000).optional(),
       dishDescription: z.string().nonempty().max(1000).optional(),
     }),
     async resolve({ input, ctx }) {

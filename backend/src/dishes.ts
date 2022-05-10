@@ -520,8 +520,8 @@ export const addDish = async (
   userId: string,
   slots: number,
   date: Date,
-  locationCity: string,
-  exactLocation: string,
+  locationCity?: string,
+  exactLocation?: string,
   dishDescription?: string
 ) => {
   const description = await getDishDescription(dish);

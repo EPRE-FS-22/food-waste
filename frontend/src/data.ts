@@ -264,8 +264,8 @@ export const addDish = async (
   dish: string,
   slots: number,
   date: Date,
-  locationCity: string,
-  exactLocation: string,
+  locationCity?: string,
+  exactLocation?: string,
   dishDescription?: string
 ) => {
   try {
@@ -280,8 +280,8 @@ export const addDish = async (
       sessionId: sessionId,
       userId: sessionUserId,
       date: date.getTime(),
-      locationCity,
-      exactLocation,
+      locationCity: locationCity || undefined,
+      exactLocation: exactLocation || undefined,
     });
     if (!result) {
       authFailure.next();
