@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+  import type { DisplayDish } from '../model';
+  import { useRouter, useRoute } from 'vue-router';
   import {
     authFailure,
     checkSession,
@@ -31,6 +32,9 @@
     checkSession();
   }
 
+
+  const currentDish = ref(null as null | DisplayDish);
+
   const currentDish = ref(lastDish.value);
   if (!currentDish.value) {
     (async () => {
@@ -46,10 +50,6 @@
     })();
   }
 
-  const description =
-    'I bought too much flour, so I opened this offer. I expect 2 person who could eat with me.';
-
-  const personCount = 2;
 
   const acceptOffer = async () => {
     try {
@@ -71,9 +71,11 @@
         <h1>{{ currentDish.dish }}</h1>
         <div class="description-section">
           <h4>Description</h4>
-          <p>{{ description }}</p>
+          <p>{{ currentDish.dishDescription }}</p>
         </div>
-        <p style="text-align: center">Number of people: {{ personCount }}</p>
+        <p style="text-align: center">
+          Number of people: {{ currentDish.slots }}
+        </p>
         <div class="button-section">
           <router-link to="/user">
             <span class="icon cancel icon-cancel-circled"></span>
@@ -127,5 +129,6 @@
         color: #1dd81af0;
       }
     }
+    cursor: pointer;
   }
 </style>
