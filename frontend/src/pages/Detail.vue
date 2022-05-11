@@ -11,6 +11,8 @@
     hasConfirmedUserSessionWithPreferences,
     lastDish,
     getAvailableDish,
+    acceptDishRequest,
+    unacceptDishRequest,
   } from '../data';
   const router = useRouter();
 
@@ -19,6 +21,14 @@
   });
 
   const route = useRoute();
+
+  let isPlan = false;
+
+  if (router.currentRoute.value.path.startsWith('/plan/')) {
+    isPlan = true;
+  }
+
+  console.log('Plan: ' + isPlan);
 
   if (!route.params.id || typeof route.params.id != 'string') {
     router.push('/user');
@@ -32,12 +42,12 @@
     checkSession();
   }
 
-
-  const currentDish = ref(null as null | DisplayDish);
-
   const currentDish = ref(lastDish.value);
   if (!currentDish.value) {
     (async () => {
+      if (isPlan) {
+        router.push('/plans');
+      }
       try {
         const result = await getAvailableDish(route.params.id as string);
         if (result) {
@@ -50,7 +60,6 @@
     })();
   }
 
-
   const acceptOffer = async () => {
     try {
       const result = await addDishRequest(route.params.id.toString());
@@ -62,6 +71,34 @@
       throw e;
     }
   };
+
+  const acceptNames = async () => {
+    try {
+      console.log('accept');
+      const result = await acceptDishRequest(route.params.id.toString());
+      console.log(result);
+      if (result) {
+        router.push('/plans');
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const unacceptNames = async () => {
+    try {
+      const result = await unacceptDishRequest(route.params.id.toString());
+      if (result) {
+        router.push('/plans');
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  console.log(currentDish.value);
 </script>
 
 <template>
@@ -76,12 +113,31 @@
         <p style="text-align: center">
           Number of people: {{ currentDish.slots }}
         </p>
-        <div class="button-section">
+        <div v-if="!isPlan" class="button-section">
           <router-link to="/user">
             <span class="icon cancel icon-cancel-circled"></span>
           </router-link>
           <div @click="acceptOffer">
             <span class="icon ok icon-ok-circled"></span>
+          </div>
+        </div>
+        <div v-if="isPlan && !currentDish.participantName" class="acceptNames">
+          <p v-if="currentDish.participantRequestsNames.length > 0">
+            people requests to join:
+          </p>
+          <div
+            v-for="(name, index) in currentDish.participantRequestsNames"
+            :key="index"
+          >
+            <p>{{ name }}</p>
+          </div>
+          <div class="button-section">
+            <div @click="unacceptNames()">
+              <span class="icon cancel icon-cancel-circled"></span>
+            </div>
+            <div @click="acceptNames()">
+              <span class="icon ok icon-ok-circled"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -95,6 +151,11 @@
     .detail-margin {
       margin: 10%;
     }
+  }
+
+  .acceptNames {
+    text-align: center;
+    margin-top: 100px;
   }
 
   .description-section {

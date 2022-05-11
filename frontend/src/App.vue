@@ -13,7 +13,8 @@
         $router.currentRoute.value.path === '/login' ||
         $router.currentRoute.value.path === '/add' ||
         $router.currentRoute.value.path === '/preferences' ||
-        $router.currentRoute.value.path.startsWith('/detail/'),
+        $router.currentRoute.value.path.startsWith('/detail/') ||
+        $router.currentRoute.value.path.startsWith('/plan/'),
     }"
   >
     Loading deliciousness...

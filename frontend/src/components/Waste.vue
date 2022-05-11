@@ -19,6 +19,7 @@
   const props = defineProps({
     small: { type: Boolean, default: false },
     type: { type: Number, default: DisplayType.available },
+    plans: { type: Boolean, default: false },
   });
 
   let dishes = ref(
@@ -49,7 +50,11 @@
   const clickDish = (index: number) => {
     const dish = dishes.value[index];
     lastDish.next(dish);
-    router.push('/detail/' + dish.customId);
+    if (props.plans) {
+      router.push('/plan/' + dish.customId);
+    } else {
+      router.push('/detail/' + dish.customId);
+    }
   };
 
   const getDishes = () => {
@@ -110,7 +115,9 @@
                 ...myAndSignedUpResult[0],
                 ...myAndSignedUpResult[1],
               ].sort((a, b) => {
-                return b.date.getTime() - a.date.getTime();
+                console.log(b);
+                console.log(a);
+                return b.date - a.date; //todo getTime (Linus)
               });
             }
             break;
@@ -183,7 +190,6 @@
     align-items: center;
     font-size: 2rem;
   }
-
   .content {
     display: grid;
     grid-template-rows: 1fr 1fr;

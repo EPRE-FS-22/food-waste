@@ -81,14 +81,18 @@
   <div class="content-base preferences-section">
     <div class="preferences">Set Up Your preferences</div>
     <div class="preferences-list-title">Your Preferences:</div>
-    <div v-for="(dishPreference, index) in dishPreferences" :key="index">
+    <div
+      v-for="(dishPreference, index) in dishPreferences"
+      :key="index"
+      class="preference"
+    >
       <p class="preferences-list-text">{{ dishPreference.dish }}</p>
-      <button
+      <span
         v-if="dishPreferences.length > 1"
+        class="icon icon-trash"
         @click="deletePreferences(dishPreference.dish)"
       >
-        delete
-      </button>
+      </span>
     </div>
     <SearchWiki v-model="userInputPreference"></SearchWiki>
   </div>
@@ -107,5 +111,14 @@
 
   .preferences-list-text {
     font-size: 1.5rem;
+  }
+
+  .preference {
+    display: flex;
+
+    .icon {
+      margin-top: 30px;
+      cursor: pointer;
+    }
   }
 </style>

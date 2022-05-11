@@ -29,6 +29,6 @@
 
 <template>
   <div class="page">
-    <Waste :small="false" :type="DisplayType.plans"> </Waste>
+    <Waste :small="false" :type="DisplayType.plans" :plans="true"> </Waste>
   </div>
 </template>
