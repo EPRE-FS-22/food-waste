@@ -55,6 +55,48 @@
       : LoginType.logIn
   );
 
+  const captchaSitekey =
+    import.meta.env.VITE_FOOD_WASTE_CAPTCHA_SITEKEY?.toString() ?? '';
+
+  const router = useRouter();
+
+  const email = ref('');
+  const password = ref('');
+  const newPassword = ref('');
+  const name = ref('');
+  const dateOfBirth = ref(null as Date | null);
+  const idImage = ref(null as FileList | null);
+  const previousCity = ref('');
+  const city = ref('');
+  const previousLocation = ref('');
+  const location = ref('');
+
+  const message = ref('');
+  const emailMessage = ref('');
+  const passwordMessage = ref('');
+  const newPasswordMessage = ref('');
+  const captchaMessage = ref('');
+  const dateOfBirthMessage = ref('');
+  const idImageMessage = ref('');
+  const cityMessage = ref('');
+  const locationMessage = ref('');
+
+  const clearMessages = () => {
+    message.value = '';
+    emailMessage.value = '';
+    passwordMessage.value = '';
+    newPasswordMessage.value = '';
+    captchaMessage.value = '';
+    dateOfBirthMessage.value = '';
+    idImageMessage.value = '';
+    cityMessage.value = '';
+    locationMessage.value = '';
+  };
+
+  const showCaptcha = ref(false);
+
+  let captchaToken = '';
+
   onUnmounted(() => {
     if (type.value === LoginType.setAgain) {
       clearSetCode();
@@ -104,8 +146,6 @@
       ? base64Decode(route.query.code)
       : '';
 
-  const message = ref('');
-
   if (queryUserId && queryCode) {
     type.value = LoginType.confirm;
     message.value = queryIsRegister
@@ -115,7 +155,7 @@
 
   const confirmAction = async () => {
     try {
-      message.value = '';
+      clearMessages();
       const result = await verify(queryUserId, queryCode);
       if (result.success) {
         loggedIn.value = true;
@@ -145,12 +185,7 @@
 
   const setAction = async () => {
     try {
-      message.value = '';
-      newPasswordMessage.value = '';
-      dateOfBirthMessage.value = '';
-      idImageMessage.value = '';
-      cityMessage.value = '';
-      locationMessage.value = '';
+      clearMessages();
       let fail = false;
       if (!newPassword.value) {
         newPasswordMessage.value = 'The password cannot be empty';
@@ -171,6 +206,12 @@
             Date.now() - 1000 * 60 * 60 * 24 * 365 * 18
           ) {
             dateOfBirthMessage.value = 'You need to be 18 or older';
+            fail = true;
+          } else if (
+            date.getTime() <
+            Date.now() - 1000 * 60 * 60 * 24 * 365 * 200
+          ) {
+            dateOfBirthMessage.value = 'You cannot be older than 200 years old';
             fail = true;
           }
         }
@@ -207,6 +248,7 @@
       if (fail || !date || !idImageBase64) {
         return;
       }
+      clearMessages();
       const result = await set(
         newPassword.value,
         name.value,
@@ -233,7 +275,7 @@
 
   const resetAction = async () => {
     try {
-      message.value = '';
+      clearMessages();
       if (
         !newPassword.value &&
         (!city.value || city.value === previousCity.value) &&
@@ -243,6 +285,7 @@
           'New password, city and address cannot all be empty or the same as before';
         return;
       }
+      clearMessages();
       previousCity.value = city.value;
       previousLocation.value = location.value;
       const result = await reset(newPassword.value, city.value, location.value);
@@ -264,8 +307,7 @@
 
   const changeAction = async () => {
     try {
-      passwordMessage.value = '';
-      message.value = '';
+      clearMessages();
       let fail = false;
       if (!password.value) {
         passwordMessage.value = 'Password cannot be empty';
@@ -283,6 +325,7 @@
       if (fail) {
         return;
       }
+      clearMessages();
       previousCity.value = city.value;
       previousLocation.value = location.value;
       const result = await change(
@@ -307,37 +350,9 @@
     }
   };
 
-  const captchaSitekey =
-    import.meta.env.VITE_FOOD_WASTE_CAPTCHA_SITEKEY?.toString() ?? '';
-
-  const router = useRouter();
-
-  const email = ref('');
-  const password = ref('');
-  const newPassword = ref('');
-  const name = ref('');
-  const dateOfBirth = ref(null as Date | null);
-  const idImage = ref(null as FileList | null);
-  const previousCity = ref('');
-  const city = ref('');
-  const previousLocation = ref('');
-  const location = ref('');
-
-  const emailMessage = ref('');
-  const passwordMessage = ref('');
-  const newPasswordMessage = ref('');
-  const captchaMessage = ref('');
-  const dateOfBirthMessage = ref('');
-  const idImageMessage = ref('');
-  const cityMessage = ref('');
-  const locationMessage = ref('');
-
-  const showCaptcha = ref(false);
-
-  let captchaToken = '';
-
   const emailLogInAction = async (isRegister = false) => {
     try {
+      clearMessages();
       let fail = false;
       if (!email.value || !email.value.match(EMAIL_REGEX)) {
         emailMessage.value = 'E-Mail needs to be a valid address';
@@ -347,13 +362,10 @@
         captchaMessage.value = 'Captcha invalid';
         fail = true;
       }
-      message.value = '';
       if (fail) {
         return;
       }
-      captchaMessage.value = '';
-      emailMessage.value = '';
-      passwordMessage.value = '';
+      clearMessages();
       const result = isRegister
         ? await register(
             email.value,
@@ -387,6 +399,7 @@
 
   const logInAction = async () => {
     try {
+      clearMessages();
       let fail = false;
       if (!password.value) {
         passwordMessage.value = 'Password cannot be empty';
@@ -401,13 +414,10 @@
         captchaMessage.value = 'Captcha invalid';
         fail = true;
       }
-      message.value = '';
       if (fail) {
         return;
       }
-      captchaMessage.value = '';
-      emailMessage.value = '';
-      passwordMessage.value = '';
+      clearMessages();
       const result = await logIn(
         password.value,
         email.value || undefined,
@@ -501,8 +511,14 @@
           <div
             class="label-button"
             tabindex="0"
-            @click="type = LoginType.logIn"
-            @keyup.enter="type = LoginType.logIn"
+            @click="
+              clearMessages();
+              type = LoginType.logIn;
+            "
+            @keyup.enter="
+              clearMessages();
+              type = LoginType.logIn;
+            "
           >
             Log in with password instead
           </div>
@@ -527,8 +543,14 @@
         <div
           class="label-button"
           tabindex="0"
-          @click="type = LoginType.emailLogIn"
-          @keyup.enter="type = LoginType.emailLogIn"
+          @click="
+            clearMessages();
+            type = LoginType.emailLogIn;
+          "
+          @keyup.enter="
+            clearMessages();
+            type = LoginType.emailLogIn;
+          "
         >
           Log in without password (E-Mail) instead / reset password
         </div></label
@@ -708,8 +730,14 @@
       ><div
         class="label-button label-button-solo"
         tabindex="0"
-        @click="type = LoginType.register"
-        @keyup.enter="type = LoginType.register"
+        @click="
+          clearMessages();
+          type = LoginType.register;
+        "
+        @keyup.enter="
+          clearMessages();
+          type = LoginType.register;
+        "
       >
         No account yet? Register here
       </div></label
@@ -720,8 +748,14 @@
       ><div
         class="label-button label-button-solo"
         tabindex="0"
-        @click="type = LoginType.logIn"
-        @keyup.enter="type = LoginType.logIn"
+        @click="
+          clearMessages();
+          type = LoginType.logIn;
+        "
+        @keyup.enter="
+          clearMessages();
+          type = LoginType.logIn;
+        "
       >
         Already registered? Log in here
       </div></label

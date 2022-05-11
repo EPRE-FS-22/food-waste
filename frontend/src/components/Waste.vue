@@ -1,10 +1,10 @@
 <script setup lang="ts">
   import { ref, onBeforeUnmount, watch } from 'vue';
   import { DisplayType, loading } from '../settings';
-  import { getPicture } from '../pictures';
   import {
     getAvailableDishes,
     getMyDishes,
+    getPictures,
     getRecommendedDishes,
     getSignedUpDishes,
     lastDish,
@@ -25,20 +25,31 @@
     [] as DisplayDish[] | (DisplayDishInfo | DisplayDishEvent)[]
   );
 
-  const getPictures = async () => {
-    dishes.value = await Promise.all(
-      dishes.value.map(async (item) => {
-        return {
-          ...item,
-          image: await getPicture(item.dish),
-        };
-      })
-    );
+  const getDishesPictures = async () => {
+    if (!dishes.value.length) {
+      return;
+    }
+
+    let pictureSearchTexts: string[] = [];
+
+    dishes.value.forEach((item) => {
+      pictureSearchTexts.push(item.dish);
+    });
+
+    const pictures = await getPictures(pictureSearchTexts);
+
+    if (pictures) {
+      dishes.value = dishes.value.map((item, index) => ({
+        ...item,
+        image: pictures[index],
+      }));
+    }
   };
 
   const clickDish = (index: number) => {
-    lastDish.next(dishes.value[index]);
-    router.push('/detail/' + index);
+    const dish = dishes.value[index];
+    lastDish.next(dish);
+    router.push('/detail/' + dish.customId);
   };
 
   const getDishes = () => {
@@ -89,15 +100,15 @@
             break;
 
           case DisplayType.plans:
-            const myAndSingedUpResult = (await Promise.all([
+            const myAndSignedUpResult = (await Promise.all([
               getMyDishes(),
               getSignedUpDishes(),
             ])) as [false | DishInfo[], false | DishEvent[]];
-            if (myAndSingedUpResult[0] && myAndSingedUpResult[1]) {
+            if (myAndSignedUpResult[0] && myAndSignedUpResult[1]) {
               success = true;
               dishes.value = [
-                ...myAndSingedUpResult[0],
-                ...myAndSingedUpResult[1],
+                ...myAndSignedUpResult[0],
+                ...myAndSignedUpResult[1],
               ].sort((a, b) => {
                 return b.date.getTime() - a.date.getTime();
               });
@@ -105,7 +116,7 @@
             break;
         }
         if (success) {
-          await getPictures();
+          await getDishesPictures();
           if (loading.value) {
             loading.value = false;
           }

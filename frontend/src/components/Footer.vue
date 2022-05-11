@@ -2,22 +2,14 @@
   import { useRouter } from 'vue-router';
   import { APP_NAME } from '../../../backend/src/constants';
   import { logOut } from '../data';
-  import {
-    loggedIn,
-    userConfirmed,
-    userConfirmedWithPreferences,
-    userLoggedIn,
-  } from '../settings';
+  import { loggedIn, resetState, userLoggedIn } from '../settings';
 
   const router = useRouter();
 
   const logOutOnclick = async () => {
     try {
-      loggedIn.value = false;
-      userLoggedIn.value = false;
-      userConfirmed.value = false;
-      userConfirmedWithPreferences.value = false;
       await logOut();
+      resetState();
       router.push('/');
     } catch (e) {
       console.error(e);
@@ -32,7 +24,15 @@
 
 <template>
   <div class="footer">
-    <a href="https://mll.one/" class="subtitle footer-item">Hosted by MllOne</a>
+    <a
+      v-if="$router.currentRoute.value.path === '/login'"
+      href="https://mll.one/"
+      class="subtitle footer-item"
+      >Hosted by MllOne</a
+    >
+    <a v-else href="https://www.pexels.com" class="subtitle footer-item"
+      >Photos by Pexels</a
+    >
     <router-link
       v-if="$router.currentRoute.value.path === '/'"
       :to="loggedIn ? (userLoggedIn ? '/user' : '/admin') : '/login'"

@@ -8,11 +8,11 @@ export interface DBDishBase extends DishBase {
 }
 
 export interface DishPlan extends DishBase {
+  date: Date;
   customId: string;
 }
 
 export interface Dish extends DishPlan, UserInfoDish {
-  date: Date;
   slots: number;
   filled: number;
   dishDescription?: string;

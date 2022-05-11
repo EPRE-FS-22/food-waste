@@ -436,12 +436,15 @@ export const getSignedUpDishes = async (userId: string) => {
   );
 };
 
-export const getDish = async (customId: string, userId?: string) => {
+export const getAvailableDish = async (customId: string, userId?: string) => {
   const dishesCollection = await getDishesCollection();
 
   const dish = await dishesCollection.findOne({
     customId,
-    $or: [{ date: { $gte: new Date() } }, userId ? { userId } : {}],
+    $or: [
+      { date: { $gte: new Date() } },
+      userId ? { userID: { $ne: userId } } : {},
+    ],
   });
 
   if (dish) {
@@ -449,6 +452,53 @@ export const getDish = async (customId: string, userId?: string) => {
   }
 
   return false;
+};
+
+export const getMyDish = async (customId: string, userId: string) => {
+  const dishesCollection = await getDishesCollection();
+  const dishEventsCollection = await getDishEventsCollection();
+
+  const dish = await dishesCollection.findOne({
+    customId,
+    userId,
+  });
+
+  if (!dish) {
+    return false;
+  }
+
+  const dishEvents = await dishEventsCollection
+    .find({
+      dishId: dish.customId,
+    })
+    .toArray();
+
+  return combineDishInfoDBValues(dish, dishEvents);
+};
+
+export const getSignedUpDish = async (customId: string, userId: string) => {
+  const dishesCollection = await getDishesCollection();
+  const dishEventsCollection = await getDishEventsCollection();
+
+  const dishEvent = await dishEventsCollection.findOne({
+    customId,
+    userId,
+    date: { $gte: new Date() },
+  });
+
+  if (!dishEvent) {
+    return false;
+  }
+
+  const dish = await dishesCollection.findOne({
+    customId: dishEvent.dishId,
+  });
+
+  if (!dish) {
+    return false;
+  }
+
+  return combineDishEventDBValues(dishEvent, dish);
 };
 
 const getDishDescription = async (dish: string) => {
@@ -479,7 +529,7 @@ export const addDishPreference = async (
         success = await userPreferencesSet(userId);
       }
       if (success) {
-        return !!(
+        return (
           await dishPreferencesCollection.insertOne({
             dish: dish,
             likes,
@@ -487,7 +537,7 @@ export const addDishPreference = async (
             userId,
             setDate: new Date(),
           })
-        ).insertedId;
+        ).acknowledged;
       }
     }
   }
@@ -650,7 +700,7 @@ export const addDishEventInternal = async (
 
   const dish = await dishesCollection.findOne({
     customId,
-    $or: [{ date: { $gte: new Date() } }],
+    date: { $gte: new Date() },
     $expr: { $ne: ['$slots', '$filled'] },
   });
 
@@ -663,6 +713,7 @@ export const addDishEventInternal = async (
 
     const result = await dishEventsCollection.insertOne({
       dish: dish.dish,
+      date: dish.date,
       dishId: dish.customId,
       description: dish.description,
       customId: id,
@@ -673,8 +724,7 @@ export const addDishEventInternal = async (
       signupDate: new Date(),
     });
 
-    const success = !!result.insertedId;
-    if (success) {
+    if (result.acknowledged) {
       return {
         success: true,
         dish: dish.dish,

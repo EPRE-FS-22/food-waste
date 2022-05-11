@@ -235,7 +235,6 @@ VITE_FOOD_WASTE_PROTOCOL="wss"
 VITE_FOOD_WASTE_BACKEND_HOST="<domain>"
 VITE_FOOD_WASTE_BACKEND_PORT="3330"
 VITE_FOOD_WASTE_CAPTCHA_SITEKEY="<hCaptcha sitekey (can be omitted to disable captcha)>"
-VITE_FOOD_WASTE_PICTURES_KEY="<Pexels API key (can be omitted to disable picture)>"
 ```
 
 These can be set in a `.env.production.local` file in the `frontend` directory so they will be used for every full build (using `yarn build`), but not for testing and development.
@@ -258,6 +257,7 @@ FOOD_WASTE_DATABASE_PORT="27017"
 FOOD_WASTE_DATABASE_USER="<MongoDB user (can be omitted)>"
 FOOD_WASTE_DATABASE_PASSWORD="<MongoDB password (can be omitted)"
 FOOD_WASTE_CAPTCHA_SECRET="<hCaptcha secret (can be omitted to disable captcha)>"
+FOOD_WASTE_PICTURES_KEY="<Pexels API key (can be omitted to disable picture)>"
 ```
 
 These can also be set in a `.env` file in the directory it's run from. WARNING: Unlike in the frontend, they will be used for every run (including testing and development). They are not needed at compile time and can be omitted for most testing and development setups.

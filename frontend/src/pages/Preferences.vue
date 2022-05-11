@@ -34,6 +34,7 @@
     try {
       const result = await getDishPreferences();
       if (result) {
+        resetState();
         dishPreferences.value = result;
       }
     } catch (e: unknown) {
@@ -52,6 +53,7 @@
       ) {
         const result = await addDishPreference(userInputPreference.value, true);
         if (result) {
+          resetState();
           dishPreferences.value = result;
         }
       }

@@ -1,13 +1,15 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import type { DisplayDish } from '../model';
   import { useRoute, useRouter } from 'vue-router';
   import {
     authFailure,
     checkSession,
     hasUserSession,
-    lastDish,
     addDishRequest,
+    hasConfirmedUserSession,
+    hasConfirmedUserSessionWithPreferences,
+    lastDish,
+    getAvailableDish,
   } from '../data';
   const router = useRouter();
 
@@ -15,26 +17,50 @@
     router.push('/login');
   });
 
-  if (!hasUserSession()) {
-    router.push('/admin');
-  }
-  checkSession();
-
   const route = useRoute();
 
-  const currentDish = ref(null as null | DisplayDish);
+  if (!route.params.id || typeof route.params.id != 'string') {
+    router.push('/user');
+  } else if (!hasUserSession()) {
+    router.push('/admin');
+  } else if (!hasConfirmedUserSession()) {
+    router.push('/login');
+  } else if (!hasConfirmedUserSessionWithPreferences()) {
+    router.push('/preferences');
+  } else {
+    checkSession();
+  }
 
-  lastDish.subscribe((item) => {
-    currentDish.value = item;
-  });
+  const currentDish = ref(lastDish.value);
+  if (!currentDish.value) {
+    (async () => {
+      try {
+        const result = await getAvailableDish(route.params.id as string);
+        if (result) {
+          currentDish.value = result;
+        }
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    })();
+  }
 
   const description =
     'I bought too much flour, so I opened this offer. I expect 2 person who could eat with me.';
 
   const personCount = 2;
 
-  const acceptOffer = () => {
-    addDishRequest(route.params.id.toString());
+  const acceptOffer = async () => {
+    try {
+      const result = await addDishRequest(route.params.id.toString());
+      if (result) {
+        router.push('/plans');
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
   };
 </script>
 
@@ -49,11 +75,11 @@
         </div>
         <p style="text-align: center">Number of people: {{ personCount }}</p>
         <div class="button-section">
-          <router-link to="/">
-            <img src="../assets/icons8-cancel-128.png" />
+          <router-link to="/user">
+            <span class="icon cancel icon-cancel-circled"></span>
           </router-link>
           <div @click="acceptOffer">
-            <img src="../assets/icons8-check-circle-128.png" />
+            <span class="icon ok icon-ok-circled"></span>
           </div>
         </div>
       </div>
@@ -88,5 +114,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
+
+    .icon {
+      color: #ffffff;
+      font-size: 4rem;
+
+      &.cancel {
+        color: #d81a1af0;
+      }
+
+      &.ok {
+        color: #1dd81af0;
+      }
+    }
   }
 </style>

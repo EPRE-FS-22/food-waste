@@ -2,8 +2,8 @@ import type { AppRouter } from '../../backend/src/router';
 import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
 import type { Dish, DishInfo, UserInfoPrivate } from '../../backend/src/model';
-import { ReplaySubject, Subject } from 'rxjs';
-import type { DisplayDish } from './model';
+import { BehaviorSubject, Subject } from 'rxjs';
+import { DisplayDish } from './model';
 
 const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
 const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
@@ -76,7 +76,48 @@ export const clearSetCode = () => {
 
 export const authFailure = new Subject<void>();
 
-export const inLogin = new Subject<boolean>();
+authFailure.subscribe(() => {
+  clearAll();
+});
+
+const clearAll = () => {
+  clearSetCode();
+  clearCaches();
+  clearUserInfo();
+  clearPictures();
+  clearWikiSearches();
+  clearLastDish();
+};
+
+const clearUserInfo = () => {
+  userInfo = null;
+};
+
+const clearPictures = () => {
+  pictures = {};
+};
+
+const clearWikiSearches = () => {
+  wikiSearches = {};
+};
+
+const clearLastDish = () => {
+  lastDish.next(null);
+};
+
+const clearCaches = () => {
+  dishesPreviousIndex = 0;
+  dishesIndex = 0;
+  dishesDate = new Date();
+  dishes = [];
+  recommendedDishesPrevious = [];
+  recommendedDishesDate = new Date();
+  recommendedDishes = [];
+  myDishesDate = new Date();
+  myDishes = [];
+  signedUpDishesDate = new Date();
+  signedUpDishes = [];
+};
 
 let dishesPreviousIndex = 0;
 let dishesIndex = 0;
@@ -111,6 +152,35 @@ export const getAvailableDishes = async (
       dishesIndex += data.length;
       dishesDate = new Date();
       dishes = data;
+      return data;
+    } else {
+      authFailure.next();
+      return false;
+    }
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const getAvailableDish = async (dishId: string) => {
+  try {
+    if (!hasConfirmedUserSessionWithPreferences()) {
+      authFailure.next();
+      return false;
+    }
+    if (dishes.length && dishesDate.getTime() > Date.now() - 1000 * 60 * 1) {
+      const dish = dishes.find((item) => item.customId === dishId);
+      if (dish) {
+        return dish;
+      }
+    }
+    const data = await client.query('getAvailableDish', {
+      sessionId,
+      userId: sessionUserId,
+      dishId,
+    });
+    if (data) {
       return data;
     } else {
       authFailure.next();
@@ -205,6 +275,38 @@ export const getMyDishes = async () => {
   }
 };
 
+export const getMyDish = async (dishId: string) => {
+  try {
+    if (!hasConfirmedUserSessionWithPreferences()) {
+      authFailure.next();
+      return false;
+    }
+    if (
+      myDishes.length &&
+      myDishesDate.getTime() > Date.now() - 1000 * 60 * 1
+    ) {
+      const dish = myDishes.find((item) => item.customId === dishId);
+      if (dish) {
+        return dish;
+      }
+    }
+    const data = await client.query('getMyDish', {
+      sessionId,
+      userId: sessionUserId,
+      dishId,
+    });
+    if (data) {
+      return data;
+    } else {
+      authFailure.next();
+      return false;
+    }
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
 let signedUpDishesDate = new Date();
 let signedUpDishes: Dish[] = [];
 
@@ -227,6 +329,38 @@ export const getSignedUpDishes = async () => {
     if (data) {
       signedUpDishesDate = new Date();
       signedUpDishes = data;
+      return data;
+    } else {
+      authFailure.next();
+      return false;
+    }
+  } catch (e) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const getSignedUpDish = async (dishEventId: string) => {
+  try {
+    if (!hasConfirmedUserSessionWithPreferences()) {
+      authFailure.next();
+      return false;
+    }
+    if (
+      signedUpDishes.length &&
+      signedUpDishesDate.getTime() > Date.now() - 1000 * 60 * 1
+    ) {
+      const dish = signedUpDishes.find((item) => item.customId === dishEventId);
+      if (dish) {
+        return dish;
+      }
+    }
+    const data = await client.query('getSignedUpDish', {
+      sessionId,
+      userId: sessionUserId,
+      dishEventId,
+    });
+    if (data) {
       return data;
     } else {
       authFailure.next();
@@ -796,6 +930,7 @@ export const logOut = async () => {
   try {
     loggingOut = true;
     await client.mutation('logout', { sessionId, userId: sessionUserId });
+    clearAll();
     sessionId = '';
     sessionUserId = '';
     isAdmin = false;
@@ -841,6 +976,7 @@ export const populate = async (
   }
 };
 
+let wikiSearches: Record<string, string[]> = {};
 export const searchWiki = async (
   searchText: string,
   limit = 5,
@@ -852,7 +988,16 @@ export const searchWiki = async (
       authFailure.next();
       return false;
     }
-    const result = await client.mutation('searchWiki', {
+
+    const queryQuery =
+      searchText + ';' + limit + ';' + onlyCoords + ';' + lengthLimit;
+
+    const wikiSearch = wikiSearches[queryQuery];
+
+    if (wikiSearch) {
+      return wikiSearch;
+    }
+    const result = await client.query('searchWiki', {
       searchText,
       sessionId,
       userId: sessionUserId,
@@ -860,11 +1005,68 @@ export const searchWiki = async (
       onlyCoords,
       lengthLimit,
     });
-    return result;
+    if (result) {
+      wikiSearches[queryQuery] = result;
+      return result;
+    }
+    return false;
   } catch (e: unknown) {
     console.error(e);
     throw e;
   }
 };
 
-export const lastDish: ReplaySubject<DisplayDish> = new ReplaySubject();
+let pictures: Record<string, string> = {};
+
+export const getPicture = async (searchText: string) => {
+  try {
+    if (pictures[searchText]) {
+      return pictures[searchText];
+    }
+    const result = await client.query('getPicture', {
+      searchText,
+    });
+    if (result) {
+      pictures[searchText] = result;
+      return result;
+    }
+    return false;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const getPictures = async (searchTexts: string[]) => {
+  try {
+    if (!searchTexts.length || searchTexts.length > 50) {
+      return false;
+    }
+
+    const rest = searchTexts.filter((searchText) => !pictures[searchText]);
+
+    if (!rest.length) {
+      return searchTexts.map((searchText) => pictures[searchText]);
+    }
+
+    const result = await client.query('getPictures', {
+      searchTexts: [rest[0], ...rest.slice(1)],
+    });
+    if (result) {
+      return searchTexts.map((searchText) => {
+        if (pictures[searchText]) {
+          return pictures[searchText] ?? '';
+        } else {
+          return result[rest.indexOf(searchText)] ?? '';
+        }
+      });
+    }
+    return false;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
+export const lastDish: BehaviorSubject<DisplayDish | null> =
+  new BehaviorSubject(null as DisplayDish | null);

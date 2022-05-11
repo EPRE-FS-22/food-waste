@@ -19,10 +19,13 @@ import {
   addDish,
   addDishEvent,
   addDishPreference,
+  getAvailableDish,
   getAvailableDishes,
   getDishPreferences,
+  getMyDish,
   getMyDishes,
   getRecommendedDishes,
+  getSignedUpDish,
   getSignedUpDishes,
   removeDish,
   removeDishEvent,
@@ -32,6 +35,7 @@ import {
 } from './dishes.js';
 import { searchWiki } from './wiki.js';
 import { populateWithData } from './populate.js';
+import { getPicture, getPictures } from './pictures.js';
 
 let adminSessions: {
   [key: string]: { expirationDate: Date; ip: string; adminId: string };
@@ -392,6 +396,66 @@ export const appRouter = trpc
       }
     },
   })
+  .query('getAvailableDish', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+      dishId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (
+          isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
+        ) {
+          return await getAvailableDish(input.dishId, input.userId);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getMyDish', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+      dishId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (
+          isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
+        ) {
+          return await getMyDish(input.dishId, input.userId);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getSignedUpDish', {
+    input: z.object({
+      userId: z.string().nonempty().length(20),
+      sessionId: z.string().length(20),
+      dishEventId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (
+          isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
+        ) {
+          return await getSignedUpDish(input.dishEventId, input.userId);
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
   .query('getUserInfo', {
     input: z.object({
       userId: z.string().nonempty().length(20),
@@ -456,6 +520,57 @@ export const appRouter = trpc
         if (getConfirmedSession(input.sessionId, ip, input.userId)) {
           return await createLoginLink(input.userId, input.stay);
         }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('searchWiki', {
+    input: z.object({
+      searchText: z.string().nonempty().max(100),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+      limit: z.number().nonnegative().min(1).max(50).default(15),
+      lengthLimit: z.number().nonnegative().min(1).max(100).default(50),
+      onlyCoords: z.boolean().optional(),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId)) {
+          return await searchWiki(
+            input.searchText,
+            input.limit,
+            !!input.onlyCoords
+          );
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getPicture', {
+    input: z.object({
+      searchText: z.string().nonempty().max(50),
+    }),
+    async resolve({ input }) {
+      try {
+        return await getPicture(input.searchText);
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getPictures', {
+    input: z.object({
+      searchTexts: z.array(z.string().nonempty().max(50)).nonempty().max(6),
+    }),
+    async resolve({ input }) {
+      try {
+        return await getPictures(input.searchTexts);
         return false;
       } catch (e: unknown) {
         throw internalServerError(e);
@@ -779,31 +894,6 @@ export const appRouter = trpc
             );
             return dishId;
           }
-        }
-        return false;
-      } catch (e: unknown) {
-        throw internalServerError(e);
-      }
-    },
-  })
-  .mutation('searchWiki', {
-    input: z.object({
-      searchText: z.string().nonempty().max(100),
-      sessionId: z.string().length(20),
-      userId: z.string().length(20),
-      limit: z.number().nonnegative().min(1).max(50).default(15),
-      lengthLimit: z.number().nonnegative().min(1).max(100).default(50),
-      onlyCoords: z.boolean().optional(),
-    }),
-    async resolve({ input, ctx }) {
-      try {
-        const ip = getIp(ctx as Context);
-        if (verifySession(input.sessionId, ip, input.userId)) {
-          return await searchWiki(
-            input.searchText,
-            input.limit,
-            !!input.onlyCoords
-          );
         }
         return false;
       } catch (e: unknown) {
