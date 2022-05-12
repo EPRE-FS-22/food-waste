@@ -12,7 +12,7 @@ import { getCoords } from './geo.js';
 import { validateId } from './validateId.js';
 
 export const checkEmail = (email?: string): boolean =>
-  !!email && !!email.match(EMAIL_REGEX) && email !== mailAddress;
+  !!email && !!email.match(EMAIL_REGEX) && email.toLowerCase() !== mailAddress?.toLowerCase();
 
 export const hashPassword = async (password: string) => {
   return await hash(password);
@@ -448,10 +448,6 @@ export const registerOrEmailLoginInternal = async (
   stay = false,
   isRegister = true
 ) => {
-  if (!checkEmail(email)) {
-    return { success: false };
-  }
-
   const lowercaseEmail = email.toLocaleLowerCase();
 
   const usersCollection = await getUsersCollection();
@@ -525,6 +521,10 @@ export const registerOrEmailLogin = async (
   stay = false,
   isRegister = true
 ) => {
+  if (!checkEmail(email)) {
+    return await timeOutCaptchaAndResponse(ip, captchaToken, undefined, false);
+  }
+
   return await timeOutCaptchaAndResponse(ip, captchaToken, async () => {
     const result = await registerOrEmailLoginInternal(email, stay, isRegister);
 
