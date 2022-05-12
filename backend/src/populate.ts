@@ -208,7 +208,7 @@ export const populateWithData = async (
       const preferencesResults = await Promise.all(
         new Array(preferencesPerUser)
           .fill(undefined)
-          .map(async (item, index) => {
+          .map(async (_, index) => {
             const dish = await generateDishName();
             return await addDishPreference(
               dish,

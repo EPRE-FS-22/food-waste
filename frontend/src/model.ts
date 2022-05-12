@@ -1,4 +1,4 @@
-import { Dish, DishEvent, DishInfo } from '../../backend/src/model';
+import type { Dish, DishEvent, DishInfo } from '../../backend/src/model';
 
 export interface DisplayDish extends Dish {
   image?: string;

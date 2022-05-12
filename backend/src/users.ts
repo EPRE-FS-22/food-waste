@@ -253,9 +253,8 @@ export const setUserInfo = async (
 
       return true;
     }
-  } else {
-    return false;
   }
+  return false;
 };
 
 export const resetUserInfo = async (

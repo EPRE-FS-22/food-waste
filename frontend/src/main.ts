@@ -1,3 +1,4 @@
+import './styles.scss';
 import { createApp } from 'vue';
 import { createRouter, createWebHashHistory } from 'vue-router';
 import App from './App.vue';
@@ -13,7 +14,6 @@ import Detail from './pages/Detail.vue';
 import vhCheck from 'vh-check';
 vhCheck();
 
-import './styles.scss';
 import { APP_NAME } from '../../backend/src/constants';
 
 document.title = APP_NAME;

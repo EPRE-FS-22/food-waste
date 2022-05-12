@@ -17,7 +17,7 @@ const mailPassword = process.env.FOOD_WASTE_MAIL_PASSWORD;
 export const mailAddress = process.env.FOOD_WASTE_MAIL_ADDRESS;
 
 const mailTransporter =
-  mailHostname && mailHostname && mailPassword && mailAddress
+  mailHostname && mailHostname && mailUsername && mailPassword && mailAddress
     ? nodemailer.createTransport({
         host: mailHostname,
         port: mailPort,
