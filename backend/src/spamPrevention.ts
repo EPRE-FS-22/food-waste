@@ -51,7 +51,7 @@ export const timeOutCaptchaAndResponse = async (
     }
   }
   if (timeOut) {
-    if (timeOut > new Date()) {
+    if (timeOut.getTime() > Date.now()) {
       return {
         success: false,
         showCaptcha: previousCount > 3,

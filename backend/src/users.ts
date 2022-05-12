@@ -142,7 +142,7 @@ export const setUserInfoInternal = async (
     return { success: false };
   }
 
-  if (registeredUser.resetExpiration < new Date()) {
+  if (registeredUser.resetExpiration.getTime() < Date.now()) {
     await usersCollection.updateOne(
       {
         customId: userId,
@@ -214,6 +214,10 @@ export const setUserInfo = async (
     return false;
   }
 
+  if (dateOfBirth.getTime() >= Date.now() - 1000 * 60 * 60 * 24 * 365 * 18) {
+    return false;
+  }
+
   const identityConfirmed = await validateId(idImageBase64);
 
   if (identityConfirmed) {
@@ -280,7 +284,7 @@ export const resetUserInfo = async (
     return false;
   }
 
-  if (registeredUser.resetExpiration < new Date()) {
+  if (registeredUser.resetExpiration.getTime() < Date.now()) {
     await usersCollection.updateOne(
       {
         customId: userId,
@@ -363,7 +367,7 @@ export const verifyUserEmail = async (
     return { success: false };
   }
 
-  if (registeredUser.verifyExpiration < new Date()) {
+  if (registeredUser.verifyExpiration.getTime() < Date.now()) {
     await usersCollection.updateOne(
       {
         customId: userId,
@@ -461,7 +465,7 @@ export const registerOrEmailLoginInternal = async (
       registeredUser &&
       (registeredUser.verifyDate ||
         !registeredUser.verifyExpiration ||
-        registeredUser.verifyExpiration < new Date())
+        registeredUser.verifyExpiration.getTime() < Date.now())
     )
       return { success: false };
   } else {

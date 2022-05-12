@@ -1,8 +1,14 @@
 import type { AppRouter } from '../../backend/src/router';
 import { createTRPCClient } from '@trpc/client';
-import type { Dish, DishInfo, UserInfoPrivate } from '../../backend/src/model';
+import type {
+  Dish,
+  DishEvent,
+  DishInfo,
+  UserInfoPrivate,
+} from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
-import type { DisplayDish } from './model';
+import type { CurrentDish } from './model';
+import superjson from 'superjson';
 
 const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'http';
 const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
@@ -10,6 +16,7 @@ const port = import.meta.env.VITE_FOOD_WASTE_BACKEND_PORT ?? '3330';
 
 const client = createTRPCClient<AppRouter>({
   url: protocol + '://' + host + ':' + port + '/',
+  transformer: superjson,
 });
 
 let loggingOut = false;
@@ -132,8 +139,8 @@ export const getAvailableDishes = async (
     }
     const data = await client.query('getAvailableDishes', {
       locationCity,
-      dateStart: dateStart ? dateStart.getTime() : undefined,
-      dateEnd: dateEnd ? dateEnd.getTime() : undefined,
+      dateStart,
+      dateEnd,
       start: dishesIndex,
       locationRangeSize,
       ageRangeSize,
@@ -213,8 +220,8 @@ export const getRecommendedDishes = async (
       userId: sessionUserId,
       previousIds: recommendedDishesPrevious.map((dish) => dish.customId),
       locationCity,
-      dateStart: dateStart ? dateStart.getTime() : undefined,
-      dateEnd: dateEnd ? dateEnd.getTime() : undefined,
+      dateStart,
+      dateEnd,
       locationRangeSize,
       ageRangeSize,
     });
@@ -299,7 +306,7 @@ export const getMyDish = async (dishId: string) => {
 };
 
 let signedUpDishesDate = new Date();
-let signedUpDishes: Dish[] = [];
+let signedUpDishes: DishEvent[] = [];
 
 export const getSignedUpDishes = async () => {
   try {
@@ -401,10 +408,10 @@ export const addDish = async (
     const result = await client.mutation('addDish', {
       dish,
       slots,
-      dishDescription,
+      dishDescription: dishDescription || undefined,
       sessionId: sessionId,
       userId: sessionUserId,
-      date: date.getTime(),
+      date,
       locationCity: locationCity || undefined,
       exactLocation: exactLocation || undefined,
     });
@@ -458,7 +465,11 @@ export const addDishPreference = async (dish: string, likes: boolean) => {
       authFailure.next();
       return false;
     } else {
+      if (userInfo) {
+        userInfo.preferencesSet = true;
+      }
       preferencesSet = true;
+      localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
     }
     return result;
   } catch (e: unknown) {
@@ -764,7 +775,7 @@ export const set = async (
       userId: sessionUserId,
       password: newPassword,
       name,
-      dateOfBirth: dateOfBirth.getTime(),
+      dateOfBirth,
       locationCity,
       exactLocation,
       code: setCode,
@@ -802,7 +813,6 @@ export const reset = async (
       authFailure.next();
       return false;
     }
-    console.log(setCode);
     if (!hasSetCode()) {
       await logOut();
       authFailure.next();
@@ -1055,5 +1065,5 @@ export const getPictures = async (searchTexts: string[]) => {
   }
 };
 
-export const lastDish: BehaviorSubject<DisplayDish | null> =
-  new BehaviorSubject(null as DisplayDish | null);
+export const lastDish: BehaviorSubject<CurrentDish | null> =
+  new BehaviorSubject(null as CurrentDish | null);

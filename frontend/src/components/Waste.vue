@@ -11,7 +11,7 @@
   } from '../data';
   import type { DishEvent, DishInfo } from '../../../backend/src/model';
   import { PROMO_DISHES } from '../../../backend/src/constants';
-  import { DisplayDish, DisplayDishEvent, DisplayDishInfo } from '../model';
+  import { DisplayDish, NormalCurrentDish, PlanDish } from '../model';
   import { useRouter } from 'vue-router';
 
   const router = useRouter();
@@ -21,9 +21,7 @@
     type: { type: Number, default: DisplayType.available },
   });
 
-  let dishes = ref(
-    [] as DisplayDish[] | (DisplayDishInfo | DisplayDishEvent)[]
-  );
+  let dishes = ref([] as NormalCurrentDish[] | PlanDish[]);
 
   const getDishesPictures = async () => {
     if (!dishes.value.length) {
@@ -33,23 +31,34 @@
     let pictureSearchTexts: string[] = [];
 
     dishes.value.forEach((item) => {
-      pictureSearchTexts.push(item.dish);
+      pictureSearchTexts.push(item.dish.dish);
     });
 
     const pictures = await getPictures(pictureSearchTexts);
 
     if (pictures) {
       dishes.value = dishes.value.map((item, index) => ({
-        ...item,
-        image: pictures[index],
-      }));
+        type: item.type,
+        dish: {
+          ...item.dish,
+          image: pictures[index],
+        },
+      })) as NormalCurrentDish[] | PlanDish[];
     }
   };
 
   const clickDish = (index: number) => {
-    const dish = dishes.value[index];
-    lastDish.next(dish);
-    router.push('/detail/' + dish.customId);
+    const item = dishes.value[index];
+    lastDish.next(item);
+    if (props.type === DisplayType.plans) {
+      if (item.type === 'info') {
+        router.push('/host/' + item.dish.customId);
+      } else {
+        router.push('/plan/' + item.dish.customId);
+      }
+    } else {
+      router.push('/detail/' + item.dish.customId);
+    }
   };
 
   const getDishes = () => {
@@ -61,20 +70,22 @@
             const availableResult = await getAvailableDishes();
             if (availableResult) {
               success = true;
-              dishes.value = availableResult.length
-                ? availableResult
-                : PROMO_DISHES.map(
-                    (item) =>
-                      ({
-                        promo: true,
-                        customId: 'abcdefghijklmnopqrst',
-                        dish: item,
-                        name: 'John Doe',
-                        date: new Date(Date.now() + 1000 * 60 * 60 * 6),
-                        slots: 2,
-                        filled: 1,
-                      } as DisplayDish)
-                  );
+              dishes.value = (
+                availableResult.length
+                  ? availableResult
+                  : PROMO_DISHES.map(
+                      (item) =>
+                        ({
+                          promo: true,
+                          customId: 'abcdefghijklmnopqrst',
+                          dish: item,
+                          name: 'John Doe',
+                          date: new Date(Date.now() + 1000 * 60 * 60 * 6),
+                          slots: 2,
+                          filled: 1,
+                        } as DisplayDish)
+                    )
+              ).map((item) => ({ type: 'normal', dish: item }));
             }
             break;
 
@@ -82,20 +93,22 @@
             const recommendedResult = await getRecommendedDishes();
             if (recommendedResult) {
               success = true;
-              dishes.value = recommendedResult.length
-                ? recommendedResult
-                : [...PROMO_DISHES].reverse().map(
-                    (item) =>
-                      ({
-                        promo: true,
-                        customId: 'abcdefghijklmnopqrst',
-                        dish: item,
-                        name: 'John Doe',
-                        date: new Date(Date.now() + 1000 * 60 * 60 * 6),
-                        slots: 2,
-                        filled: 1,
-                      } as DisplayDish)
-                  );
+              dishes.value = (
+                recommendedResult.length
+                  ? recommendedResult
+                  : [...PROMO_DISHES].reverse().map(
+                      (item) =>
+                        ({
+                          promo: true,
+                          customId: 'abcdefghijklmnopqrst',
+                          dish: item,
+                          name: 'John Doe',
+                          date: new Date(Date.now() + 1000 * 60 * 60 * 6),
+                          slots: 2,
+                          filled: 1,
+                        } as DisplayDish)
+                    )
+              ).map((item) => ({ type: 'normal', dish: item }));
             }
             break;
 
@@ -106,11 +119,19 @@
             ])) as [false | DishInfo[], false | DishEvent[]];
             if (myAndSignedUpResult[0] && myAndSignedUpResult[1]) {
               success = true;
-              dishes.value = [
-                ...myAndSignedUpResult[0],
-                ...myAndSignedUpResult[1],
-              ].sort((a, b) => {
-                return b.date.getTime() - a.date.getTime();
+              dishes.value = (
+                [
+                  ...myAndSignedUpResult[0].map((item) => ({
+                    type: 'info',
+                    dish: item,
+                  })),
+                  ...myAndSignedUpResult[1].map((item) => ({
+                    type: 'event',
+                    dish: item,
+                  })),
+                ] as PlanDish[]
+              ).sort((a, b) => {
+                return b.dish.date.getTime() - a.dish.date.getTime();
               });
             }
             break;
@@ -158,18 +179,18 @@
   <div v-else class="content-base content" :class="{ small: !!small }">
     <div
       v-for="(data, index) in dishes"
-      :key="data.customId"
+      :key="data.dish.customId"
       class="dish"
       :class="{
         ['dish-' + (index + 1)]: true,
       }"
       :style="{
-        backgroundImage: data.image ? 'url(' + data.image + ')' : '',
+        backgroundImage: data.dish.image ? 'url(' + data.dish.image + ')' : '',
       }"
       @click="clickDish(index)"
     >
       <div class="name">
-        {{ data.dish }}
+        {{ data.dish.dish }}
       </div>
     </div>
   </div>
@@ -183,7 +204,6 @@
     align-items: center;
     font-size: 2rem;
   }
-
   .content {
     display: grid;
     grid-template-rows: 1fr 1fr;

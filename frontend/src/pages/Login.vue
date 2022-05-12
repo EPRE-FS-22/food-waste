@@ -799,6 +799,14 @@
     }
   }
 
+  .id-image {
+    min-height: 30px;
+  }
+
+  .date-of-birth {
+    min-height: 30px;
+  }
+
   .field {
     height: 1rem;
     font-size: 1rem;

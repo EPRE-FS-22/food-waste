@@ -160,7 +160,20 @@
     z-index: 1;
     cursor: pointer;
   }
-
+  .searchWiki {
+    input {
+      height: 1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 90%;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0.25rem;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    }
+  }
   .results:hover {
     background-color: #a4a4a4;
   }

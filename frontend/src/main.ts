@@ -27,6 +27,8 @@ const routes = [
   { path: '/add', component: Add },
   { path: '/preferences', component: Preferences },
   { path: '/detail/:id', component: Detail },
+  { path: '/plan/:id', component: Detail },
+  { path: '/host/:id', component: Detail },
 ];
 
 const router = createRouter({

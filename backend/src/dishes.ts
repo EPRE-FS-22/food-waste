@@ -97,7 +97,8 @@ const combineDishEventDBValues = (
   dish: WithId<DBDish>
 ): DishEvent => {
   return {
-    customId: dish.customId,
+    customId: dishEvent.customId,
+    dishId: dish.customId,
     name: dish.name,
     date: dish.date,
     slots: dish.slots,
@@ -866,19 +867,21 @@ export const acceptDishEventInternal = async (
         )
       ).modifiedCount > 0
     ) {
-      const result = await dishesCollection.updateOne(
-        {
-          customId: dishEvent.dishId,
-        },
-        {
-          $inc: {
-            filled: 1,
-          },
-          $currentDate: { lastAcceptedDate: true },
-        }
-      );
-
-      if (result.modifiedCount > 0) {
+      if (
+        (
+          await dishesCollection.updateOne(
+            {
+              customId: dishEvent.dishId,
+            },
+            {
+              $inc: {
+                filled: 1,
+              },
+              $currentDate: { lastAcceptedDate: true },
+            }
+          )
+        ).modifiedCount > 0
+      ) {
         return {
           success: true,
           participantName: dishEvent.participantName,

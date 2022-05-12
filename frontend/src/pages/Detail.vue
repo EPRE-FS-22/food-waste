@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { useRoute, useRouter } from 'vue-router';
+  import { useRouter, useRoute } from 'vue-router';
   import {
     authFailure,
     checkSession,
@@ -10,6 +10,9 @@
     hasConfirmedUserSessionWithPreferences,
     lastDish,
     getAvailableDish,
+    acceptDishRequest,
+    getMyDish,
+    getSignedUpDish,
   } from '../data';
   const router = useRouter();
 
@@ -18,6 +21,25 @@
   });
 
   const route = useRoute();
+
+  let isMine = false;
+  let isPlan = false;
+
+  const currentDish = ref(lastDish.value);
+
+  if (router.currentRoute.value.path.startsWith('/host/')) {
+    isMine = true;
+    if (currentDish.value && currentDish.value.type !== 'info') {
+      currentDish.value = null;
+    }
+  } else if (router.currentRoute.value.path.startsWith('/plan/')) {
+    isPlan = true;
+    if (currentDish.value && currentDish.value.type !== 'event') {
+      currentDish.value = null;
+    }
+  } else if (currentDish.value && currentDish.value.type !== 'normal') {
+    currentDish.value = null;
+  }
 
   if (!route.params.id || typeof route.params.id != 'string') {
     router.push('/user');
@@ -31,13 +53,27 @@
     checkSession();
   }
 
-  const currentDish = ref(lastDish.value);
   if (!currentDish.value) {
     (async () => {
       try {
-        const result = await getAvailableDish(route.params.id as string);
-        if (result) {
-          currentDish.value = result;
+        if (isMine) {
+          const result = await getMyDish(route.params.id as string);
+          if (result) {
+            currentDish.value = { type: 'info', dish: result };
+          }
+        } else if (isPlan) {
+          const result = await getSignedUpDish(route.params.id as string);
+          if (result) {
+            currentDish.value = { type: 'event', dish: result };
+          }
+        } else {
+          const result = await getAvailableDish(route.params.id as string);
+          if (result) {
+            currentDish.value = { type: 'normal', dish: result };
+          }
+        }
+        if (!currentDish.value) {
+          router.push(isMine || isPlan ? '/plans' : '/user');
         }
       } catch (e) {
         console.error(e);
@@ -46,16 +82,33 @@
     })();
   }
 
-  const description =
-    'I bought too much flour, so I opened this offer. I expect 2 person who could eat with me.';
-
-  const personCount = 2;
-
   const acceptOffer = async () => {
     try {
-      const result = await addDishRequest(route.params.id.toString());
-      if (result) {
-        router.push('/plans');
+      if (currentDish.value && currentDish.value.type === 'normal') {
+        const result = await addDishRequest(currentDish.value.dish.customId);
+        if (result) {
+          router.push('/plans');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const acceptNames = async (index: number) => {
+    try {
+      if (currentDish.value && currentDish.value.type === 'info') {
+        const event = currentDish.value.dish.eventRequestsIds[index];
+        if (event) {
+          const result = await acceptDishRequest(event);
+          if (result) {
+            const newDish = await getMyDish(route.params.id as string);
+            if (newDish) {
+              currentDish.value = { type: 'info', dish: newDish };
+            }
+          }
+        }
       }
     } catch (e) {
       console.error(e);
@@ -68,19 +121,55 @@
   <div class="content-base detail">
     <template v-if="currentDish">
       <div class="detail-margin">
-        <h1>{{ currentDish.dish }}</h1>
+        <h1>{{ currentDish.dish.dish }}</h1>
         <div class="description-section">
           <h4>Description</h4>
-          <p>{{ description }}</p>
+          <p>{{ currentDish.dish.dishDescription }}</p>
         </div>
-        <p style="text-align: center">Number of people: {{ personCount }}</p>
-        <div class="button-section">
+        <p class="info-section">
+          Number of people: {{ currentDish.dish.slots }}
+        </p>
+        <p class="info-section">
+          Current number of people: {{ currentDish.dish.filled }}
+        </p>
+        <div v-if="currentDish.type === 'normal'" class="button-section">
           <router-link to="/user">
             <span class="icon cancel icon-cancel-circled"></span>
           </router-link>
           <div @click="acceptOffer">
             <span class="icon ok icon-ok-circled"></span>
           </div>
+        </div>
+        <div v-else-if="currentDish.type === 'info'" class="acceptNames">
+          <template v-if="currentDish.dish.slots == currentDish.dish.filled">
+            <p>Your event is full</p>
+          </template>
+          <template v-else>
+            <p v-if="currentDish.dish.participantRequestsNames.length > 0">
+              people requests to join:
+            </p>
+            <div
+              v-for="(name, index) in currentDish.dish.participantRequestsNames"
+              :key="index"
+            >
+              <p>{{ name }}</p>
+              <div
+                v-if="currentDish.dish.participantRequestsNames.length > 0"
+                class="button-section"
+              >
+                <div @click="acceptNames(index)">
+                  <span class="icon icon-small ok icon-ok-circled"></span>
+                </div>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div v-else>
+          {{
+            currentDish.dish.accepted
+              ? 'Your request was accepted'
+              : 'Your request was not yet accepted'
+          }}
         </div>
       </div>
     </template>
@@ -93,6 +182,11 @@
     .detail-margin {
       margin: 10%;
     }
+  }
+
+  .acceptNames {
+    text-align: center;
+    margin-top: 100px;
   }
 
   .description-section {
@@ -109,6 +203,10 @@
     margin-bottom: 80px;
   }
 
+  .info-section {
+    text-align: center;
+  }
+
   .button-section {
     text-align: center;
     display: flex;
@@ -119,6 +217,10 @@
       color: #ffffff;
       font-size: 4rem;
 
+      &.icon-small {
+        font-size: 2rem;
+      }
+
       &.cancel {
         color: #d81a1af0;
       }
@@ -127,5 +229,6 @@
         color: #1dd81af0;
       }
     }
+    cursor: pointer;
   }
 </style>
