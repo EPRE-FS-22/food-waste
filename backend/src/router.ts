@@ -222,7 +222,7 @@ const getIp = (ctx: Context): string => {
   if (!ctx) {
     throw new Error('Could not get context to get IP');
   }
-  const ip = ctx.req.connection.remoteAddress;
+  const ip = ctx.req.socket.remoteAddress;
   if (!ip) {
     throw new Error('Could not get IP');
   }
