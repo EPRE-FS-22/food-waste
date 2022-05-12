@@ -131,7 +131,10 @@
           >
             <p>{{ name }}</p>
           </div>
-          <div class="button-section">
+          <div
+            v-if="currentDish.participantRequestsNames.length > 0"
+            class="button-section"
+          >
             <div @click="unacceptNames()">
               <span class="icon cancel icon-cancel-circled"></span>
             </div>
