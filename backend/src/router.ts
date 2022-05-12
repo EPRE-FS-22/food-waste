@@ -476,7 +476,7 @@ export const appRouter = trpc
             return info;
           }
         }
-        return false;
+        return null;
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -557,8 +557,11 @@ export const appRouter = trpc
     }),
     async resolve({ input }) {
       try {
-        return await getPicture(input.searchText);
-        return false;
+        const result = await getPicture(input.searchText);
+        if (result) {
+          return result;
+        }
+        return '';
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -570,8 +573,11 @@ export const appRouter = trpc
     }),
     async resolve({ input }) {
       try {
-        return await getPictures(input.searchTexts);
-        return false;
+        const result = await getPictures(input.searchTexts);
+        if (result.length) {
+          return result;
+        }
+        return [];
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -708,14 +714,13 @@ export const appRouter = trpc
               input.exactLocation,
               input.idBase64
             );
-
             if (result) {
               updateSessionData(input.sessionId, true, true);
               return await getUserInfo(input.userId);
             }
           }
         }
-        return false;
+        return null;
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -753,7 +758,7 @@ export const appRouter = trpc
             return userInfo;
           }
         }
-        return false;
+        return null;
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -791,7 +796,7 @@ export const appRouter = trpc
             return userInfo;
           }
         }
-        return false;
+        return null;
       } catch (e: unknown) {
         throw internalServerError(e);
       }

@@ -18,6 +18,7 @@ import {
   addDishEventInternal,
   addDishPreference,
 } from './dishes.js';
+import { getCoords } from './geo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -75,14 +76,21 @@ const generatePerson = async () => {
   if (city) {
     const cityPage = await getWikiPage(city);
     if (cityPage) {
-      const postalCodesString = await cityPage.info('postalCode');
-      if (postalCodesString) {
-        const postalCodeFound = postalCodesString.toString().match(/^\d+-\d+$/)
-          ? postalCodesString.toString().replace(/-\d+$/, '')
-          : postalCodesString.toString().match(/^\d+$/)
-          ? postalCodesString.toString()
-          : '';
-        postalCode = postalCodeFound;
+      const cityCoordinates = await getCoords(city);
+      if (cityCoordinates) {
+        const postalCodesString = await cityPage.info('postalCode');
+        if (postalCodesString) {
+          const postalCodeFound = postalCodesString
+            .toString()
+            .match(/^\d+-\d+$/)
+            ? postalCodesString.toString().replace(/-\d+$/, '')
+            : postalCodesString.toString().match(/^\d+$/)
+            ? postalCodesString.toString()
+            : '';
+          postalCode = postalCodeFound;
+        } else {
+          city = '';
+        }
       } else {
         city = '';
       }

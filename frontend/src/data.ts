@@ -1,24 +1,15 @@
 import type { AppRouter } from '../../backend/src/router';
-import { createWSClient, wsLink } from '@trpc/client/links/wsLink';
 import { createTRPCClient } from '@trpc/client';
 import type { Dish, DishInfo, UserInfoPrivate } from '../../backend/src/model';
 import { BehaviorSubject, Subject } from 'rxjs';
-import { DisplayDish } from './model';
+import type { DisplayDish } from './model';
 
-const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'ws';
+const protocol = import.meta.env.VITE_FOOD_WASTE_PROTOCOL ?? 'http';
 const host = import.meta.env.VITE_FOOD_WASTE_BACKEND_HOST ?? 'localhost';
 const port = import.meta.env.VITE_FOOD_WASTE_BACKEND_PORT ?? '3330';
 
-const wsClient = createWSClient({
-  url: protocol + '://' + host + ':' + port + '/',
-});
-
 const client = createTRPCClient<AppRouter>({
-  links: [
-    wsLink({
-      client: wsClient,
-    }),
-  ],
+  url: protocol + '://' + host + ':' + port + '/',
 });
 
 let loggingOut = false;

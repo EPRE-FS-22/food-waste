@@ -29,12 +29,20 @@ export const getPicture = (search: string) =>
             ? previousPictures[search].value
             : new ReplaySubject<string>();
           previousPictures[search] = { date: new Date(), value: subject };
-          while (Object.keys(previousPictures).length > 1000) {
+          let currentIndex = 0;
+          while (
+            Object.keys(previousPictures).length > 1000 &&
+            currentIndex < Object.keys(previousPictures).length
+          ) {
             if (
-              !previousPictures[Object.keys(previousPictures)[0]].value.observed
+              !previousPictures[Object.keys(previousPictures)[currentIndex]]
+                .value.observed
             ) {
-              delete previousPictures[Object.keys(previousPictures)[0]];
+              delete previousPictures[
+                Object.keys(previousPictures)[currentIndex]
+              ];
             }
+            currentIndex++;
           }
           const result = await axios.get('https://api.pexels.com/v1/search', {
             params: {

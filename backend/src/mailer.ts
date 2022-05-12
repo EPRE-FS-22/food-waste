@@ -56,8 +56,7 @@ export const sendMail = async (
         subject +
         '; ' +
         body +
-        ' | ' +
-        html
+        (html ? ' | ' + html : '')
     );
   }
 };

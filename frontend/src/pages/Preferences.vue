@@ -55,6 +55,7 @@
         if (result) {
           resetState();
           dishPreferences.value = result;
+          userInputPreference.value = '';
         }
       }
     } catch (e: unknown) {

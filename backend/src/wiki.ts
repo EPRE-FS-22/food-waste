@@ -30,16 +30,21 @@ export const getWikiPage = (page: string) =>
             ? previousWikiPageSearches[page].value
             : new ReplaySubject<Page | null>();
           previousWikiPageSearches[page] = { date: new Date(), value: subject };
-          while (Object.keys(previousWikiPageSearches).length > 100) {
+          let currentIndex = 0;
+          while (
+            Object.keys(previousWikiPageSearches).length > 100 &&
+            currentIndex < Object.keys(previousWikiPageSearches).length
+          ) {
             if (
               !previousWikiPageSearches[
-                Object.keys(previousWikiPageSearches)[0]
+                Object.keys(previousWikiPageSearches)[currentIndex]
               ].value.observed
             ) {
               delete previousWikiPageSearches[
-                Object.keys(previousWikiPageSearches)[0]
+                Object.keys(previousWikiPageSearches)[currentIndex]
               ];
             }
+            currentIndex++;
           }
           const foundPage = (await wiki().page(page)) as Page;
           if (foundPage) {
@@ -96,16 +101,21 @@ export const getWikiPageCoordinates = (pageName: string) =>
             date: new Date(),
             value: subject,
           };
-          while (Object.keys(previousWikiCoordsSearches).length > 100) {
+          let currentIndex = 0;
+          while (
+            Object.keys(previousWikiCoordsSearches).length > 100 &&
+            currentIndex < Object.keys(previousWikiCoordsSearches).length
+          ) {
             if (
               !previousWikiCoordsSearches[
-                Object.keys(previousWikiCoordsSearches)[0]
+                Object.keys(previousWikiCoordsSearches)[currentIndex]
               ].value.observed
             ) {
               delete previousWikiCoordsSearches[
-                Object.keys(previousWikiCoordsSearches)[0]
+                Object.keys(previousWikiCoordsSearches)[currentIndex]
               ];
             }
+            currentIndex++;
           }
           const page = await getWikiPage(pageName);
           if (page) {
@@ -128,6 +138,73 @@ export const getWikiPageCoordinates = (pageName: string) =>
       } catch (err: unknown) {
         if (previousWikiCoordsSearches[pageName]) {
           previousWikiCoordsSearches[pageName].value.next(null);
+        }
+        reject(err);
+      }
+    })();
+  });
+
+const previousWikiSummarySearches: Record<
+  string,
+  { date: Date; value: ReplaySubject<string> }
+> = {};
+
+export const getWikiPageSummary = (pageName: string) =>
+  new Promise<string>((resolve, reject) => {
+    (async () => {
+      try {
+        if (!pageName) {
+          resolve('');
+          return;
+        }
+
+        if (
+          previousWikiSummarySearches[pageName] &&
+          previousWikiSummarySearches[pageName].date.getTime() >
+            Date.now() - 1000 * 60 * 60
+        ) {
+          previousWikiSummarySearches[pageName].value.subscribe((item) => {
+            resolve(item);
+          });
+        } else {
+          const subject = previousWikiSummarySearches[pageName]
+            ? previousWikiSummarySearches[pageName].value
+            : new ReplaySubject<string>();
+          previousWikiSummarySearches[pageName] = {
+            date: new Date(),
+            value: subject,
+          };
+          let currentIndex = 0;
+          while (
+            Object.keys(previousWikiSummarySearches).length > 100 &&
+            currentIndex < Object.keys(previousWikiSummarySearches).length
+          ) {
+            if (
+              !previousWikiSummarySearches[
+                Object.keys(previousWikiSummarySearches)[currentIndex]
+              ].value.observed
+            ) {
+              delete previousWikiSummarySearches[
+                Object.keys(previousWikiSummarySearches)[currentIndex]
+              ];
+            }
+            currentIndex++;
+          }
+          const page = await getWikiPage(pageName);
+          if (page) {
+            const summary = (await page.summary()) as string | undefined;
+            if (summary) {
+              subject.next(summary);
+              resolve(summary);
+              return;
+            }
+          }
+          subject.next('');
+          resolve('');
+        }
+      } catch (err: unknown) {
+        if (previousWikiSummarySearches[pageName]) {
+          previousWikiSummarySearches[pageName].value.next('');
         }
         reject(err);
       }
@@ -213,13 +290,21 @@ export const searchWiki = (
             date: new Date(),
             value: subject,
           };
-          while (Object.keys(previousWikiSearches).length > 100) {
+          let currentIndex = 0;
+          while (
+            Object.keys(previousWikiSearches).length > 100 &&
+            currentIndex < Object.keys(previousWikiSearches).length
+          ) {
             if (
-              !previousWikiSearches[Object.keys(previousWikiSearches)[0]].value
-                .observed
+              !previousWikiSearches[
+                Object.keys(previousWikiSearches)[currentIndex]
+              ].value.observed
             ) {
-              delete previousWikiSearches[Object.keys(previousWikiSearches)[0]];
+              delete previousWikiSearches[
+                Object.keys(previousWikiSearches)[currentIndex]
+              ];
             }
+            currentIndex++;
           }
           if (!onlyCoords) {
             const searchResult = await wiki().prefixSearch(query, limit);

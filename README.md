@@ -21,7 +21,6 @@ This project is build with modern web-technologies, the most important are:
 
 - [Typescript](https://www.typescriptlang.org)
 - [tRPC](https://trpc.io)
-- [WebSockets](https://developer.mozilla.org/de/docs/Web/API/WebSockets_API)
 - [RxJS](https://rxjs.dev)
 
 #### Backend

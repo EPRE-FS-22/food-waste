@@ -1363,14 +1363,6 @@ fastify-plugin@^3.0.0, fastify-plugin@^3.0.1:
   resolved "https://registry.yarnpkg.com/fastify-plugin/-/fastify-plugin-3.0.1.tgz#79e84c29f401020f38b524f59f2402103fd21ed2"
   integrity sha512-qKcDXmuZadJqdTm6vlCqioEbyewF60b/0LOFCcYN1B6BIZGlYJumWWOYs70SFYLDAH4YqdE1cxH/RKMG7rFxgA==
 
-fastify-websocket@^4.2.1:
-  version "4.2.1"
-  resolved "https://registry.yarnpkg.com/fastify-websocket/-/fastify-websocket-4.2.1.tgz#684cba5857aab018a9f47b75acb40185c3663ddb"
-  integrity sha512-m1q6+ecfAd0mfrFxVmCUSHUsVxUysNVP6H8OvVkT/7HRR3bvGXeoFIJE1hEOyfTU7k8cKxmX+dL5dEMX8RTWSA==
-  dependencies:
-    fastify-plugin "^3.0.0"
-    ws "^8.0.0"
-
 fastify@^3.27.4:
   version "3.27.4"
   resolved "https://registry.yarnpkg.com/fastify/-/fastify-3.27.4.tgz#67ffd61b5bea74768a7de28dbef5b6bc58f9e953"
@@ -3864,11 +3856,6 @@ write-file-atomic@^3.0.0:
     is-typedarray "^1.0.0"
     signal-exit "^3.0.2"
     typedarray-to-buffer "^3.1.5"
-
-ws@^8.0.0:
-  version "8.5.0"
-  resolved "https://registry.yarnpkg.com/ws/-/ws-8.5.0.tgz#bfb4be96600757fe5382de12c670dab984a1ed4f"
-  integrity sha512-BWX0SWVgLPzYwF8lTzEy1egjhS4S4OEAHfsO8o65WOVsrnSRGaSiUaa9e0ggGlkMTtBlmOpEXiie9RUcBO86qg==
 
 xdg-basedir@^4.0.0:
   version "4.0.0"

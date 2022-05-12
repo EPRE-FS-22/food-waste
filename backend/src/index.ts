@@ -1,5 +1,4 @@
 import fastify from 'fastify';
-import ws from 'fastify-websocket';
 import fastifyCors from 'fastify-cors';
 import fp from 'fastify-plugin';
 import fs from 'fs';
@@ -34,10 +33,7 @@ const makeFastify = (): ReturnType<typeof makeHTTPSFastify> => {
 
 const server = makeFastify();
 
-server.register(ws);
-
 server.register(fp(fastifyTRPCPlugin), {
-  useWSS: true,
   prefix: '/',
   trpcOptions: { router: appRouter, createContext },
 });
@@ -54,14 +50,15 @@ export const generateFrontendLink = (path: string) => {
   }${frontendPath}${path}`;
 };
 
-server.register(fastifyCors, () => (req, callback) => {
-  let corsOptions;
-  if (req.hostname === frontendHost) {
-    corsOptions = { origin: true };
-  } else {
-    corsOptions = { origin: false };
-  }
-  callback(null, corsOptions);
+server.register(fastifyCors, {
+  origin: (origin, cb) => {
+    const hostname = new URL(origin).hostname;
+    if (hostname === frontendHost) {
+      cb(null, true);
+      return;
+    }
+    cb(new Error('Not allowed'), false);
+  },
 });
 (async () => {
   try {

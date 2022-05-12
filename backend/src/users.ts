@@ -101,7 +101,7 @@ Your ${changesString} ${changesNumber > 0 ? 'have' : 'has'} been changed.
 If this was not you use the site to reset it: ${generateFrontendLink(
       '/login'
     )}`;
-    sendMail(registeredUser.email, APP_NAME + ' account changed', body);
+    await sendMail(registeredUser.email, APP_NAME + ' account changed', body);
 
     return true;
   }
@@ -245,7 +245,7 @@ export const setUserInfo = async (
   If this was not you contact our support via our site: ${generateFrontendLink(
     '/login'
   )}`;
-      sendMail(result.email, APP_NAME + ' account set', body);
+      await sendMail(result.email, APP_NAME + ' account set', body);
 
       return true;
     }
@@ -332,7 +332,7 @@ Your ${changesString} ${changesNumber > 0 ? 'have' : 'has'} been changed.
 If this was not you use the site to reset it: ${generateFrontendLink(
       '/login'
     )}`;
-    sendMail(registeredUser.email, APP_NAME + ' account changed', body);
+    await sendMail(registeredUser.email, APP_NAME + ' account changed', body);
 
     return true;
   } else {
@@ -720,7 +720,7 @@ export const sendUserMail = async (
   });
 
   if (user) {
-    sendMail(user.email, subject, body, html);
+    await sendMail(user.email, subject, body, html);
   }
 
   return false;

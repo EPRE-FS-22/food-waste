@@ -29,7 +29,7 @@ import {
 } from './constants.js';
 import moment from 'moment';
 import { getCoords } from './geo.js';
-import { getWikiPage } from './wiki.js';
+import { getWikiPageSummary } from './wiki.js';
 
 const recommender = new ContentBasedRecommender({
   minScore: 0.1,
@@ -501,19 +501,13 @@ export const getSignedUpDish = async (customId: string, userId: string) => {
   return combineDishEventDBValues(dishEvent, dish);
 };
 
-const getDishDescription = async (dish: string) => {
-  const page = await getWikiPage(dish);
-
-  return (await page?.summary()) ?? '';
-};
-
 export const addDishPreference = async (
   dish: string,
   userId: string,
   likes: boolean,
   isFirst: boolean
 ) => {
-  const description = await getDishDescription(dish);
+  const description = await getWikiPageSummary(dish);
 
   if (description) {
     const dishPreferencesCollection = await getDishPreferencesCollection();
@@ -574,7 +568,7 @@ export const addDish = async (
   exactLocation?: string,
   dishDescription?: string
 ) => {
-  const description = await getDishDescription(dish);
+  const description = await getWikiPageSummary(dish);
 
   if (description) {
     const dishesCollection = await getDishesCollection();
@@ -634,34 +628,39 @@ export const removeDish = async (customId: string, userId?: string) => {
     if (result.deletedCount > 0) {
       const dishEventsCollection = await getDishEventsCollection();
 
-      const dishEvents = await dishEventsCollection.find({ dishId: customId });
+      const dishEvents = await dishEventsCollection
+        .find({ dishId: customId })
+        .toArray();
 
-      dishEvents.forEach((dishEvent) => {
-        const body = userId
-          ? `Hello ${dishEvent.participantName}
+      await Promise.all(
+        dishEvents.map(async (dishEvent) => {
+          const body = userId
+            ? `Hello ${dishEvent.participantName}
 
 Thank your for using the ${APP_NAME} App.
 
 Unfortunately the plan for eating ${dish.dish} on ${moment(
-              dish.date
-            ).calendar()} has been cancelled by the host.
+                dish.date
+              ).calendar()} has been cancelled by the host.
 
 Use the site to search for alternatives: ${generateFrontendLink('/user')}`
-          : `Hello ${dishEvent.participantName}
+            : `Hello ${dishEvent.participantName}
 
 Thank your for using the ${APP_NAME} App.
 
 Unfortunately the plan for eating ${dish.dish} on ${moment(
-              dish.date
-            ).calendar()} has been cancelled by an admin.
+                dish.date
+              ).calendar()} has been cancelled by an admin.
 
 Use the site to search for alternatives: ${generateFrontendLink('/user')}`;
-        sendUserMail(
-          dishEvent.participantId,
-          APP_NAME + (userId ? ' plan cancelled' : ' plan cancelled by admin'),
-          body
-        );
-      });
+          await sendUserMail(
+            dishEvent.participantId,
+            APP_NAME +
+              (userId ? ' plan cancelled' : ' plan cancelled by admin'),
+            body
+          );
+        })
+      );
 
       if (!userId) {
         const body = `Hello ${dish.name}
@@ -675,7 +674,11 @@ Unfortunately your plan for eating ${dish.dish} on ${moment(
 If you do not agree with this decision use the contact option on our site: ${generateFrontendLink(
           '/user'
         )}`;
-        sendUserMail(dish.userId, APP_NAME + ' plan cancelled by admin', body);
+        await sendUserMail(
+          dish.userId,
+          APP_NAME + ' plan cancelled by admin',
+          body
+        );
       }
 
       return (
@@ -761,7 +764,7 @@ Your plan on ${APP_NAME} for eating ${result.dish} on ${moment(
     }.
 
 Use the site to accept it: ${generateFrontendLink('/plans')}`;
-    sendUserMail(userId, APP_NAME + ' new guest request', body);
+    await sendUserMail(userId, APP_NAME + ' new guest request', body);
 
     return true;
   }
@@ -816,7 +819,7 @@ Unfortunately your guest ${dishEvent.participantName} for eating ${
 Use the site to see and accept other requests: ${generateFrontendLink(
           '/plans'
         )}`;
-        sendUserMail(dish.userId, APP_NAME + ' guest cancelled', body);
+        await sendUserMail(dish.userId, APP_NAME + ' guest cancelled', body);
 
         return true;
       }
@@ -912,7 +915,11 @@ Your request on ${APP_NAME} for eating ${result.dish} on ${moment(
     ).calendar()} with ${result.dishName} has been accepted.
 
 Use the site to see more details: ${generateFrontendLink('/plans')}`;
-    sendUserMail(result.participantId, APP_NAME + ' request accepted', body);
+    await sendUserMail(
+      result.participantId,
+      APP_NAME + ' request accepted',
+      body
+    );
 
     return true;
   }
@@ -973,7 +980,7 @@ Unfortunately your host ${dish.name} for eating ${dish.dish} on ${moment(
         ).calendar()} has cancelled your invite.
 
 Use the site to search for alternatives: ${generateFrontendLink('/user')}`;
-        sendUserMail(
+        await sendUserMail(
           dishEvent.participantId,
           APP_NAME + ' invite cancelled',
           body
