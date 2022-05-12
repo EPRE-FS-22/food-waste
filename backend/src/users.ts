@@ -12,7 +12,9 @@ import { getCoords } from './geo.js';
 import { validateId } from './validateId.js';
 
 export const checkEmail = (email?: string): boolean =>
-  !!email && !!email.match(EMAIL_REGEX) && email.toLowerCase() !== mailAddress?.toLowerCase();
+  !!email &&
+  !!email.match(EMAIL_REGEX) &&
+  email.toLowerCase() !== mailAddress?.toLowerCase();
 
 export const hashPassword = async (password: string) => {
   return await hash(password);
@@ -163,34 +165,38 @@ export const setUserInfoInternal = async (
       return { success: false };
     }
 
-    await usersCollection.updateOne(
-      {
-        customId: userId,
-      },
-      {
-        $set: {
-          hash: passwordHashed,
-          name,
-          dateOfBirth,
-          locationCity,
-          exactLocation,
-          identityConfirmed: true,
-          infosSet: true,
-        },
-        $unset: { resetHash: true, resetExpiration: true },
-        $currentDate: { changedDate: true },
-      }
-    );
-    return {
-      success: true,
-      passwordHashed,
-      locationCityCoords,
-      previousName: registeredUser.name,
-      email: registeredUser.email,
-    };
-  } else {
-    return { success: false };
+    if (
+      (
+        await usersCollection.updateOne(
+          {
+            customId: userId,
+          },
+          {
+            $set: {
+              hash: passwordHashed,
+              name,
+              dateOfBirth,
+              locationCity,
+              exactLocation,
+              identityConfirmed: true,
+              infosSet: true,
+            },
+            $unset: { resetHash: true, resetExpiration: true },
+            $currentDate: { changedDate: true },
+          }
+        )
+      ).modifiedCount > 0
+    ) {
+      return {
+        success: true,
+        passwordHashed,
+        locationCityCoords,
+        previousName: registeredUser.name,
+        email: registeredUser.email,
+      };
+    }
   }
+  return { success: false };
 };
 
 export const setUserInfo = async (
@@ -367,14 +373,9 @@ export const verifyUserEmail = async (
   }
 
   if (registeredUser.verifyExpiration.getTime() < Date.now()) {
-    await usersCollection.updateOne(
-      {
-        customId: userId,
-      },
-      {
-        $unset: { verifyHash: true, verifyExpiration: true, verifyStay: true },
-      }
-    );
+    await usersCollection.deleteOne({
+      customId: userId,
+    });
     return { success: false };
   }
 
@@ -456,13 +457,20 @@ export const registerOrEmailLoginInternal = async (
     email: lowercaseEmail,
   });
   if (isRegister) {
-    if (
-      registeredUser &&
-      (registeredUser.verifyDate ||
+    if (registeredUser) {
+      if (
+        registeredUser.verifyDate ||
         !registeredUser.verifyExpiration ||
-        registeredUser.verifyExpiration.getTime() < Date.now())
-    )
-      return { success: false };
+        registeredUser.verifyExpiration.getTime() < Date.now()
+      ) {
+        return { success: false };
+      } else {
+        await usersCollection.deleteOne({
+          email: lowercaseEmail,
+        });
+        return { success: false };
+      }
+    }
   } else {
     if (!registeredUser || !registeredUser.verifyDate) {
       return { success: false };
