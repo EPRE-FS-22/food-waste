@@ -711,10 +711,8 @@ export const verify = async (userId: string, code: string) => {
       identityConfirmed = !!result.identityConfirmed;
       infosSet = !!result.infosSet;
       preferencesSet = !!result.preferencesSet;
-      if (!identityConfirmed || !infosSet) {
-        setCode = result.code ?? '';
-        setExpired = Date.now() + 1000 * 60 * 25 ?? 0;
-      }
+      setCode = result.code ?? '';
+      setExpired = Date.now() + 1000 * 60 * 25 ?? 0;
     }
 
     if (sessionId) {
@@ -804,6 +802,7 @@ export const reset = async (
       authFailure.next();
       return false;
     }
+    console.log(setCode);
     if (!hasSetCode()) {
       await logOut();
       authFailure.next();
@@ -906,9 +905,6 @@ export const getUserInfo = async () => {
       );
       localStorage.setItem('infosSet', infosSet ? 'true' : '');
       localStorage.setItem('preferencesSet', preferencesSet ? 'true' : '');
-      if (identityConfirmed && infosSet) {
-        clearSetCode();
-      }
     }
     return result;
   } catch (e) {
