@@ -29,21 +29,13 @@
       </router-link>
       <router-link
         v-if="
-          $router.currentRoute.value.path === '/login' &&
-          userConfirmedWithPreferences
-        "
-        :to="userLoggedIn ? '/user' : '/'"
-        class="view-toggle"
-      >
-        Back
-      </router-link>
-      <router-link
-        v-if="
           ($router.currentRoute.value.path === '/login' ||
             $router.currentRoute.value.path === '/user' ||
             $router.currentRoute.value.path === '/add' ||
             $router.currentRoute.value.path === '/plans' ||
-            $router.currentRoute.value.path.startsWith('/detail/')) &&
+            $router.currentRoute.value.path.startsWith('/detail/') ||
+            $router.currentRoute.value.path.startsWith('/plan/') ||
+            $router.currentRoute.value.path.startsWith('/host/')) &&
           userConfirmed
         "
         to="/preferences"
@@ -63,10 +55,13 @@
       </router-link>
       <router-link
         v-if="
-          ($router.currentRoute.value.path === '/user' ||
+          ($router.currentRoute.value.path === '/login' ||
+            $router.currentRoute.value.path === '/user' ||
             $router.currentRoute.value.path === '/add' ||
             $router.currentRoute.value.path === '/preferences' ||
-            $router.currentRoute.value.path.startsWith('/detail/')) &&
+            $router.currentRoute.value.path.startsWith('/detail/') ||
+            $router.currentRoute.value.path.startsWith('/plan/') ||
+            $router.currentRoute.value.path.startsWith('/host/')) &&
           userConfirmedWithPreferences
         "
         to="/plans"
@@ -79,7 +74,9 @@
           ($router.currentRoute.value.path === '/plans' ||
             $router.currentRoute.value.path === '/add' ||
             $router.currentRoute.value.path === '/preferences' ||
-            $router.currentRoute.value.path.startsWith('/detail/')) &&
+            $router.currentRoute.value.path.startsWith('/detail/') ||
+            $router.currentRoute.value.path.startsWith('/plan/') ||
+            $router.currentRoute.value.path.startsWith('/host/')) &&
           userConfirmedWithPreferences
         "
         to="/user"

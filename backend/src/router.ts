@@ -1,5 +1,6 @@
 import * as trpc from '@trpc/server';
 import { z } from 'zod';
+import superjson from 'superjson';
 import { TRAIN_INTERVAL } from './constants.js';
 import { makeId } from './id.js';
 import {
@@ -90,12 +91,12 @@ const addSession = (
     };
   }
   Object.keys(sessions).forEach((id) => {
-    if (sessions[id].expirationDate < new Date()) {
+    if (sessions[id].expirationDate.getTime() < Date.now()) {
       delete sessions[id];
     }
   });
   Object.keys(adminSessions).forEach((id) => {
-    if (adminSessions[id].expirationDate < new Date()) {
+    if (adminSessions[id].expirationDate.getTime() < Date.now()) {
       delete adminSessions[id];
     }
   });
@@ -116,7 +117,7 @@ const verifySession = (
     return (
       session &&
       session.ip === ip &&
-      session.expirationDate > new Date() &&
+      session.expirationDate.getTime() > Date.now() &&
       session.adminId === userId
     );
   } else {
@@ -124,7 +125,7 @@ const verifySession = (
     return (
       session &&
       (!session.ip || session.ip === ip) &&
-      session.expirationDate > new Date() &&
+      session.expirationDate.getTime() > Date.now() &&
       session.userId === userId
     );
   }
@@ -237,14 +238,15 @@ const internalServerError = (e: unknown) => {
 
 export const appRouter = trpc
   .router()
+  .transformer(superjson)
   .query('getAvailableDishes', {
     input: z.object({
       userId: z.string().nonempty().length(20).optional(),
       sessionId: z.string().length(20).optional(),
       start: z.number().nonnegative().optional(),
       locationCity: z.string().nonempty().max(100).optional(),
-      dateStart: z.number().nonnegative().optional(),
-      dateEnd: z.number().nonnegative().optional(),
+      dateStart: z.date().optional(),
+      dateEnd: z.date().optional(),
       locationRangeSize: z.number().nonnegative().max(200).optional(),
       ageRangeSize: z.number().nonnegative().max(200).optional(),
     }),
@@ -253,54 +255,26 @@ export const appRouter = trpc
         if (input.userId && input.sessionId) {
           const ip = getIp(ctx as Context);
           if (verifySession(input.sessionId, ip, input.userId)) {
-            let dateStart: Date | undefined = undefined;
-            if (input.dateStart) {
-              const dateStartParsed = new Date(input.dateStart);
-              if (dateStartParsed && !isNaN(dateStartParsed.getTime())) {
-                dateStart = dateStartParsed;
-              }
-            }
-            let dateEnd: Date | undefined = undefined;
-            if (input.dateEnd) {
-              const dateEndParsed = new Date(input.dateEnd);
-              if (dateEnd && !isNaN(dateEndParsed.getTime())) {
-                dateEnd = dateEndParsed;
-              }
-            }
             return await getAvailableDishes(
               input.userId,
               input.start,
               undefined,
               input.locationCity,
-              dateStart,
-              dateEnd,
+              input.dateStart,
+              input.dateEnd,
               input.locationRangeSize,
               input.ageRangeSize
             );
           }
           return false;
         } else {
-          let dateStart: Date | undefined = undefined;
-          if (input.dateStart) {
-            const dateStartParsed = new Date(input.dateStart);
-            if (dateStartParsed && !isNaN(dateStartParsed.getTime())) {
-              dateStart = dateStartParsed;
-            }
-          }
-          let dateEnd: Date | undefined = undefined;
-          if (input.dateEnd) {
-            const dateEndParsed = new Date(input.dateEnd);
-            if (dateEnd && !isNaN(dateEndParsed.getTime())) {
-              dateEnd = dateEndParsed;
-            }
-          }
           return await getAvailableDishes(
             undefined,
             input.start,
             undefined,
             input.locationCity,
-            dateStart,
-            dateEnd,
+            input.dateStart,
+            input.dateEnd,
             input.locationRangeSize,
             input.ageRangeSize
           );
@@ -316,8 +290,8 @@ export const appRouter = trpc
       sessionId: z.string().length(20),
       previousIds: z.array(z.string().nonempty().length(20)).optional(),
       locationCity: z.string().nonempty().max(100).optional(),
-      dateStart: z.number().nonnegative().optional(),
-      dateEnd: z.number().nonnegative().optional(),
+      dateStart: z.date().optional(),
+      dateEnd: z.date().optional(),
       locationRangeSize: z.number().nonnegative().max(200).optional(),
       ageRangeSize: z.number().nonnegative().max(200).optional(),
     }),
@@ -327,27 +301,13 @@ export const appRouter = trpc
         if (
           isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
         ) {
-          let dateStart: Date | undefined = undefined;
-          if (input.dateStart) {
-            const dateStartParsed = new Date(input.dateStart);
-            if (dateStartParsed && !isNaN(dateStartParsed.getTime())) {
-              dateStart = dateStartParsed;
-            }
-          }
-          let dateEnd: Date | undefined = undefined;
-          if (input.dateEnd) {
-            const dateEndParsed = new Date(input.dateEnd);
-            if (dateEnd && !isNaN(dateEndParsed.getTime())) {
-              dateEnd = dateEndParsed;
-            }
-          }
           return await getRecommendedDishes(
             input.userId,
             input.previousIds,
             undefined,
             input.locationCity,
-            dateStart,
-            dateEnd,
+            input.dateStart,
+            input.dateEnd,
             input.locationRangeSize,
             input.ageRangeSize
           );
@@ -689,7 +649,7 @@ export const appRouter = trpc
       sessionId: z.string().length(20),
       password: z.string().nonempty().max(20),
       name: z.string().nonempty().max(200),
-      dateOfBirth: z.number().nonnegative(),
+      dateOfBirth: z.date(),
       locationCity: z.string().nonempty().max(100),
       exactLocation: z.string().nonempty().max(1000),
       idBase64: z.string().nonempty().max(10000000),
@@ -698,26 +658,19 @@ export const appRouter = trpc
       try {
         const ip = getIp(ctx as Context);
         if (verifySession(input.sessionId, ip, input.userId)) {
-          const date = new Date(input.dateOfBirth);
-          if (
-            date &&
-            !isNaN(date.getTime()) &&
-            date.getTime() < Date.now() - 1000 * 60 * 60 * 24 * 365 * 18
-          ) {
-            const result = await setUserInfo(
-              input.userId,
-              input.code,
-              input.password,
-              input.name,
-              date,
-              input.locationCity,
-              input.exactLocation,
-              input.idBase64
-            );
-            if (result) {
-              updateSessionData(input.sessionId, true, true);
-              return await getUserInfo(input.userId);
-            }
+          const result = await setUserInfo(
+            input.userId,
+            input.code,
+            input.password,
+            input.name,
+            input.dateOfBirth,
+            input.locationCity,
+            input.exactLocation,
+            input.idBase64
+          );
+          if (result) {
+            updateSessionData(input.sessionId, true, true);
+            return await getUserInfo(input.userId);
           }
         }
         return null;
@@ -877,7 +830,7 @@ export const appRouter = trpc
       sessionId: z.string().length(20),
       userId: z.string().length(20),
       slots: z.number().min(1).max(10).int(),
-      date: z.number().nonnegative(),
+      date: z.date(),
       locationCity: z.string().nonempty().max(100).optional(),
       exactLocation: z.string().nonempty().max(1000).optional(),
       dishDescription: z.string().nonempty().max(1000).optional(),
@@ -886,19 +839,16 @@ export const appRouter = trpc
       try {
         const ip = getIp(ctx as Context);
         if (getConfirmedSession(input.sessionId, ip, input.userId)) {
-          const date = new Date(input.date);
-          if (date && !isNaN(date.getTime())) {
-            const dishId = await addDish(
-              input.dish,
-              input.userId,
-              input.slots,
-              date,
-              input.locationCity,
-              input.exactLocation,
-              input.dishDescription
-            );
-            return dishId;
-          }
+          const dishId = await addDish(
+            input.dish,
+            input.userId,
+            input.slots,
+            input.date,
+            input.locationCity,
+            input.exactLocation,
+            input.dishDescription
+          );
+          return dishId;
         }
         return false;
       } catch (e: unknown) {

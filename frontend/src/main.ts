@@ -28,6 +28,7 @@ const routes = [
   { path: '/preferences', component: Preferences },
   { path: '/detail/:id', component: Detail },
   { path: '/plan/:id', component: Detail },
+  { path: '/host/:id', component: Detail },
 ];
 
 const router = createRouter({

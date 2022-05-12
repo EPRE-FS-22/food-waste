@@ -39,25 +39,25 @@
   const dateOfEventMessage = ref('');
 
   const addInvite = async () => {
-    userInputEventMessage.value = '';
-    personNrMessage.value = '';
-    descriptionMessage.value = '';
-    dateOfEventMessage.value = '';
-    let date: Date | null = null;
-    if (dateOfEvent.value) {
-      date = moment(dateOfEvent.value).toDate();
-    }
-    if (
-      !(
-        userInputEvent.value === '' ||
-        personNr.value === null ||
-        description.value === '' ||
-        !date ||
-        isNaN(date.getTime()) ||
-        date.getTime() < Date.now()
-      )
-    ) {
-      try {
+    try {
+      userInputEventMessage.value = '';
+      personNrMessage.value = '';
+      descriptionMessage.value = '';
+      dateOfEventMessage.value = '';
+      let date: Date | null = null;
+      if (dateOfEvent.value) {
+        date = moment(dateOfEvent.value).toDate();
+      }
+      if (
+        !(
+          userInputEvent.value === '' ||
+          personNr.value <= 0 ||
+          description.value === '' ||
+          !date ||
+          isNaN(date.getTime()) ||
+          date.getTime() < Date.now()
+        )
+      ) {
         const result = await addDish(
           userInputEvent.value,
           personNr.value,
@@ -67,26 +67,26 @@
         if (result) {
           router.push('/plans');
         }
-      } catch (e: unknown) {
-        console.error(e);
-        throw e;
+      } else {
+        if (!date || isNaN(date.getTime()) || date.getTime() < Date.now()) {
+          dateOfEventMessage.value =
+            'Please set Correct Date & it must be in the future';
+        }
+        if (userInputEvent.value === '') {
+          userInputEventMessage.value =
+            "Search text is not correct (don't forget to choose from the List)";
+        }
+        if (description.value === '') {
+          descriptionMessage.value = 'Description is missing';
+        }
+        if (personNr.value <= 0) {
+          personNrMessage.value =
+            'Number of people is incorrect, set 1 or higher';
+        }
       }
-    } else {
-      if (!date || isNaN(date.getTime()) || date.getTime() < Date.now()) {
-        dateOfEventMessage.value =
-          'Please set Correct Date & it must be in the future';
-      }
-      if (userInputEvent.value === '') {
-        userInputEventMessage.value =
-          "Search text is not correct (don't forget to choose from the List)";
-      }
-      if (description.value === '') {
-        descriptionMessage.value = 'Description is missing';
-      }
-      if (personNr.value === null) {
-        personNrMessage.value =
-          'Number of Persons is incorrect, set 1 or higher';
-      }
+    } catch (e) {
+      console.error(e);
+      throw e;
     }
   };
 </script>
@@ -101,7 +101,7 @@
       </label>
       <SearchWiki v-model="userInputEvent"></SearchWiki>
       <label class="label name-label add-item" for="name"
-        >How many Persons?{{ personNrMessage ? ': ' + personNrMessage : ''
+        >How many people?{{ personNrMessage ? ': ' + personNrMessage : ''
         }}<br />
       </label>
       <input
@@ -124,7 +124,7 @@
       <input
         id="date-of-event"
         v-model="dateOfEvent"
-        type="date"
+        type="datetime-local"
         class="field date-of-event"
         name="date-of-event"
         placeholder="20.06.2022"
@@ -138,12 +138,11 @@
       <textarea
         id="description"
         v-model="description"
-        type="text"
         class="textarea name add-item"
         name="description"
         placeholder="Hello..."
         maxlength="200"
-      />
+      ></textarea>
       <button class="invite-button" @click="addInvite()">Invite Now</button>
     </div>
   </div>

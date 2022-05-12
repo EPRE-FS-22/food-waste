@@ -4,7 +4,6 @@ export interface DishBase {
 
 export interface DBDishBase extends DishBase {
   description: string;
-  fake?: boolean;
 }
 
 export interface DishPlan extends DishBase {
@@ -44,13 +43,13 @@ export interface DishEventBase extends DishPlan {
   response?: string;
   signupDate: Date;
   acceptedDate?: Date;
+  dishId: string;
 }
 
 export interface DishEvent extends DishEventBase, Dish {}
 
 export interface DBDishEvent extends DishEventBase, DBDishBase {
   participantId: string;
-  dishId: string;
 }
 
 export interface DishPreference extends DishBase {
@@ -127,9 +126,6 @@ export interface User extends UserInfoPrivate {
   changedDate?: Date;
 }
 
-export interface DBUser extends User {
-  fake?: boolean;
-  showFake?: boolean;
-}
+export type DBUser = User;
 
 export type Setting = StringSetting | NumberSetting | DateSetting | SubSetting;

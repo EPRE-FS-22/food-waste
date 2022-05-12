@@ -51,6 +51,7 @@
     "@trpc/server": "^9.20.3",
     "moment": "^2.29.1",
     "rxjs": "^7.5.5",
+    "superjson": "^1.9.1",
     "vh-check": "^2.0.5",
     "vue": "^3.2.31",
     "vue-router": "4",
