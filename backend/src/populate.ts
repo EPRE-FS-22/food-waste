@@ -63,11 +63,11 @@ const generatePerson = async () => {
   const password = makeId(fakeGenerator.random.number(10, 20));
   const email =
     name
-      .replace(/\. /, '.')
-      .replace(/ /, '.')
+      .replace(/\. /g, '.')
+      .replace(/ /g, '.')
       .replace(/[^\S.]+/g, '') +
     '@' +
-    (mailAddress?.replace(/@[^@]+$/, '') ?? 'example.com');
+    (mailAddress?.replace(/^[^@]+@/, '') ?? 'example.com');
   let city = locations.length
     ? locations[fakeGenerator.random.number(0, locations.length)]
     : '';
