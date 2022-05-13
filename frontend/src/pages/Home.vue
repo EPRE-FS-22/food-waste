@@ -1,5 +1,10 @@
 <script setup lang="ts">
-  import { DisplayType, resetState } from '../settings';
+  import {
+    DisplayType,
+    resetSettings,
+    resetSettingsMessages,
+    resetState,
+  } from '../settings';
   import Waste from '../components/Waste.vue';
   import { authFailure, checkSession, hasSession, isLoggingOut } from '../data';
   import { useRouter } from 'vue-router';
@@ -7,6 +12,8 @@
 
   authFailure.subscribe(() => {
     resetState();
+    resetSettings();
+    resetSettingsMessages();
   });
 
   if (!isLoggingOut() && hasSession()) {

@@ -32,6 +32,14 @@ export const resetState = () => {
 
 export const loading = ref(true);
 
+export const resetSettingsMessages = () => {
+  settingsMessages.locationCity = '';
+  settingsMessages.locationRangeSize = '';
+  settingsMessages.ageRangeSize = '';
+  settingsMessages.dateEnd = '';
+  settingsMessages.dateStart = '';
+};
+
 export const settingsMessages = reactive({
   dateStart: '',
   dateEnd: '',
@@ -39,6 +47,15 @@ export const settingsMessages = reactive({
   locationRangeSize: '',
   ageRangeSize: '',
 });
+
+export const resetSettings = () => {
+  settings.locationCity = '';
+  settings.previousLocationCity = '';
+  settings.locationRangeSize = DEFAULT_SEARCH_LOCATION_RANGE;
+  settings.ageRangeSize = DEFAULT_SEARCH_AGE_RANGE;
+  settings.dateEnd = '';
+  settings.dateStart = '';
+};
 
 export const settings = reactive({
   dateStart: '',

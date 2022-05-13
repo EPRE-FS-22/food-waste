@@ -2,7 +2,13 @@
   import { useRouter } from 'vue-router';
   import { APP_NAME } from '../../../backend/src/constants';
   import { logOut } from '../data';
-  import { loggedIn, resetState, userLoggedIn } from '../settings';
+  import {
+    loggedIn,
+    resetSettings,
+    resetSettingsMessages,
+    resetState,
+    userLoggedIn,
+  } from '../settings';
 
   const router = useRouter();
 
@@ -10,6 +16,8 @@
     try {
       await logOut();
       resetState();
+      resetSettings();
+      resetSettingsMessages();
       router.push('/');
     } catch (e) {
       console.error(e);

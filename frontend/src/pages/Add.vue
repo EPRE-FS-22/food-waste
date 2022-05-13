@@ -11,11 +11,17 @@
   import SearchWiki from '../components/SearchWiki.vue';
   import { ref } from 'vue';
   import moment from 'moment';
-  import { resetState } from '../settings';
+  import {
+    resetSettings,
+    resetSettingsMessages,
+    resetState,
+  } from '../settings';
   const router = useRouter();
 
   authFailure.subscribe(() => {
     resetState();
+    resetSettings();
+    resetSettingsMessages();
     router.push('/login');
   });
 

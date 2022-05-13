@@ -3,6 +3,7 @@
   import {
     DisplayType,
     loading,
+    resetSettingsMessages,
     settings,
     settingsMessages,
   } from '../settings';
@@ -107,6 +108,8 @@
         let locationRangeSizeChecked: undefined | number = undefined;
         let ageRangeSizeChecked: undefined | number = undefined;
 
+        resetSettingsMessages();
+
         if (
           props.type === DisplayType.recommended ||
           (props.type === DisplayType.available && hasSession(true))
@@ -201,11 +204,6 @@
             return;
           }
         }
-        settingsMessages.locationCity = '';
-        settingsMessages.locationRangeSize = '';
-        settingsMessages.ageRangeSize = '';
-        settingsMessages.dateEnd = '';
-        settingsMessages.dateStart = '';
         requestOngoing = true;
         switch (props.type) {
           case DisplayType.available:

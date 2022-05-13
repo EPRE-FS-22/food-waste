@@ -21,6 +21,8 @@
   import { base64Decode, getBase64 } from '../helpers';
   import {
     loggedIn,
+    resetSettings,
+    resetSettingsMessages,
     resetState,
     userConfirmed,
     userConfirmedWithPreferences,
@@ -135,6 +137,8 @@
 
   authFailure.subscribe(() => {
     resetState();
+    resetSettings();
+    resetSettingsMessages();
     type.value = LoginType.logIn;
     message.value = 'Your session expired, please log in again.';
   });

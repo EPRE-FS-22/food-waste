@@ -15,9 +15,17 @@
     getSignedUpDish,
     clearCaches,
   } from '../data';
+  import {
+    resetSettings,
+    resetSettingsMessages,
+    resetState,
+  } from '../settings';
   const router = useRouter();
 
   authFailure.subscribe(() => {
+    resetState();
+    resetSettings();
+    resetSettingsMessages();
     router.push('/login');
   });
 

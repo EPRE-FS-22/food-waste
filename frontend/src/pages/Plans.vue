@@ -1,6 +1,11 @@
 <script setup lang="ts">
   import Waste from '../components/Waste.vue';
-  import { DisplayType, resetState } from '../settings';
+  import {
+    DisplayType,
+    resetSettings,
+    resetSettingsMessages,
+    resetState,
+  } from '../settings';
   import { useRouter } from 'vue-router';
   import {
     authFailure,
@@ -13,6 +18,8 @@
 
   authFailure.subscribe(() => {
     resetState();
+    resetSettings();
+    resetSettingsMessages();
     router.push('/login');
   });
 
