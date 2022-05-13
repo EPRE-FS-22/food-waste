@@ -9,7 +9,10 @@
 
 <template>
   <div class="header">
-    <router-link to="/" class="header-container">
+    <router-link
+      :to="loggedIn ? (userLoggedIn ? '/user' : '/admin') : '/'"
+      class="header-container"
+    >
       <img src="../assets/logofullwhite.png" class="logo" />
     </router-link>
     <div class="right-hand-buttons">

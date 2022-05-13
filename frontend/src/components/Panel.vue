@@ -1,6 +1,12 @@
 <script setup lang="ts">
   import { ref } from 'vue';
-  import { hasSession, populate } from '../data';
+  import {
+    clearCaches,
+    depopulate,
+    hasSession,
+    populate,
+    refreshDishes,
+  } from '../data';
   import {
     loggedIn,
     userLoggedIn,
@@ -13,7 +19,29 @@
       if (hasSession(true)) {
         buttonDisabled.value = true;
         const result = await populate();
+        clearCaches(true, false, false, false);
         buttonDisabled.value = false;
+        refreshDishes.next();
+        if (result) {
+          alert('Success');
+        } else {
+          alert('Error');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const depopulateOnClick = async () => {
+    try {
+      if (hasSession(true)) {
+        buttonDisabled.value = true;
+        const result = await depopulate();
+        clearCaches(true, false, false, false);
+        buttonDisabled.value = false;
+        refreshDishes.next();
         if (result) {
           alert('Success');
         } else {
@@ -30,14 +58,22 @@
 
 <template>
   <div class="panel">
-    <button
-      v-if="loggedIn && !userLoggedIn"
-      class="populate-button"
-      :disabled="buttonDisabled"
-      @click="populateOnClick()"
-    >
-      Populate
-    </button>
+    <div v-if="loggedIn && !userLoggedIn">
+      <button
+        class="populate-button"
+        :disabled="buttonDisabled"
+        @click="populateOnClick()"
+      >
+        Populate
+      </button>
+      <button
+        class="populate-button"
+        :disabled="buttonDisabled"
+        @click="depopulateOnClick()"
+      >
+        Depopulate
+      </button>
+    </div>
     <div class="location-range-container input-container">
       <label for="location-range"
         >Location range{{

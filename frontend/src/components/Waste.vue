@@ -17,6 +17,7 @@
     hasSession,
     hasUserSession,
     lastDish,
+    refreshDishes,
   } from '../data';
   import type { DishEvent, DishInfo } from '../../../backend/src/model';
   import { NormalCurrentDish, PlanDish } from '../model';
@@ -262,11 +263,20 @@
     }
   );
 
+  let intervalCounter = 0;
+
   const interval = setInterval(() => {
     if (props.type !== DisplayType.recommended) {
       getDishes();
+    } else if (intervalCounter % 5 === 0) {
+      getDishes();
     }
-  }, 1000 * 60 * 10);
+    intervalCounter++;
+  }, 1000 * 60 * 3);
+
+  refreshDishes.subscribe(() => {
+    getDishes();
+  });
 
   onBeforeUnmount(() => {
     loading.value = true;
@@ -275,7 +285,11 @@
 </script>
 
 <template>
-  <div v-if="!dishes.length" class="content-base no-content">
+  <div
+    v-if="!dishes.length"
+    class="content-base no-content"
+    :class="{ small: !!small }"
+  >
     Nothing to see here
   </div>
   <div v-else class="content-base content" :class="{ small: !!small }">

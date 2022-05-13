@@ -699,6 +699,14 @@ export const removeDishPreference = async (dish: string, userId: string) => {
   return result.deletedCount > 0;
 };
 
+export const removePopulatedDishPreferences = async () => {
+  const dishPreferencesCollection = await getDishPreferencesCollection();
+
+  await dishPreferencesCollection.deleteMany({
+    populated: true,
+  });
+};
+
 export const addDish = async (
   dish: string,
   userId: string,
@@ -834,6 +842,14 @@ If you do not agree with this decision use the contact option on our site: ${gen
   }
 
   return false;
+};
+
+export const removePopulatedDishes = async () => {
+  const dishesCollection = await getDishesCollection();
+
+  await dishesCollection.deleteMany({
+    populated: true,
+  });
 };
 
 export const addDishEventInternal = async (
@@ -981,6 +997,14 @@ Use the site to see and accept other requests: ${generateFrontendLink(
   }
 
   return false;
+};
+
+export const removePopulatedDishEvents = async () => {
+  const dishEventsCollection = await getDishEventsCollection();
+
+  await dishEventsCollection.deleteMany({
+    populated: true,
+  });
 };
 
 export const acceptDishEventInternal = async (

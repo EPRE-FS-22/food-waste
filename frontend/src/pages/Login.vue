@@ -8,6 +8,8 @@
     clearSetCode,
     emailLogIn,
     getUserInfo,
+    hasSession,
+    hasUserSession,
     logIn,
     register,
     reset,
@@ -498,7 +500,15 @@
         confirmAction();
         break;
       case LoginType.none:
-        router.push('/');
+        if (hasSession()) {
+          if (hasUserSession()) {
+            router.push('/user');
+          } else {
+            router.push('/admin');
+          }
+        } else {
+          router.push('/');
+        }
         break;
     }
   };

@@ -35,7 +35,7 @@ import {
   unacceptDishEvent,
 } from './dishes.js';
 import { searchWiki } from './wiki.js';
-import { populateWithData } from './populate.js';
+import { deletePopulatedData, populateWithData } from './populate.js';
 import { getPicture, getPictures } from './pictures.js';
 
 let adminSessions: {
@@ -1066,6 +1066,23 @@ export const appRouter = trpc
             input.dishesPerUser,
             input.dishEventsPerUser
           );
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .mutation('depopulate', {
+    input: z.object({
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId, true)) {
+          return await deletePopulatedData();
         }
         return false;
       } catch (e: unknown) {

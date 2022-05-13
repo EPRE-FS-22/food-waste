@@ -7,9 +7,11 @@
     addDishPreference,
     authFailure,
     checkSession,
+    clearCaches,
     getDishPreferences,
     hasConfirmedUserSession,
     hasUserSession,
+    refreshDishes,
     removeDishPreference,
   } from '../data';
   import {
@@ -60,6 +62,14 @@
         inProgressDishPreferences.push(dish.value);
         const result = await addDishPreference(dish.value, true);
         if (result) {
+          if (timeoutId) {
+            window.clearTimeout(timeoutId);
+          }
+          timeoutId = window.setTimeout(async () => {
+            timeoutId = 0;
+            clearCaches(false, true, false, false);
+            refreshDishes.next();
+          }, 1000 * 65);
           inProgressDishPreferences.splice(
             inProgressDishPreferences.indexOf(dish.value)
           );
@@ -74,10 +84,20 @@
     }
   });
 
+  let timeoutId = 0;
+
   const deletePreferences = async (dish: string) => {
     try {
       const result = await removeDishPreference(dish);
       if (result) {
+        if (timeoutId) {
+          window.clearTimeout(timeoutId);
+        }
+        timeoutId = window.setTimeout(async () => {
+          timeoutId = 0;
+          clearCaches(false, true, false, false);
+          refreshDishes.next();
+        }, 1000 * 65);
         dishPreferences.value = result;
       }
     } catch (e: unknown) {
@@ -90,7 +110,9 @@
 <template>
   <div class="content-base preferences-section">
     <div class="preferences">Set Up Your preferences</div>
-    <div class="preferences-list-title">Your Preferences:</div>
+    <div class="preferences-list-title">
+      Your Preferences (recommendations take a couple of minutes to update):
+    </div>
     <div
       v-for="(dishPreference, index) in dishPreferences"
       :key="index"

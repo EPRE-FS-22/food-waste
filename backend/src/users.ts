@@ -574,6 +574,14 @@ If you did not request this email, simply ignore it.`;
   });
 };
 
+export const deletePopulatedUsers = async () => {
+  const usersCollection = await getUsersCollection();
+
+  await usersCollection.deleteMany({
+    populated: true,
+  });
+};
+
 export const verifyAdminPassword = async (
   password: string,
   ip: string,

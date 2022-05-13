@@ -6,6 +6,7 @@ import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getWikiPage } from './wiki.js';
 import {
+  deletePopulatedUsers,
   registerOrEmailLoginInternal,
   setUserInfoInternal,
   verifyUserEmail,
@@ -17,6 +18,9 @@ import {
   addDish,
   addDishEventInternal,
   addDishPreference,
+  removePopulatedDishes,
+  removePopulatedDishEvents,
+  removePopulatedDishPreferences,
 } from './dishes.js';
 import { getCoords } from './geo.js';
 
@@ -161,6 +165,15 @@ const shuffleArray = <T>(array: T[]) => {
     array[i] = array[j];
     array[j] = temp;
   }
+};
+
+export const deletePopulatedData = async () => {
+  await deletePopulatedUsers();
+  await removePopulatedDishPreferences();
+  await removePopulatedDishes();
+  await removePopulatedDishEvents();
+
+  return true;
 };
 
 export const populateWithData = async (

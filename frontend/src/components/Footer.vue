@@ -57,7 +57,6 @@
     >
     <div
       v-else-if="$router.currentRoute.value.path === '/login' && loggedIn"
-      to="/"
       class="action-link footer-item"
       @click="logOutOnclick()"
     >

@@ -1010,6 +1010,23 @@ export const populate = async (
   }
 };
 
+export const depopulate = async () => {
+  try {
+    if (!hasSession(true)) {
+      authFailure.next();
+      return false;
+    }
+    const result = await client.mutation('depopulate', {
+      sessionId: sessionId,
+      userId: sessionUserId,
+    });
+    return result;
+  } catch (e: unknown) {
+    console.error(e);
+    throw e;
+  }
+};
+
 let wikiSearches: Record<string, string[]> = {};
 export const searchWiki = async (
   searchText: string,
@@ -1104,3 +1121,5 @@ export const getPictures = async (searchTexts: string[]) => {
 
 export const lastDish: BehaviorSubject<CurrentDish | null> =
   new BehaviorSubject(null as CurrentDish | null);
+
+export const refreshDishes: Subject<void> = new Subject();

@@ -51,7 +51,11 @@
   }
 
   if (!route.params.id || typeof route.params.id != 'string') {
-    router.push('/user');
+    if (hasUserSession()) {
+      router.push('/user');
+    } else {
+      router.push('/admin');
+    }
   } else if (!hasUserSession()) {
     router.push('/admin');
   } else if (!hasConfirmedUserSession()) {
