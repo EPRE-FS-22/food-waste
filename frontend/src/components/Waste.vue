@@ -7,6 +7,7 @@
     settingsMessages,
   } from '../settings';
   import {
+    clearCaches,
     getAvailableDishes,
     getMyDishes,
     getPictures,
@@ -90,6 +91,7 @@
       }
       timeoutId = window.setTimeout(async () => {
         timeoutId = 0;
+        clearCaches(!hasUserSession(), true, false, false);
         getDishes();
       }, 1000);
     }
@@ -313,7 +315,7 @@
     if (props.type !== DisplayType.recommended) {
       getDishes();
     }
-  }, 1000 * 60 * 1);
+  }, 1000 * 60 * 10);
 
   onBeforeUnmount(() => {
     loading.value = true;
