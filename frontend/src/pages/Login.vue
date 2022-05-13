@@ -288,7 +288,11 @@
       clearMessages();
       previousCity.value = city.value;
       previousLocation.value = location.value;
-      const result = await reset(newPassword.value, city.value, location.value);
+      const result = await reset(
+        newPassword.value,
+        city.value === previousCity.value ? undefined : city.value,
+        location.value === previousLocation.value ? undefined : location.value
+      );
       resetState();
       if (result) {
         if (userConfirmedWithPreferences.value) {
@@ -331,8 +335,8 @@
       const result = await change(
         password.value,
         newPassword.value,
-        city.value,
-        location.value
+        city.value === previousCity.value ? undefined : city.value,
+        location.value === previousLocation.value ? undefined : location.value
       );
       resetState();
       if (result) {

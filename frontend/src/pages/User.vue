@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import Panel from '../components/Panel.vue';
   import Waste from '../components/Waste.vue';
   import { DisplayType, resetState } from '../settings';
   import { useRouter } from 'vue-router';
@@ -29,6 +30,7 @@
 
 <template>
   <div class="page">
-    <Waste :small="false" :type="DisplayType.recommended"> </Waste>
+    <Panel></Panel>
+    <Waste :small="true" :type="DisplayType.recommended"> </Waste>
   </div>
 </template>

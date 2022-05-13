@@ -29,8 +29,8 @@
     checkSession();
   }
 
-  const userInputEvent = ref('');
-  const userInputEventMessage = ref('');
+  const city = ref('');
+  const cityMessage = ref('');
   const personNr = ref(1);
   const personNrMessage = ref('');
   const description = ref('');
@@ -40,7 +40,7 @@
 
   const addInvite = async () => {
     try {
-      userInputEventMessage.value = '';
+      cityMessage.value = '';
       personNrMessage.value = '';
       descriptionMessage.value = '';
       dateOfEventMessage.value = '';
@@ -50,7 +50,7 @@
       }
       if (
         !(
-          userInputEvent.value === '' ||
+          city.value === '' ||
           personNr.value <= 0 ||
           description.value === '' ||
           !date ||
@@ -59,7 +59,7 @@
         )
       ) {
         const result = await addDish(
-          userInputEvent.value,
+          city.value,
           personNr.value,
           date,
           undefined,
@@ -74,8 +74,8 @@
           dateOfEventMessage.value =
             'Please set Correct Date & it must be in the future';
         }
-        if (userInputEvent.value === '') {
-          userInputEventMessage.value =
+        if (city.value === '') {
+          cityMessage.value =
             "Search text is not correct (don't forget to choose from the List)";
         }
         if (description.value === '') {
@@ -98,10 +98,17 @@
     <div class="add-margin">
       <label class="label name-label add-item" for="name"
         >Search your Dish (Select from shown List){{
-          userInputEventMessage ? ': ' + userInputEventMessage : ''
+          cityMessage ? ': ' + cityMessage : ''
         }}<br />
       </label>
-      <SearchWiki v-model="userInputEvent"></SearchWiki>
+      <SearchWiki
+        id="city"
+        v-model="city"
+        name="city"
+        placeholder="Pizza"
+        class="field city add-item"
+        :maxlength="200"
+      ></SearchWiki>
       <label class="label name-label add-item" for="name"
         >How many people?{{ personNrMessage ? ': ' + personNrMessage : ''
         }}<br />

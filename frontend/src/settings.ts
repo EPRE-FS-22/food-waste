@@ -1,5 +1,5 @@
-import moment from 'moment';
-import { ref } from 'vue';
+import { reactive, ref } from 'vue';
+import { DEFAULT_SEARCH_LOCATION_RANGE } from '../../backend/src/constants';
 import {
   hasConfirmedUserSession,
   hasConfirmedUserSessionWithPreferences,
@@ -27,19 +27,21 @@ export const resetState = () => {
   userConfirmedWithPreferences.value = hasConfirmedUserSessionWithPreferences();
 };
 
-export const ranking = ref(false);
-
 export const loading = ref(true);
 
-const currentDate = moment(new Date()).format('YYYY-MM-DDThh:mm');
+export const settingsMessages = reactive({
+  dateStart: '',
+  dateEnd: '',
+  locationCity: '',
+  locationRangeSize: '',
+  ageRangeSize: '',
+});
 
-export const settings = ref({
-  amount: ref(1),
-  keepAmount: false,
-  date: ref(currentDate),
-  keepDate: false,
-  owner: ref(''),
-  keepOwner: false,
-  reason: ref(''),
-  keepReason: false,
+export const settings = reactive({
+  dateStart: '',
+  dateEnd: '',
+  locationCity: '',
+  previousLocationCity: '',
+  locationRangeSize: DEFAULT_SEARCH_LOCATION_RANGE,
+  ageRangeSize: DEFAULT_SEARCH_LOCATION_RANGE,
 });

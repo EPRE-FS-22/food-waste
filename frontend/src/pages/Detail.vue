@@ -53,7 +53,6 @@
   } else {
     checkSession();
   }
-
   if (!currentDish.value) {
     (async () => {
       try {
@@ -81,6 +80,8 @@
         throw e;
       }
     })();
+  } else if (currentDish.value && currentDish.value.dish.promo) {
+    router.push('/user');
   }
 
   const acceptOffer = async () => {
@@ -88,7 +89,7 @@
       if (currentDish.value && currentDish.value.type === 'normal') {
         const result = await addDishRequest(currentDish.value.dish.customId);
         if (result) {
-          clearCaches();
+          clearCaches(true, true, false, true);
           router.push('/plans');
         }
       }
@@ -105,7 +106,7 @@
         if (event) {
           const result = await acceptDishRequest(event);
           if (result) {
-            clearCaches();
+            clearCaches(false, false, true, false);
             const newDish = await getMyDish(route.params.id as string);
             if (newDish) {
               currentDish.value = { type: 'info', dish: newDish };

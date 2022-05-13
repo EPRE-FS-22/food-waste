@@ -103,22 +103,38 @@ const clearLastDish = () => {
   lastDish.next(null);
 };
 
-export const clearCaches = () => {
-  dishesPreviousIndex = 0;
-  dishesIndex = 0;
-  dishesDate = new Date();
-  dishes = [];
-  recommendedDishesPrevious = [];
-  recommendedDishesDate = new Date();
-  recommendedDishes = [];
-  myDishesPreviousIndex = 0;
-  myDishesIndex = 0;
-  myDishesDate = new Date();
-  myDishes = [];
-  signedUpDishesPreviousIndex = 0;
-  signedUpDishesIndex = 0;
-  signedUpDishesDate = new Date();
-  signedUpDishes = [];
+export const clearCaches = (
+  normal = true,
+  recommended = true,
+  my = true,
+  signedUp = true
+) => {
+  if (normal) {
+    dishesPreviousIndex = 0;
+    dishesIndex = 0;
+    dishesDate = new Date();
+    dishes = [];
+  }
+
+  if (recommended) {
+    recommendedDishesPrevious = [];
+    recommendedDishesDate = new Date();
+    recommendedDishes = [];
+  }
+
+  if (my) {
+    myDishesPreviousIndex = 0;
+    myDishesIndex = 0;
+    myDishesDate = new Date();
+    myDishes = [];
+  }
+
+  if (signedUp) {
+    signedUpDishesPreviousIndex = 0;
+    signedUpDishesIndex = 0;
+    signedUpDishesDate = new Date();
+    signedUpDishes = [];
+  }
 };
 
 let dishesPreviousIndex = 0;
@@ -218,11 +234,12 @@ export const getRecommendedDishes = async (
       ) {
         return recommendedDishes;
       }
+      recommendedDishes = recommendedDishesPrevious;
     }
     const data = await client.query('getRecommendedDishes', {
       sessionId,
       userId: sessionUserId,
-      previousIds: recommendedDishesPrevious.map((dish) => dish.customId),
+      previousIds: recommendedDishes.map((dish) => dish.customId),
       locationCity,
       dateStart,
       dateEnd,

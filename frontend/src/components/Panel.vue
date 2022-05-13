@@ -1,7 +1,13 @@
 <script setup lang="ts">
   import { ref } from 'vue';
   import { hasSession, populate } from '../data';
-  import { loggedIn, userLoggedIn /*settings*/ } from '../settings';
+  import {
+    loggedIn,
+    userLoggedIn,
+    settings,
+    settingsMessages,
+  } from '../settings';
+  import SearchWiki from './SearchWiki.vue';
   const populateOnClick = async () => {
     try {
       if (hasSession(true)) {
@@ -32,89 +38,106 @@
     >
       Populate
     </button>
-    <!-- <div class="amount-container input-container">
-      <label for="amount">Amount</label>
+    <div class="location-range-container input-container">
+      <label for="location-range"
+        >Location range{{
+          settingsMessages.locationRangeSize
+            ? ': ' + settingsMessages.locationRangeSize
+            : settingsMessages.locationRangeSize
+        }}</label
+      >
       <input
-        id="amount"
-        v-model="settings.amount"
+        id="location-range"
+        v-model="settings.locationRangeSize"
         type="number"
-        name="amount"
-        placeholder="10 / -3"
-        :class="{ warning: !settings.amount }"
+        name="location-range"
+        placeholder="10"
+        :class="{
+          warning:
+            !settings.locationRangeSize || settingsMessages.locationRangeSize,
+        }"
       />
-      <div class="keep-container">
-        <input
-          id="keepAmount"
-          v-model="settings.keepAmount"
-          type="checkbox"
-          name="keepAmount"
-        />
-        <label for="keepAmount">Keep</label>
-      </div>
     </div>
-    <div class="date-container input-container">
-      <label for="date">Date</label>
+    <div class="age-range-container input-container">
+      <label for="age-range"
+        >Age range{{
+          settingsMessages.ageRangeSize
+            ? ': ' + settingsMessages.ageRangeSize
+            : settingsMessages.ageRangeSize
+        }}</label
+      >
+      <input
+        id="age-range"
+        v-model="settings.ageRangeSize"
+        type="number"
+        name="age-range"
+        placeholder="10"
+        :class="{
+          warning: !settings.ageRangeSize || settingsMessages.ageRangeSize,
+        }"
+      />
+    </div>
+    <div class="date-start-container input-container">
+      <label for="date-start"
+        >Date from{{
+          settingsMessages.dateStart
+            ? ': ' + settingsMessages.dateStart
+            : settingsMessages.dateStart
+        }}</label
+      >
       <div class="date-inner-container">
         <input
-          id="date"
-          v-model="settings.date"
+          id="date-start"
+          v-model="settings.dateStart"
           type="datetime-local"
-          name="date"
+          name="date-start"
           placeholder="Date"
-          :class="{ warning: !settings.date }"
+          :class="{
+            warning: !settings.dateStart || settingsMessages.dateStart,
+          }"
         />
-      </div>
-      <div class="keep-container">
-        <input
-          id="keepDate"
-          v-model="settings.keepDate"
-          type="checkbox"
-          name="keepDate"
-        />
-        <label for="keepDate">Keep</label>
       </div>
     </div>
-    <div class="owner-container input-container">
-      <label for="owner">Owner</label>
-      <input
-        id="owner"
-        v-model="settings.owner"
-        type="text"
-        name="owner"
-        maxlength="100"
-        placeholder="Person (optional)"
-      />
-      <div class="keep-container">
+    <div class="date-end-container input-container">
+      <label for="date-end"
+        >Date to{{
+          settingsMessages.dateEnd
+            ? ': ' + settingsMessages.dateEnd
+            : settingsMessages.dateEnd
+        }}</label
+      >
+      <div class="date-inner-container">
         <input
-          id="keepOwner"
-          v-model="settings.keepOwner"
-          type="checkbox"
-          name="keepOwner"
+          id="date-end"
+          v-model="settings.dateEnd"
+          type="datetime-local"
+          name="date-end"
+          placeholder="Date"
+          :class="{
+            warning: !settings.dateEnd || settingsMessages.dateEnd,
+          }"
         />
-        <label for="keepOwner">Keep</label>
       </div>
     </div>
     <div class="reason-container input-container">
-      <label for="reason">Reason</label>
-      <input
-        id="reason"
-        v-model="settings.reason"
-        type="text"
-        name="reason"
-        maxlength="1000"
-        placeholder="Occasion"
-        :class="{ warning: !settings.reason }"
-      />
-      <div class="keep-container">
-        <input
-          id="keepReason"
-          v-model="settings.keepReason"
-          type="checkbox"
-          name="keepReason"
-        />
-        <label for="keepReason">Keep</label>
-      </div>
-    </div> -->
+      <label for="reason"
+        >Reason{{
+          settingsMessages.locationCity
+            ? ': ' + settingsMessages.locationCity
+            : settingsMessages.locationCity
+        }}</label
+      >
+      <SearchWiki
+        id="city"
+        v-model="settings.locationCity"
+        :only-coords="true"
+        name="city"
+        placeholder="Zug"
+        class="field city panel-item"
+        :maxlength="100"
+        :previous-value="settings.previousLocationCity"
+      ></SearchWiki>
+    </div>
   </div>
 </template>
 
@@ -150,169 +173,136 @@
       color: #000000;
     }
 
-    //   .input-container {
-    //     display: flex;
-    //     flex-direction: column;
-    //     width: 25%;
-    //     padding: 0.5rem;
-    //     font-size: 3vh;
-    //     font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
-    //     line-height: 3vh;
-    //     line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+    .field {
+      height: 1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 90%;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0.25rem;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    }
 
-    //     label {
-    //       margin-left: 0.5vh;
-    //       margin-left: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       font-weight: bold;
-    //     }
+    .input-container {
+      display: flex;
+      flex-direction: column;
+      width: 25%;
+      padding: 0.5rem;
+      font-size: 3vh;
+      font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+      line-height: 3vh;
+      line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
 
-    //     > * {
-    //       margin-top: 1vh;
-    //       margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
-    //     }
+      label {
+        margin-left: 0.5vh;
+        margin-left: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+        font-weight: bold;
+      }
 
-    //     > *:first-child {
-    //       margin-top: 0;
-    //     }
+      > * {
+        margin-top: 1vh;
+        margin-top: calc((1 * (100vh - var(--vh-offset, 0px)) / 100));
+      }
 
-    //     input {
-    //       height: 2vh;
-    //       height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       font-size: 2vh;
-    //       font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       line-height: 2vh;
-    //       line-height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       width: 90%;
-    //       padding: 0.5vh;
-    //       padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       margin: 0.5vh;
-    //       margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       margin-top: 1.5vh;
-    //       margin-top: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       border: solid 0.2vh rgb(179, 179, 179);
-    //       border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
-    //         rgb(179, 179, 179);
-    //       border-radius: 2vh;
-    //       border-radius: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+      > *:first-child {
+        margin-top: 0;
+      }
 
-    //       &.warning {
-    //         border: solid 0.3vh rgb(194, 0, 0);
-    //         border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
-    //           rgb(194, 0, 0);
-    //       }
+      input {
+        height: 2vh;
+        height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+        font-size: 2vh;
+        font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+        line-height: 2vh;
+        line-height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+        width: 90%;
+        padding: 0.5vh;
+        padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+        margin: 0.5vh;
+        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+        margin-top: 1.5vh;
+        margin-top: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+        border: solid 0.2vh rgb(179, 179, 179);
+        border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
+          rgb(179, 179, 179);
+        border-radius: 2vh;
+        border-radius: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+        box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
 
-    //       &#date {
-    //         margin: 0;
-    //         margin-top: 0;
-    //       }
-    //     }
+        &.warning {
+          border: solid 0.3vh rgb(194, 0, 0);
+          border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
+            rgb(194, 0, 0);
+        }
 
-    //     .date-inner-container {
-    //       margin: 0.5vh;
-    //       margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       margin-top: 1.5vh;
-    //       margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //       padding: 0;
-    //       border: none;
-    //     }
+        &#date {
+          margin: 0;
+          margin-top: 0;
+        }
+      }
 
-    //     .keep-container {
-    //       display: flex;
-    //       flex-direction: row;
+      .date-inner-container {
+        margin: 0.5vh;
+        margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+        margin-top: 1.5vh;
+        margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
+        padding: 0;
+        border: none;
+      }
+    }
+  }
 
-    //       label {
-    //         font-size: 2.5vh;
-    //         font-size: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //         line-height: 2.5vh;
-    //         line-height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //         margin-top: 0.5vh;
-    //         margin-top: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //         font-weight: normal;
-    //       }
+  @media (max-aspect-ratio: 1/1) {
+    .panel {
+      padding: 0.125rem;
+      width: calc(100% - 0.25rem);
+      height: calc(15vw - 1rem);
 
-    //       input {
-    //         height: 2.5vh;
-    //         height: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //         width: 2.5vh;
-    //         width: calc((2.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //         padding: 0.5vh;
-    //         padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //         margin: 0.5vh;
-    //         margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
-    //         border: solid 0.2vh rgb(179, 179, 179);
-    //         border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
-    //           rgb(179, 179, 179);
-    //         box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-    //       }
-    //     }
-    //   }
-    // }
+      .input-container {
+        padding: 0.1rem;
+        font-size: 3vw;
+        line-height: 3vw;
 
-    // @media (max-aspect-ratio: 1/1) {
-    //   .panel {
-    //     padding: 0.125rem;
-    //     width: calc(100% - 0.25rem);
-    //     height: calc(15vw - 1rem);
+        label {
+          margin-left: 0.5vw;
+        }
 
-    //     .input-container {
-    //       padding: 0.1rem;
-    //       font-size: 3vw;
-    //       line-height: 3vw;
+        > * {
+          margin-top: 1vw;
+        }
 
-    //       label {
-    //         margin-left: 0.5vw;
-    //       }
+        > *:first-child {
+          margin-top: 0;
+        }
 
-    //       > * {
-    //         margin-top: 1vw;
-    //       }
+        input {
+          height: 2vw;
+          font-size: 2vw;
+          line-height: 2vw;
+          padding: 0.5vw;
+          margin: 0.5vw;
+          margin-top: 1.5vw;
+          border: solid 0.2vw rgb(179, 179, 179);
+          border-radius: 2vw;
 
-    //       > *:first-child {
-    //         margin-top: 0;
-    //       }
+          &.warning {
+            border: solid 0.3vw rgb(194, 0, 0);
+          }
 
-    //       input {
-    //         height: 2vw;
-    //         font-size: 2vw;
-    //         line-height: 2vw;
-    //         padding: 0.5vw;
-    //         margin: 0.5vw;
-    //         margin-top: 1.5vw;
-    //         border: solid 0.2vw rgb(179, 179, 179);
-    //         border-radius: 2vw;
+          &#date {
+            margin: 0;
+            margin-top: 0;
+          }
+        }
 
-    //         &.warning {
-    //           border: solid 0.3vw rgb(194, 0, 0);
-    //         }
-
-    //         &#date {
-    //           margin: 0;
-    //           margin-top: 0;
-    //         }
-    //       }
-
-    //       .date-inner-container {
-    //         margin: 0.5vw;
-    //         margin-top: 1.5vw;
-    //       }
-
-    //       .keep-container {
-    //         label {
-    //           font-size: 2.5vw;
-    //           line-height: 2.5vw;
-    //           margin-top: 0.5vw;
-    //         }
-
-    //         input {
-    //           height: 2.5vw;
-    //           width: 2.5vw;
-    //           padding: 0.5vw;
-    //           margin: 0.5vw;
-    //           border: solid 0.2vw rgb(179, 179, 179);
-    //         }
-    //       }
-    //     }
-    //   }
+        .date-inner-container {
+          margin: 0.5vw;
+          margin-top: 1.5vw;
+        }
+      }
+    }
   }
 </style>

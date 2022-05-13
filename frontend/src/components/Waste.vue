@@ -1,18 +1,27 @@
 <script setup lang="ts">
   import { ref, onBeforeUnmount, watch } from 'vue';
-  import { DisplayType, loading } from '../settings';
+  import {
+    DisplayType,
+    loading,
+    settings,
+    settingsMessages,
+  } from '../settings';
   import {
     getAvailableDishes,
     getMyDishes,
     getPictures,
     getRecommendedDishes,
     getSignedUpDishes,
+    getUserInfo,
+    hasSession,
+    hasUserSession,
     lastDish,
   } from '../data';
   import type { DishEvent, DishInfo } from '../../../backend/src/model';
   import { PROMO_DISHES } from '../../../backend/src/constants';
   import { DisplayDish, NormalCurrentDish, PlanDish } from '../model';
   import { useRouter } from 'vue-router';
+  import moment from 'moment';
 
   const router = useRouter();
 
@@ -61,13 +70,152 @@
     }
   };
 
+  let timeoutId = 0;
+  let requestOngoing = false;
+
+  let ignoreNextChange = false;
+
+  watch(settings, () => {
+    if (ignoreNextChange) {
+      ignoreNextChange = false;
+    } else if (
+      props.type === DisplayType.recommended ||
+      (props.type === DisplayType.available && hasSession(true))
+    ) {
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+      if (requestOngoing) {
+        return;
+      }
+      timeoutId = window.setTimeout(async () => {
+        timeoutId = 0;
+        getDishes();
+      }, 1000);
+    }
+  });
+
   const getDishes = () => {
     (async () => {
       try {
         let success = false;
+        let locationCityChecked: undefined | string = undefined;
+        let dateStartChecked: undefined | Date = undefined;
+        let dateEndChecked: undefined | Date = undefined;
+        let locationRangeSizeChecked: undefined | number = undefined;
+        let ageRangeSizeChecked: undefined | number = undefined;
+
+        if (
+          props.type === DisplayType.recommended ||
+          (props.type === DisplayType.available && hasSession(true))
+        ) {
+          let fail = false;
+          if (!settings.locationCity) {
+            if (hasUserSession()) {
+              const userInfo = await getUserInfo();
+              if (userInfo && userInfo.locationCity) {
+                settings.locationCity = userInfo.locationCity;
+                settings.previousLocationCity = userInfo.locationCity;
+                ignoreNextChange = true;
+              }
+            }
+          }
+          if (settings.locationCity) {
+            if (settings.locationCity !== settings.previousLocationCity) {
+              locationCityChecked = settings.locationCity;
+            } else {
+            }
+          } else if (hasUserSession()) {
+            settingsMessages.locationCity = 'Please enter a valid city.';
+            fail = true;
+          }
+          if (!settings.dateStart) {
+            settings.dateStart = moment(
+              new Date(Date.now() + 1000 * 60 * 60 * 3)
+            ).format('YYYY-MM-DDTHH:MM');
+            ignoreNextChange = true;
+          }
+          const startDate = moment(settings.dateStart).toDate();
+          if (startDate && !Number.isNaN(startDate.getTime())) {
+            if (startDate.getTime() > Date.now() + 1000 * 60) {
+              dateStartChecked = startDate;
+            } else {
+              settingsMessages.dateStart =
+                'Please enter a date later than now.';
+              fail = true;
+            }
+          } else {
+            settingsMessages.dateStart = 'Please enter a valid date.';
+            fail = true;
+          }
+          if (!settings.dateEnd) {
+            settings.dateEnd = moment(
+              new Date(Date.now() + 1000 * 60 * 60 * 36)
+            ).format('YYYY-MM-DDTHH:MM');
+            ignoreNextChange = true;
+          }
+          const endDate = moment(settings.dateEnd).toDate();
+          if (endDate && !Number.isNaN(endDate.getTime())) {
+            if (
+              (!startDate && endDate.getTime() > Date.now() + 1000 * 60) ||
+              (startDate && endDate.getTime() > startDate.getTime())
+            ) {
+              dateEndChecked = endDate;
+            } else {
+              settingsMessages.dateEnd =
+                'Please enter a date later than the start date and later than now';
+              fail = true;
+            }
+          } else {
+            settingsMessages.dateEnd = 'Please enter a valid date.';
+            fail = true;
+          }
+          if (settings.locationRangeSize > 0) {
+            if (settings.locationRangeSize <= 200) {
+              locationRangeSizeChecked = settings.locationRangeSize;
+            } else {
+              settingsMessages.locationRangeSize =
+                'The range cannot be bigger than 200';
+              fail = true;
+            }
+          } else {
+            settingsMessages.locationRangeSize =
+              'The range must be larger than 0';
+            fail = true;
+          }
+          if (settings.ageRangeSize > 0) {
+            if (settings.ageRangeSize <= 200) {
+              ageRangeSizeChecked = settings.ageRangeSize;
+            } else {
+              settingsMessages.ageRangeSize =
+                'The range cannot be bigger than 200';
+              fail = true;
+            }
+          } else {
+            settingsMessages.ageRangeSize = 'The range must be larger than 0';
+            fail = true;
+          }
+          if (fail) {
+            return;
+          }
+        }
+        settingsMessages.locationCity = '';
+        settingsMessages.locationRangeSize = '';
+        settingsMessages.ageRangeSize = '';
+        settingsMessages.dateEnd = '';
+        settingsMessages.dateStart = '';
+        requestOngoing = true;
         switch (props.type) {
           case DisplayType.available:
-            const availableResult = await getAvailableDishes();
+            const availableResult = hasSession(true)
+              ? await getAvailableDishes(
+                  locationCityChecked,
+                  dateStartChecked,
+                  dateEndChecked,
+                  locationRangeSizeChecked,
+                  ageRangeSizeChecked
+                )
+              : await getAvailableDishes();
             if (availableResult) {
               success = true;
               dishes.value = (
@@ -136,6 +284,7 @@
             }
             break;
         }
+        requestOngoing = false;
         if (success) {
           await getDishesPictures();
           if (loading.value) {

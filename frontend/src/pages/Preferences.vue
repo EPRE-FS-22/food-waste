@@ -28,8 +28,8 @@
     checkSession();
   }
 
-  let userInputPreference = ref('');
-  let dishPreferences = ref([] as DishPreference[]);
+  const city = ref('');
+  const dishPreferences = ref([] as DishPreference[]);
   (async () => {
     try {
       const result = await getDishPreferences();
@@ -43,19 +43,17 @@
     }
   })();
 
-  watch(userInputPreference, async () => {
+  watch(city, async () => {
     try {
       if (
-        userInputPreference.value &&
-        !dishPreferences.value.find(
-          (item) => item.dish === userInputPreference.value
-        )
+        city.value &&
+        !dishPreferences.value.find((item) => item.dish === city.value)
       ) {
-        const result = await addDishPreference(userInputPreference.value, true);
+        const result = await addDishPreference(city.value, true);
         if (result) {
           resetState();
           dishPreferences.value = result;
-          userInputPreference.value = '';
+          city.value = '';
         }
       }
     } catch (e: unknown) {
@@ -94,7 +92,13 @@
       >
       </span>
     </div>
-    <SearchWiki v-model="userInputPreference"></SearchWiki>
+    <SearchWiki
+      v-model="city"
+      name="city"
+      placeholder="Pizza"
+      class="field city preferences-item"
+      :maxlength="200"
+    ></SearchWiki>
   </div>
 </template>
 
@@ -109,6 +113,10 @@
     font-size: 1.75rem;
   }
 
+  .preferences-item {
+    margin: 0.5rem;
+  }
+
   .preferences-list-text {
     font-size: 1.5rem;
   }
@@ -120,5 +128,18 @@
       margin-top: 30px;
       cursor: pointer;
     }
+  }
+
+  .field {
+    height: 1rem;
+    font-size: 1rem;
+    line-height: 1rem;
+    width: 90%;
+    max-width: 40vh;
+    max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+    padding: 0.25rem;
+    border: solid 0.1rem rgb(179, 179, 179);
+    border-radius: 1rem;
+    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
   }
 </style>

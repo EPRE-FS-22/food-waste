@@ -85,7 +85,8 @@
       }
       const searchString = searchText.value;
       timeoutId = window.setTimeout(async () => {
-        await listWiki(searchString);
+        timeoutId = 0;
+        listWiki(searchString);
       }, 500);
     } else {
       searchResults.value = [];
@@ -95,12 +96,14 @@
 
   const listWiki = async (searchString: string) => {
     try {
+      requestOngoing = true;
       const results = await searchWiki(
         searchString,
         props.limit,
         props.onlyCoords,
         props.maxlength
       );
+      requestOngoing = false;
       if (results) {
         searchResults.value = results;
         showResult.value = true;
