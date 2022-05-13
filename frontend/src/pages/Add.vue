@@ -62,6 +62,8 @@
           userInputEvent.value,
           personNr.value,
           date,
+          undefined,
+          undefined,
           description.value
         );
         if (result) {
