@@ -30,13 +30,14 @@ import {
 import moment from 'moment';
 import { getCoords } from './geo.js';
 import { getWikiPageSummary } from './wiki.js';
+import { getPicture, getPictures } from './pictures.js';
 
 const recommender = new ContentBasedRecommender({
   minScore: 0.1,
   maxSimilarDocuments: 100,
 });
 
-const stripDishDBValues = (dish: WithId<DBDish>): Dish => {
+const combineDishDBValues = (dish: WithId<DBDish>, image?: string): Dish => {
   return {
     customId: dish.customId,
     name: dish.name,
@@ -45,11 +46,17 @@ const stripDishDBValues = (dish: WithId<DBDish>): Dish => {
     filled: dish.filled,
     dish: dish.dish,
     dishDescription: dish.dishDescription,
+    image,
   };
 };
 
-const stripDishesDBValues = (dishes: WithId<DBDish>[]): Dish[] => {
-  return dishes.map((d) => stripDishDBValues(d));
+const combineDishesDBValues = (
+  dishes: WithId<DBDish>[],
+  images?: string[]
+): Dish[] => {
+  return dishes.map((d, i) =>
+    combineDishDBValues(d, images ? images[i] : undefined)
+  );
 };
 
 const combineDishInfoDBValues = (
@@ -182,50 +189,53 @@ export const getAvailableDishes = async (
 
   const dishesCollection = await getDishesCollection();
 
-  return stripDishesDBValues(
-    await dishesCollection
-      .find({
-        $and: [
-          signedUpIds.length
-            ? { customId: { $not: { $in: signedUpIds } } }
-            : {},
-          dateStart
-            ? { date: { $gte: dateStart } }
-            : { date: { $gte: new Date() } },
-          userId ? { userId: { $ne: userId } } : {},
-          dateEnd ? { date: { $lte: dateEnd } } : {},
-          agePreference
-            ? {
-                age: {
-                  $gte:
-                    agePreference - (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
-                  $lte:
-                    agePreference + (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
-                },
-              }
-            : {},
-          locationCityCoords
-            ? {
-                locationCityCoords: {
-                  $near: {
-                    $geometry: {
-                      type: 'Point',
-                      coordinates: locationCityCoords,
-                    },
-                    $maxDistance:
-                      locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE,
+  const result = await dishesCollection
+    .find({
+      $and: [
+        signedUpIds.length ? { customId: { $not: { $in: signedUpIds } } } : {},
+        dateStart
+          ? { date: { $gte: dateStart } }
+          : { date: { $gte: new Date() } },
+        userId ? { userId: { $ne: userId } } : {},
+        dateEnd ? { date: { $lte: dateEnd } } : {},
+        agePreference
+          ? {
+              age: {
+                $gte:
+                  agePreference - (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
+                $lte:
+                  agePreference + (ageRangeSize ?? DEFAULT_SEARCH_AGE_RANGE),
+              },
+            }
+          : {},
+        locationCityCoords
+          ? {
+              locationCityCoords: {
+                $near: {
+                  $geometry: {
+                    type: 'Point',
+                    coordinates: locationCityCoords,
                   },
+                  $maxDistance:
+                    locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE,
                 },
-              }
-            : {},
-          !actuallyShowPopulated ? { populated: { $ne: true } } : {},
-        ],
-        $expr: { $ne: ['$slots', '$filled'] },
-      })
-      .sort({ populated: 1, date: 1 })
-      .skip(start)
-      .limit(limit)
-      .toArray()
+              },
+            }
+          : {},
+        !actuallyShowPopulated ? { populated: { $ne: true } } : {},
+      ],
+      $expr: { $ne: ['$slots', '$filled'] },
+    })
+    .sort({ populated: 1, date: 1 })
+    .skip(start)
+    .limit(limit)
+    .toArray();
+
+  return combineDishesDBValues(
+    result,
+    result.length
+      ? await getPictures(result.map((item) => item.dish))
+      : undefined
   );
 };
 
@@ -312,7 +322,12 @@ const getRecommendedDishesInternal = async (
   if (dishes.length <= limit) {
     if (dishes.length < limit && showPopulated && !searchPopulated) {
       return [
-        ...stripDishesDBValues([...dishes].reverse()),
+        ...combineDishesDBValues(
+          dishes,
+          dishes.length
+            ? await getPictures(dishes.map((item) => item.dish))
+            : undefined
+        ),
         ...(await getRecommendedDishesInternal(
           userId,
           previousIds,
@@ -328,7 +343,12 @@ const getRecommendedDishesInternal = async (
         )),
       ];
     }
-    return stripDishesDBValues([...dishes].reverse());
+    return combineDishesDBValues(
+      dishes,
+      dishes.length
+        ? await getPictures(dishes.map((item) => item.dish))
+        : undefined
+    );
   }
 
   const dishPreferencesCollection = await getDishPreferencesCollection();
@@ -340,7 +360,12 @@ const getRecommendedDishesInternal = async (
     .toArray();
 
   if (!preferences.length) {
-    return stripDishesDBValues([...dishes].reverse().slice(limit));
+    return combineDishesDBValues(
+      dishes.slice(limit),
+      dishes.length
+        ? await getPictures(dishes.slice(limit).map((item) => item.dish))
+        : undefined
+    );
   }
 
   const likes = preferences
@@ -396,7 +421,12 @@ const getRecommendedDishesInternal = async (
     }
   }
 
-  return stripDishesDBValues(output);
+  return combineDishesDBValues(
+    output,
+    output.length
+      ? await getPictures(output.map((item) => item.dish))
+      : undefined
+  );
 };
 
 export const getRecommendedDishes = async (
@@ -556,7 +586,7 @@ export const getAvailableDish = async (customId: string, userId?: string) => {
   });
 
   if (dish) {
-    return stripDishDBValues(dish);
+    return combineDishDBValues(dish, await getPicture(dish.dish));
   }
 
   return false;
@@ -900,7 +930,7 @@ export const removeDishEvent = async (customId: string, userId?: string) => {
   const dishEvent = await dishEventsCollection.findOne({
     customId,
     participantId: userId,
-    date: { $gte: new Date() }
+    date: { $gte: new Date() },
   });
 
   if (
@@ -963,7 +993,7 @@ export const acceptDishEventInternal = async (
   const dishEvent = await dishEventsCollection.findOne({
     customId,
     accepted: false,
-    date: { $gte: new Date() }
+    date: { $gte: new Date() },
   });
 
   if (dishEvent) {
@@ -1060,7 +1090,7 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
   const dishEvent = await dishEventsCollection.findOne({
     customId,
     accepted: true,
-    date: { $gte: new Date() }
+    date: { $gte: new Date() },
   });
 
   if (dishEvent) {

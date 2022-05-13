@@ -12,10 +12,14 @@ export interface DishPlan extends DishBase {
   customId: string;
 }
 
-export interface Dish extends DishPlan, UserInfoDish {
+export interface DishBasic extends DishPlan, UserInfoDish {
   slots: number;
   filled: number;
   dishDescription?: string;
+}
+
+export interface Dish extends DishBasic {
+  image?: string;
 }
 
 export interface DishInfoBase extends Dish {

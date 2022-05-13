@@ -1,35 +1,22 @@
 import type { Dish, DishEvent, DishInfo } from '../../backend/src/model';
-
-export interface DisplayDish extends Dish {
-  image?: string;
-}
-
-export interface DisplayDishInfo extends DishInfo {
-  image?: string;
-}
-
-export interface DisplayDishEvent extends DishEvent {
-  image?: string;
-}
-
 interface BaseCurrentDish {
   type: string;
-  dish: DisplayDish | DisplayDishInfo | DisplayDishEvent;
+  dish: Dish | DishInfo | DishEvent;
 }
 
 export interface NormalCurrentDish extends BaseCurrentDish {
   type: 'normal';
-  dish: DisplayDish;
+  dish: Dish;
 }
 
 interface InfoCurrentDish extends BaseCurrentDish {
   type: 'info';
-  dish: DisplayDishInfo;
+  dish: DishInfo;
 }
 
 interface EventCurrentDish extends BaseCurrentDish {
   type: 'event';
-  dish: DisplayDishEvent;
+  dish: DishEvent;
 }
 
 export type PlanDish = InfoCurrentDish | EventCurrentDish;

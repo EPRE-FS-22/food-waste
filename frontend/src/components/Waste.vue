@@ -11,7 +11,6 @@
     clearCaches,
     getAvailableDishes,
     getMyDishes,
-    getPictures,
     getRecommendedDishes,
     getSignedUpDishes,
     getUserInfo,
@@ -32,30 +31,6 @@
   });
 
   let dishes = ref([] as NormalCurrentDish[] | PlanDish[]);
-
-  const getDishesPictures = async () => {
-    if (!dishes.value.length) {
-      return;
-    }
-
-    let pictureSearchTexts: string[] = [];
-
-    dishes.value.forEach((item) => {
-      pictureSearchTexts.push(item.dish.dish);
-    });
-
-    const pictures = await getPictures(pictureSearchTexts);
-
-    if (pictures) {
-      dishes.value = dishes.value.map((item, index) => ({
-        type: item.type,
-        dish: {
-          ...item.dish,
-          image: pictures[index],
-        },
-      })) as NormalCurrentDish[] | PlanDish[];
-    }
-  };
 
   const clickDish = (index: number) => {
     const item = dishes.value[index];
@@ -266,11 +241,8 @@
             break;
         }
         requestOngoing = false;
-        if (success) {
-          await getDishesPictures();
-          if (loading.value) {
-            loading.value = false;
-          }
+        if (success && loading.value) {
+          loading.value = false;
         }
       } catch (e) {
         console.error(e);
