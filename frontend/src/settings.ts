@@ -1,5 +1,5 @@
 import { reactive, ref } from 'vue';
-import { DEFAULT_SEARCH_LOCATION_RANGE } from '../../backend/src/constants';
+import { DEFAULT_SEARCH_AGE_RANGE, DEFAULT_SEARCH_LOCATION_RANGE } from '../../backend/src/constants';
 import {
   hasConfirmedUserSession,
   hasConfirmedUserSessionWithPreferences,
@@ -43,5 +43,5 @@ export const settings = reactive({
   locationCity: '',
   previousLocationCity: '',
   locationRangeSize: DEFAULT_SEARCH_LOCATION_RANGE,
-  ageRangeSize: DEFAULT_SEARCH_LOCATION_RANGE,
+  ageRangeSize: DEFAULT_SEARCH_AGE_RANGE,
 });
