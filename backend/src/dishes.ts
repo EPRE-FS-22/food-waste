@@ -736,6 +736,7 @@ export const addDishEventInternal = async (
         dishDate: dish.date,
         participantName,
         customId: id,
+        userId: dish.userId,
       };
     }
   }
@@ -765,7 +766,7 @@ Your plan on ${APP_NAME} for eating ${result.dish} on ${moment(
     }.
 
 Use the site to accept it: ${generateFrontendLink('/plans')}`;
-    await sendUserMail(userId, APP_NAME + ' new guest request', body);
+    await sendUserMail(result.userId, APP_NAME + ' new guest request', body);
 
     return true;
   }
