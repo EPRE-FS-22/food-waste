@@ -119,9 +119,9 @@
         />
       </div>
     </div>
-    <div class="reason-container input-container">
-      <label for="reason"
-        >Reason{{
+    <div class="location-city-container input-container">
+      <label for="location-city"
+        >City{{
           settingsMessages.locationCity
             ? ': ' + settingsMessages.locationCity
             : settingsMessages.locationCity
