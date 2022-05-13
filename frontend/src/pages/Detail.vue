@@ -13,6 +13,7 @@
     acceptDishRequest,
     getMyDish,
     getSignedUpDish,
+    clearCaches,
   } from '../data';
   const router = useRouter();
 
@@ -87,6 +88,7 @@
       if (currentDish.value && currentDish.value.type === 'normal') {
         const result = await addDishRequest(currentDish.value.dish.customId);
         if (result) {
+          clearCaches();
           router.push('/plans');
         }
       }
@@ -103,6 +105,7 @@
         if (event) {
           const result = await acceptDishRequest(event);
           if (result) {
+            clearCaches();
             const newDish = await getMyDish(route.params.id as string);
             if (newDish) {
               currentDish.value = { type: 'info', dish: newDish };

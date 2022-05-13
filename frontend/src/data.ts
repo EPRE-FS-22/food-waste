@@ -103,7 +103,7 @@ const clearLastDish = () => {
   lastDish.next(null);
 };
 
-const clearCaches = () => {
+export const clearCaches = () => {
   dishesPreviousIndex = 0;
   dishesIndex = 0;
   dishesDate = new Date();
@@ -111,8 +111,12 @@ const clearCaches = () => {
   recommendedDishesPrevious = [];
   recommendedDishesDate = new Date();
   recommendedDishes = [];
+  myDishesPreviousIndex = 0;
+  myDishesIndex = 0;
   myDishesDate = new Date();
   myDishes = [];
+  signedUpDishesPreviousIndex = 0;
+  signedUpDishesIndex = 0;
   signedUpDishesDate = new Date();
   signedUpDishes = [];
 };
@@ -240,26 +244,34 @@ export const getRecommendedDishes = async (
   }
 };
 
+let myDishesPreviousIndex = 0;
+let myDishesIndex = 0;
 let myDishesDate = new Date();
 let myDishes: DishInfo[] = [];
 
-export const getMyDishes = async () => {
+export const getMyDishes = async (next = false) => {
   try {
     if (!hasSession()) {
       authFailure.next();
       return false;
     }
-    if (
-      myDishes.length &&
-      myDishesDate.getTime() > Date.now() - 1000 * 60 * 1
-    ) {
-      return myDishes;
+    if (!next) {
+      if (
+        myDishes.length &&
+        myDishesDate.getTime() > Date.now() - 1000 * 60 * 1
+      ) {
+        return myDishes;
+      }
+      myDishesIndex = myDishesPreviousIndex;
     }
     const data = await client.query('getMyDishes', {
       sessionId,
       userId: sessionUserId,
+      start: myDishesIndex,
     });
     if (data) {
+      myDishesPreviousIndex = myDishesIndex;
+      myDishesIndex += data.length;
       myDishesDate = new Date();
       myDishes = data;
       return data;
@@ -305,26 +317,34 @@ export const getMyDish = async (dishId: string) => {
   }
 };
 
+let signedUpDishesPreviousIndex = 0;
+let signedUpDishesIndex = 0;
 let signedUpDishesDate = new Date();
 let signedUpDishes: DishEvent[] = [];
 
-export const getSignedUpDishes = async () => {
+export const getSignedUpDishes = async (next = false) => {
   try {
     if (!hasSession()) {
       authFailure.next();
       return false;
     }
-    if (
-      signedUpDishes.length &&
-      signedUpDishesDate.getTime() > Date.now() - 1000 * 60 * 1
-    ) {
-      return signedUpDishes;
+    if (!next) {
+      if (
+        signedUpDishes.length &&
+        signedUpDishesDate.getTime() > Date.now() - 1000 * 60 * 1
+      ) {
+        return signedUpDishes;
+      }
+      signedUpDishesIndex = signedUpDishesPreviousIndex;
     }
     const data = await client.query('getSignedUpDishes', {
       sessionId,
       userId: sessionUserId,
+      start: signedUpDishesIndex,
     });
     if (data) {
+      signedUpDishesPreviousIndex = signedUpDishesIndex;
+      signedUpDishesIndex += data.length;
       signedUpDishesDate = new Date();
       signedUpDishes = data;
       return data;

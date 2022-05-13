@@ -322,6 +322,7 @@ export const appRouter = trpc
     input: z.object({
       userId: z.string().nonempty().length(20),
       sessionId: z.string().length(20),
+      start: z.number().nonnegative().optional(),
     }),
     async resolve({ input, ctx }) {
       try {
@@ -329,7 +330,7 @@ export const appRouter = trpc
         if (
           isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
         ) {
-          return await getMyDishes(input.userId);
+          return await getMyDishes(input.userId, 6, input.start);
         }
         return false;
       } catch (e: unknown) {
@@ -341,6 +342,7 @@ export const appRouter = trpc
     input: z.object({
       userId: z.string().nonempty().length(20),
       sessionId: z.string().length(20),
+      start: z.number().nonnegative().optional(),
     }),
     async resolve({ input, ctx }) {
       try {
@@ -348,7 +350,7 @@ export const appRouter = trpc
         if (
           isConfirmedSessionWithPreferences(input.sessionId, ip, input.userId)
         ) {
-          return await getSignedUpDishes(input.userId);
+          return await getSignedUpDishes(input.userId, 6, input.start);
         }
         return false;
       } catch (e: unknown) {

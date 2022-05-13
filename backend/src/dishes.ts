@@ -143,24 +143,38 @@ export const getAvailableDishes = async (
   ageRangeSize?: number,
   showPopulated = true
 ) => {
+  if (
+    dateStart &&
+    (dateStart.getTime() <= Date.now() ||
+      (dateEnd && dateEnd.getTime() <= dateStart.getTime()))
+  ) {
+    return [] as Dish[];
+  }
+
   let locationCityCoords: [number, number] | undefined = undefined;
   let agePreference: number | undefined = undefined;
   let actuallyShowPopulated = showPopulated;
   if (locationCity) {
     locationCityCoords = (await getCoords(locationCity)) ?? undefined;
   }
+  let signedUpIds = [] as string[];
   if (userId) {
     const userInfo = await getUserInfo(userId);
-    if (userInfo && !locationCityCoords) {
-      locationCityCoords = userInfo.locationCityCoords;
-      agePreference = Math.floor(
-        ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
-          (dateStart ? dateStart.getTime() - Date.now() : 0)) /
-          (1000 * 60 * 60 * 24 * 365)
-      );
+    if (userInfo) {
+      if (!locationCityCoords) {
+        locationCityCoords = userInfo.locationCityCoords;
+        agePreference = Math.floor(
+          ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
+            (dateStart ? dateStart.getTime() - Date.now() : 0)) /
+            (1000 * 60 * 60 * 24 * 365)
+        );
+      }
       if (!userInfo.showPopulated) {
         actuallyShowPopulated = false;
       }
+      signedUpIds = await (
+        await getSignedUpDishes(userId)
+      ).map((item) => item.dishId);
     }
   }
 
@@ -170,6 +184,9 @@ export const getAvailableDishes = async (
     await dishesCollection
       .find({
         $and: [
+          signedUpIds.length
+            ? { customId: { $not: { $in: signedUpIds } } }
+            : {},
           dateStart
             ? { date: { $gte: dateStart } }
             : { date: { $gte: new Date() } },
@@ -254,7 +271,7 @@ const getRecommendedDishesInternal = async (
   const dishes = await dishesCollection
     .find({
       $and: [
-        { customId: { $not: { $in: previousIds } } },
+        previousIds ? { customId: { $not: { $in: previousIds } } } : {},
         dateStart
           ? { date: { $gte: dateStart } }
           : { date: { $gte: new Date() } },
@@ -391,6 +408,15 @@ export const getRecommendedDishes = async (
   ageRangeSize?: number,
   showPopulated = true
 ) => {
+  if (
+    dateStart &&
+    (dateStart.getTime() <= Date.now() ||
+      (dateEnd && dateEnd.getTime() <= dateStart.getTime()))
+  ) {
+    return [] as Dish[];
+  }
+
+  let signedUpIds = [] as string[];
   let locationCityCoords: [number, number] | undefined = undefined;
   let agePreference: number | undefined = undefined;
   let actuallyShowPopulated = showPopulated;
@@ -399,22 +425,27 @@ export const getRecommendedDishes = async (
   }
   if (userId) {
     const userInfo = await getUserInfo(userId);
-    if (userInfo && !locationCityCoords) {
-      locationCityCoords = userInfo.locationCityCoords;
-      agePreference = Math.floor(
-        ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
-          (dateStart ? dateStart.getTime() - Date.now() : 0)) /
-          (1000 * 60 * 60 * 24 * 365)
-      );
+    if (userInfo) {
+      if (!locationCityCoords) {
+        locationCityCoords = userInfo.locationCityCoords;
+        agePreference = Math.floor(
+          ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
+            (dateStart ? dateStart.getTime() - Date.now() : 0)) /
+            (1000 * 60 * 60 * 24 * 365)
+        );
+      }
       if (!userInfo.showPopulated) {
         actuallyShowPopulated = false;
       }
+      signedUpIds = await (
+        await getSignedUpDishes(userId)
+      ).map((item) => item.dishId);
     }
   }
 
   return await getRecommendedDishesInternal(
     userId,
-    previousIds,
+    [...(previousIds ?? []), ...signedUpIds],
     limit,
     locationCityCoords,
     agePreference,
@@ -439,7 +470,11 @@ export const getDishPreferences = async (userId: string) => {
   );
 };
 
-export const getMyDishes = async (userId: string) => {
+export const getMyDishes = async (
+  userId: string,
+  limit?: number,
+  start = 0
+) => {
   const dishesCollection = await getDishesCollection();
   const dishEventsCollection = await getDishEventsCollection();
 
@@ -448,6 +483,9 @@ export const getMyDishes = async (userId: string) => {
       userId,
       date: { $gte: new Date() },
     })
+    .sort({ date: 1 })
+    .skip(start)
+    .limit(limit ?? 0)
     .toArray();
 
   return combineDishesInfosDBValues(
@@ -464,7 +502,11 @@ export const getMyDishes = async (userId: string) => {
   );
 };
 
-export const getSignedUpDishes = async (userId: string) => {
+export const getSignedUpDishes = async (
+  userId: string,
+  limit?: number,
+  start = 0
+) => {
   const dishesCollection = await getDishesCollection();
   const dishEventsCollection = await getDishEventsCollection();
 
@@ -473,6 +515,9 @@ export const getSignedUpDishes = async (userId: string) => {
       participantId: userId,
       date: { $gte: new Date() },
     })
+    .sort({ date: 1 })
+    .skip(start)
+    .limit(limit ?? 0)
     .toArray();
 
   return combineDishesEventsDBValues(
@@ -763,6 +808,16 @@ export const addDishEventInternal = async (
   message?: string,
   populated = false
 ) => {
+  const dishEventsCollection = await getDishEventsCollection();
+
+  if (
+    await dishEventsCollection.findOne({
+      dishiD: customId,
+      participantId: userId,
+    })
+  ) {
+    return { success: false };
+  }
   const dishesCollection = await getDishesCollection();
 
   const dish = await dishesCollection.findOne({
@@ -772,8 +827,6 @@ export const addDishEventInternal = async (
   });
 
   if (dish) {
-    const dishEventsCollection = await getDishEventsCollection();
-
     const participantName = await getUserName(userId);
 
     const id = makeId(20);
@@ -904,6 +957,7 @@ export const acceptDishEventInternal = async (
 
   const dishEvent = await dishEventsCollection.findOne({
     customId,
+    accepted: false,
   });
 
   if (dishEvent) {
@@ -999,6 +1053,7 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
 
   const dishEvent = await dishEventsCollection.findOne({
     customId,
+    accepted: true,
   });
 
   if (dishEvent) {

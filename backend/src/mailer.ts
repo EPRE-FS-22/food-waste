@@ -38,7 +38,7 @@ export const sendMail = async (
   html?: string
 ) => {
   if (mailTransporter) {
-    (async () => {
+    setTimeout(async () => {
       try {
         await mailTransporter.sendMail({
           from: `"${APP_NAME}" <${mailAddress}>`,
@@ -51,7 +51,8 @@ export const sendMail = async (
         console.error(e);
         throw e;
       }
-    })();
+    });
+    return;
   } else {
     console.log(
       'Missing mail configuration, instead printing mail here for testing purposes'
