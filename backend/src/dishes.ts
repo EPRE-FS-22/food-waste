@@ -146,7 +146,7 @@ export const getAvailableDishes = async (
   if (
     dateStart &&
     (dateStart.getTime() <= Date.now() ||
-      (dateEnd && dateEnd.getTime() <= dateStart.getTime()))
+      (dateEnd && (dateEnd.getTime() <= dateStart.getTime() || dateEnd.getTime() <= Date.now())))
   ) {
     return [] as Dish[];
   }
@@ -411,7 +411,7 @@ export const getRecommendedDishes = async (
   if (
     dateStart &&
     (dateStart.getTime() <= Date.now() ||
-      (dateEnd && dateEnd.getTime() <= dateStart.getTime()))
+      (dateEnd && (dateEnd.getTime() <= dateStart.getTime() || dateEnd.getTime() <= Date.now())))
   ) {
     return [] as Dish[];
   }
