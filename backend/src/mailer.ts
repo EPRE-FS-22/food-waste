@@ -38,13 +38,20 @@ export const sendMail = async (
   html?: string
 ) => {
   if (mailTransporter) {
-    await mailTransporter.sendMail({
-      from: `"${APP_NAME}" <${mailAddress}>`,
-      to,
-      subject,
-      text: body,
-      html,
-    });
+    (async () => {
+      try {
+        await mailTransporter.sendMail({
+          from: `"${APP_NAME}" <${mailAddress}>`,
+          to,
+          subject,
+          text: body,
+          html,
+        });
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    })();
   } else {
     console.log(
       'Missing mail configuration, instead printing mail here for testing purposes'
