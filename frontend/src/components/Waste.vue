@@ -20,8 +20,7 @@
     lastDish,
   } from '../data';
   import type { DishEvent, DishInfo } from '../../../backend/src/model';
-  import { PROMO_DISHES } from '../../../backend/src/constants';
-  import { DisplayDish, NormalCurrentDish, PlanDish } from '../model';
+  import { NormalCurrentDish, PlanDish } from '../model';
   import { useRouter } from 'vue-router';
   import moment from 'moment';
 
@@ -218,45 +217,27 @@
               : await getAvailableDishes();
             if (availableResult) {
               success = true;
-              dishes.value = (
-                availableResult.length
-                  ? availableResult
-                  : PROMO_DISHES.map(
-                      (item) =>
-                        ({
-                          promo: true,
-                          customId: 'abcdefghijklmnopqrst',
-                          dish: item,
-                          name: 'John Doe',
-                          date: new Date(Date.now() + 1000 * 60 * 60 * 6),
-                          slots: 2,
-                          filled: 1,
-                        } as DisplayDish)
-                    )
-              ).map((item) => ({ type: 'normal', dish: item }));
+              dishes.value = availableResult.map((item) => ({
+                type: 'normal',
+                dish: item,
+              }));
             }
             break;
 
           case DisplayType.recommended:
-            const recommendedResult = await getRecommendedDishes();
+            const recommendedResult = await getRecommendedDishes(
+              locationCityChecked,
+              dateStartChecked,
+              dateEndChecked,
+              locationRangeSizeChecked,
+              ageRangeSizeChecked
+            );
             if (recommendedResult) {
               success = true;
-              dishes.value = (
-                recommendedResult.length
-                  ? recommendedResult
-                  : [...PROMO_DISHES].reverse().map(
-                      (item) =>
-                        ({
-                          promo: true,
-                          customId: 'abcdefghijklmnopqrst',
-                          dish: item,
-                          name: 'John Doe',
-                          date: new Date(Date.now() + 1000 * 60 * 60 * 6),
-                          slots: 2,
-                          filled: 1,
-                        } as DisplayDish)
-                    )
-              ).map((item) => ({ type: 'normal', dish: item }));
+              dishes.value = recommendedResult.map((item) => ({
+                type: 'normal',
+                dish: item,
+              }));
             }
             break;
 

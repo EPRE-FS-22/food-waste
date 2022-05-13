@@ -88,8 +88,6 @@
         throw e;
       }
     })();
-  } else if (currentDish.value && currentDish.value.dish.promo) {
-    router.push('/user');
   }
 
   const acceptOffer = async () => {

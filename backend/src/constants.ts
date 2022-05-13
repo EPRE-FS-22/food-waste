@@ -1,12 +1,3 @@
-export const PROMO_DISHES = [
-  'Spaghetti',
-  'Lasagna',
-  'Sushi',
-  'Ramen',
-  'Steak',
-  'Burger',
-];
-
 export const APP_NAME = 'FoodMatch';
 
 export const DEFAULT_SEARCH_LOCATION_RANGE = 50;

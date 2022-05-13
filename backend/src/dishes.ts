@@ -900,6 +900,7 @@ export const removeDishEvent = async (customId: string, userId?: string) => {
   const dishEvent = await dishEventsCollection.findOne({
     customId,
     participantId: userId,
+    date: { $gte: new Date() }
   });
 
   if (
@@ -962,6 +963,7 @@ export const acceptDishEventInternal = async (
   const dishEvent = await dishEventsCollection.findOne({
     customId,
     accepted: false,
+    date: { $gte: new Date() }
   });
 
   if (dishEvent) {
@@ -1058,6 +1060,7 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
   const dishEvent = await dishEventsCollection.findOne({
     customId,
     accepted: true,
+    date: { $gte: new Date() }
   });
 
   if (dishEvent) {
