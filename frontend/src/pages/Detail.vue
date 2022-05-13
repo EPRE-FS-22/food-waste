@@ -90,9 +90,16 @@
     })();
   }
 
+  let acceptInProgress = false;
+
   const acceptOffer = async () => {
     try {
-      if (currentDish.value && currentDish.value.type === 'normal') {
+      if (
+        !acceptInProgress &&
+        currentDish.value &&
+        currentDish.value.type === 'normal'
+      ) {
+        acceptInProgress = true;
         const result = await addDishRequest(currentDish.value.dish.customId);
         if (result) {
           clearCaches(true, true, false, true);
@@ -105,15 +112,19 @@
     }
   };
 
+  const acceptIdsInProgress: string[] = [];
+
   const acceptNames = async (index: number) => {
     try {
       if (currentDish.value && currentDish.value.type === 'info') {
         const event = currentDish.value.dish.eventRequestsIds[index];
-        if (event) {
+        if (event && !acceptIdsInProgress.includes(event)) {
+          acceptIdsInProgress.push(event);
           const result = await acceptDishRequest(event);
           if (result) {
             clearCaches(false, false, true, false);
             const newDish = await getMyDish(route.params.id as string);
+            acceptIdsInProgress.splice(acceptIdsInProgress.indexOf(event), 1);
             if (newDish) {
               currentDish.value = { type: 'info', dish: newDish };
             }

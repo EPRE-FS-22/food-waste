@@ -35,8 +35,10 @@
     checkSession();
   }
 
-  const city = ref('');
-  const cityMessage = ref('');
+  const inProgress = ref(false);
+
+  const dish = ref('');
+  const dishMessage = ref('');
   const personNr = ref(1);
   const personNrMessage = ref('');
   const description = ref('');
@@ -46,7 +48,7 @@
 
   const addInvite = async () => {
     try {
-      cityMessage.value = '';
+      dishMessage.value = '';
       personNrMessage.value = '';
       descriptionMessage.value = '';
       dateOfEventMessage.value = '';
@@ -56,7 +58,7 @@
       }
       if (
         !(
-          city.value === '' ||
+          dish.value === '' ||
           personNr.value <= 0 ||
           description.value === '' ||
           !date ||
@@ -64,8 +66,9 @@
           date.getTime() < Date.now()
         )
       ) {
+        inProgress.value = true;
         const result = await addDish(
-          city.value,
+          dish.value,
           personNr.value,
           date,
           undefined,
@@ -80,8 +83,8 @@
           dateOfEventMessage.value =
             'Please set Correct Date & it must be in the future';
         }
-        if (city.value === '') {
-          cityMessage.value =
+        if (dish.value === '') {
+          dishMessage.value =
             "Search text is not correct (don't forget to choose from the List)";
         }
         if (description.value === '') {
@@ -104,16 +107,16 @@
     <div class="add-margin">
       <label class="label name-label add-item" for="name"
         >Search your Dish (Select from shown List){{
-          cityMessage ? ': ' + cityMessage : ''
+          dishMessage ? ': ' + dishMessage : ''
         }}<br />
       </label>
       <SearchWiki
-        id="city"
-        v-model="city"
-        name="city"
+        id="dish"
+        v-model="dish"
+        name="dish"
         placeholder="Pizza"
-        class="field city add-item"
-        :maxlength="200"
+        class="field dish add-item"
+        :maxlength="50"
       ></SearchWiki>
       <label class="label name-label add-item" for="name"
         >How many people?{{ personNrMessage ? ': ' + personNrMessage : ''
@@ -158,7 +161,9 @@
         placeholder="Hello..."
         maxlength="200"
       ></textarea>
-      <button class="invite-button" @click="addInvite()">Invite Now</button>
+      <button class="invite-button" :disabled="inProgress" @click="addInvite()">
+        Invite Now
+      </button>
     </div>
   </div>
 </template>

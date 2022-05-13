@@ -12,13 +12,19 @@
 
   const router = useRouter();
 
+  let buttonDisabled = false;
+
   const logOutOnclick = async () => {
     try {
-      await logOut();
-      resetState();
-      resetSettings();
-      resetSettingsMessages();
-      router.push('/');
+      if (!buttonDisabled) {
+        buttonDisabled = true;
+        await logOut();
+        buttonDisabled = false;
+        resetState();
+        resetSettings();
+        resetSettingsMessages();
+        router.push('/');
+      }
     } catch (e) {
       console.error(e);
       throw e;

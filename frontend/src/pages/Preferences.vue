@@ -34,7 +34,7 @@
     checkSession();
   }
 
-  const city = ref('');
+  const dish = ref('');
   const dishPreferences = ref([] as DishPreference[]);
   (async () => {
     try {
@@ -49,17 +49,23 @@
     }
   })();
 
-  watch(city, async () => {
+  const inProgressDishPreferences: string[] = [];
+
+  watch(dish, async () => {
     try {
       if (
-        city.value &&
-        !dishPreferences.value.find((item) => item.dish === city.value)
+        dish.value &&
+        !dishPreferences.value.find((item) => item.dish === dish.value)
       ) {
-        const result = await addDishPreference(city.value, true);
+        inProgressDishPreferences.push(dish.value);
+        const result = await addDishPreference(dish.value, true);
         if (result) {
+          inProgressDishPreferences.splice(
+            inProgressDishPreferences.indexOf(dish.value)
+          );
           resetState();
           dishPreferences.value = result;
-          city.value = '';
+          dish.value = '';
         }
       }
     } catch (e: unknown) {
@@ -99,11 +105,11 @@
       </span>
     </div>
     <SearchWiki
-      v-model="city"
-      name="city"
+      v-model="dish"
+      name="dish"
       placeholder="Pizza"
-      class="field city preferences-item"
-      :maxlength="200"
+      class="field dish preferences-item"
+      :maxlength="50"
     ></SearchWiki>
   </div>
 </template>

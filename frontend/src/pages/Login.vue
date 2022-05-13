@@ -97,6 +97,8 @@
 
   const showCaptcha = ref(false);
 
+  const buttonDisabled = ref(false);
+
   let captchaToken = '';
 
   onUnmounted(() => {
@@ -140,6 +142,7 @@
     resetSettings();
     resetSettingsMessages();
     type.value = LoginType.logIn;
+    buttonDisabled.value = false;
     message.value = 'Your session expired, please log in again.';
   });
 
@@ -160,7 +163,9 @@
   const confirmAction = async () => {
     try {
       clearMessages();
+      buttonDisabled.value = true;
       const result = await verify(queryUserId, queryCode);
+      buttonDisabled.value = false;
       if (result.success) {
         loggedIn.value = true;
         router.replace({ query: {} });
@@ -253,6 +258,7 @@
         return;
       }
       clearMessages();
+      buttonDisabled.value = true;
       const result = await set(
         newPassword.value,
         name.value,
@@ -261,6 +267,7 @@
         location.value,
         idImageBase64
       );
+      buttonDisabled.value = false;
       resetState();
       if (result) {
         if (userConfirmedWithPreferences.value) {
@@ -292,11 +299,13 @@
       clearMessages();
       previousCity.value = city.value;
       previousLocation.value = location.value;
+      buttonDisabled.value = true;
       const result = await reset(
         newPassword.value,
         city.value === previousCity.value ? undefined : city.value,
         location.value === previousLocation.value ? undefined : location.value
       );
+      buttonDisabled.value = false;
       resetState();
       if (result) {
         if (userConfirmedWithPreferences.value) {
@@ -336,12 +345,14 @@
       clearMessages();
       previousCity.value = city.value;
       previousLocation.value = location.value;
+      buttonDisabled.value = true;
       const result = await change(
         password.value,
         newPassword.value,
         city.value === previousCity.value ? undefined : city.value,
         location.value === previousLocation.value ? undefined : location.value
       );
+      buttonDisabled.value = false;
       resetState();
       if (result) {
         if (userConfirmedWithPreferences.value) {
@@ -374,6 +385,7 @@
         return;
       }
       clearMessages();
+      buttonDisabled.value = true;
       const result = isRegister
         ? await register(
             email.value,
@@ -383,6 +395,7 @@
             email.value,
             showCaptcha.value && captchaSitekey ? captchaToken : undefined
           );
+      buttonDisabled.value = false;
       captchaExpired();
       if (result.success) {
         message.value =
@@ -426,11 +439,13 @@
         return;
       }
       clearMessages();
+      buttonDisabled.value = true;
       const result = await logIn(
         password.value,
         email.value || undefined,
         showCaptcha.value && captchaSitekey ? captchaToken : undefined
       );
+      buttonDisabled.value = false;
       captchaExpired();
       resetState();
       if (result.success) {
@@ -756,6 +771,7 @@
       ><div
         class="label-button label-button-solo"
         tabindex="0"
+        :disabled="buttonDisabled"
         @click="
           clearMessages();
           type = LoginType.logIn;
