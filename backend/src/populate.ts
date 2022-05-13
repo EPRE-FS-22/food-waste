@@ -182,6 +182,7 @@ export const populateWithData = async (
       const result = await registerOrEmailLoginInternal(
         person.email,
         false,
+        true,
         true
       );
       if (!result.success || !result.userId || !result.passwordNew) {
@@ -206,17 +207,16 @@ export const populateWithData = async (
         return false;
       }
       const preferencesResults = await Promise.all(
-        new Array(preferencesPerUser)
-          .fill(undefined)
-          .map(async (_, index) => {
-            const dish = await generateDishName();
-            return await addDishPreference(
-              dish,
-              userId,
-              generateBoolean(),
-              index === 0
-            );
-          })
+        new Array(preferencesPerUser).fill(undefined).map(async (_, index) => {
+          const dish = await generateDishName();
+          return await addDishPreference(
+            dish,
+            userId,
+            generateBoolean(),
+            index === 0,
+            true
+          );
+        })
       );
       if (preferencesResults.some((item) => !item)) {
         return false;
@@ -231,7 +231,8 @@ export const populateWithData = async (
             dish.date,
             person.city,
             person.address,
-            dish.description
+            dish.description,
+            true
           );
           if (dishResult) {
             usersDishes.push({
@@ -296,7 +297,9 @@ export const populateWithData = async (
     dishEventsList.map(async (dishEvent) => {
       const dishEventResult = await addDishEventInternal(
         dishEvent.dish,
-        dishEvent.user
+        dishEvent.user,
+        undefined,
+        true
       );
       if (!dishEventResult.success || !dishEventResult.customId) {
         return false;

@@ -4,9 +4,9 @@ import type {
   DBDish,
   DBDishEvent,
   DBDishPreference,
+  DBUser,
   Setting,
   StringSetting,
-  User,
 } from './model';
 import { hashPassword } from './users.js';
 import 'dotenv/config';
@@ -61,7 +61,7 @@ let dishEventsCollection: Collection<DBDishEvent> | undefined = undefined;
 let dishPreferencesCollection: Collection<DBDishPreference> | undefined =
   undefined;
 let settingsCollection: Collection<Setting> | undefined = undefined;
-let usersCollection: Collection<User> | undefined = undefined;
+let usersCollection: Collection<DBUser> | undefined = undefined;
 
 const ensureDBConnection = () => {
   if (connected) {
@@ -211,5 +211,5 @@ export const getSettingsCollection = async () => {
 
 export const getUsersCollection = async () => {
   await ensureDBConnection();
-  return usersCollection as Collection<User>;
+  return usersCollection as Collection<DBUser>;
 };

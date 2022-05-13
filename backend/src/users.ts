@@ -447,7 +447,8 @@ export const createLoginLink = async (userId: string, stay = false) => {
 export const registerOrEmailLoginInternal = async (
   email: string,
   stay = false,
-  isRegister = true
+  isRegister = true,
+  populated = false
 ) => {
   const lowercaseEmail = email.toLocaleLowerCase();
 
@@ -493,6 +494,8 @@ export const registerOrEmailLoginInternal = async (
       identityConfirmed: false,
       infosSet: false,
       preferencesSet: false,
+      populated,
+      showPopulated: true,
     });
     await usersCollection.deleteMany({
       email: lowercaseEmail,
@@ -682,6 +685,7 @@ export const getUserInfo = async (
         infosSet: false,
         identityConfirmed: false,
         preferencesSet: false,
+        showPopulated: true,
       };
     }
   }
@@ -696,6 +700,7 @@ export const getUserInfo = async (
       identityConfirmed: user.identityConfirmed,
       infosSet: user.infosSet,
       preferencesSet: user.preferencesSet,
+      showPopulated: user.showPopulated,
     };
   }
   return null;

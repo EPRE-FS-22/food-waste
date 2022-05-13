@@ -4,6 +4,7 @@ export interface DishBase {
 
 export interface DBDishBase extends DishBase {
   description: string;
+  populated?: boolean;
 }
 
 export interface DishPlan extends DishBase {
@@ -109,6 +110,7 @@ export interface UserInfoPrivate extends UserInfoBasePrivate {
   infosSet: boolean;
   identityConfirmed: boolean;
   preferencesSet: boolean;
+  showPopulated?: boolean;
 }
 
 export interface User extends UserInfoPrivate {
@@ -126,6 +128,8 @@ export interface User extends UserInfoPrivate {
   changedDate?: Date;
 }
 
-export type DBUser = User;
+export interface DBUser extends User {
+  populated?: boolean;
+}
 
 export type Setting = StringSetting | NumberSetting | DateSetting | SubSetting;

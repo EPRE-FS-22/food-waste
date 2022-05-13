@@ -140,10 +140,12 @@ export const getAvailableDishes = async (
   dateStart?: Date,
   dateEnd?: Date,
   locationRangeSize?: number,
-  ageRangeSize?: number
+  ageRangeSize?: number,
+  showPopulated = true
 ) => {
   let locationCityCoords: [number, number] | undefined = undefined;
   let agePreference: number | undefined = undefined;
+  let actuallyShowPopulated = showPopulated;
   if (locationCity) {
     locationCityCoords = (await getCoords(locationCity)) ?? undefined;
   }
@@ -156,6 +158,9 @@ export const getAvailableDishes = async (
           (dateStart ? dateStart.getTime() - Date.now() : 0)) /
           (1000 * 60 * 60 * 24 * 365)
       );
+      if (!userInfo.showPopulated) {
+        actuallyShowPopulated = false;
+      }
     }
   }
 
@@ -194,10 +199,11 @@ export const getAvailableDishes = async (
                 },
               }
             : {},
+          !actuallyShowPopulated ? { populated: { $ne: true } } : {},
         ],
         $expr: { $ne: ['$slots', '$filled'] },
       })
-      .sort({ _id: 1 })
+      .sort({ populated: 1, date: 1 })
       .skip(start)
       .limit(limit)
       .toArray()
@@ -230,33 +236,19 @@ const getSimilarDishes = (
   );
 };
 
-export const getRecommendedDishes = async (
+const getRecommendedDishesInternal = async (
   userId: string,
   previousIds?: string[],
   limit = 6,
-  locationCity?: string,
+  locationCityCoords?: [number, number],
+  agePreference?: number,
   dateStart?: Date,
   dateEnd?: Date,
   locationRangeSize?: number,
-  ageRangeSize?: number
-) => {
-  let locationCityCoords: [number, number] | undefined = undefined;
-  let agePreference: number | undefined = undefined;
-  if (locationCity) {
-    locationCityCoords = (await getCoords(locationCity)) ?? undefined;
-  }
-  if (userId) {
-    const userInfo = await getUserInfo(userId);
-    if (userInfo && !locationCityCoords) {
-      locationCityCoords = userInfo.locationCityCoords;
-      agePreference = Math.floor(
-        ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
-          (dateStart ? dateStart.getTime() - Date.now() : 0)) /
-          (1000 * 60 * 60 * 24 * 365)
-      );
-    }
-  }
-
+  ageRangeSize?: number,
+  showPopulated = true,
+  searchPopulated = false
+): Promise<Dish[]> => {
   const dishesCollection = await getDishesCollection();
 
   const dishes = await dishesCollection
@@ -293,11 +285,30 @@ export const getRecommendedDishes = async (
             }
           : {},
       ],
+      populated: searchPopulated ? true : { $ne: true },
       $expr: { $ne: ['$slots', '$filled'] },
     })
     .toArray();
 
   if (dishes.length <= limit) {
+    if (dishes.length < limit && showPopulated && !searchPopulated) {
+      return [
+        ...stripDishesDBValues([...dishes].reverse()),
+        ...(await getRecommendedDishesInternal(
+          userId,
+          previousIds,
+          limit - dishes.length,
+          locationCityCoords,
+          agePreference,
+          dateStart,
+          dateEnd,
+          locationRangeSize,
+          ageRangeSize,
+          true,
+          true
+        )),
+      ];
+    }
     return stripDishesDBValues([...dishes].reverse());
   }
 
@@ -367,6 +378,53 @@ export const getRecommendedDishes = async (
   }
 
   return stripDishesDBValues(output);
+};
+
+export const getRecommendedDishes = async (
+  userId: string,
+  previousIds?: string[],
+  limit = 6,
+  locationCity?: string,
+  dateStart?: Date,
+  dateEnd?: Date,
+  locationRangeSize?: number,
+  ageRangeSize?: number,
+  showPopulated = true
+) => {
+  let locationCityCoords: [number, number] | undefined = undefined;
+  let agePreference: number | undefined = undefined;
+  let actuallyShowPopulated = showPopulated;
+  if (locationCity) {
+    locationCityCoords = (await getCoords(locationCity)) ?? undefined;
+  }
+  if (userId) {
+    const userInfo = await getUserInfo(userId);
+    if (userInfo && !locationCityCoords) {
+      locationCityCoords = userInfo.locationCityCoords;
+      agePreference = Math.floor(
+        ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
+          (dateStart ? dateStart.getTime() - Date.now() : 0)) /
+          (1000 * 60 * 60 * 24 * 365)
+      );
+      if (!userInfo.showPopulated) {
+        actuallyShowPopulated = false;
+      }
+    }
+  }
+
+  return await getRecommendedDishesInternal(
+    userId,
+    previousIds,
+    limit,
+    locationCityCoords,
+    agePreference,
+    dateStart,
+    dateEnd,
+    locationRangeSize,
+    ageRangeSize,
+    actuallyShowPopulated,
+    false
+  );
 };
 
 export const getDishPreferences = async (userId: string) => {
@@ -506,7 +564,8 @@ export const addDishPreference = async (
   dish: string,
   userId: string,
   likes: boolean,
-  isFirst: boolean
+  isFirst: boolean,
+  populated = false
 ) => {
   const description = await getWikiPageSummary(dish);
 
@@ -531,6 +590,7 @@ export const addDishPreference = async (
             description,
             userId,
             setDate: new Date(),
+            populated,
           })
         ).acknowledged;
       }
@@ -567,7 +627,8 @@ export const addDish = async (
   date: Date,
   locationCity?: string,
   exactLocation?: string,
-  dishDescription?: string
+  dishDescription?: string,
+  populated = false
 ) => {
   const description = await getWikiPageSummary(dish);
 
@@ -604,6 +665,7 @@ export const addDish = async (
           : undefined,
         locationCityCoords: locationCityCoords ?? userInfo.locationCityCoords,
         exactLocation: exactLocation ?? userInfo.exactLocation,
+        populated,
       });
 
       return id;
@@ -698,7 +760,8 @@ If you do not agree with this decision use the contact option on our site: ${gen
 export const addDishEventInternal = async (
   customId: string,
   userId: string,
-  message?: string
+  message?: string,
+  populated = false
 ) => {
   const dishesCollection = await getDishesCollection();
 
@@ -726,6 +789,7 @@ export const addDishEventInternal = async (
       participantName,
       message,
       signupDate: new Date(),
+      populated,
     });
 
     if (result.acknowledged) {
