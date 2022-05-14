@@ -142,8 +142,6 @@
     }
   };
   var dt = moment(currentDish.value?.dish.date);
-
-  console.log(currentDish);
 </script>
 
 <template>

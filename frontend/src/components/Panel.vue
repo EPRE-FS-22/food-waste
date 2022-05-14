@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import moment from 'moment';
   import { ref } from 'vue';
   import {
     clearCaches,
@@ -81,7 +82,12 @@
       </button>
     </div>
     <button class="showModal-button" @click="clickModal()">
-      show Settings
+      {{
+        moment(settings.dateStart).format('L') +
+        ' - ' +
+        moment(settings.dateEnd).format('L')
+      }}
+      [Edit]
     </button>
     <Transition name="modal">
       <div v-if="showModal" class="modal-mask">
