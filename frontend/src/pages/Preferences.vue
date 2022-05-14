@@ -7,12 +7,11 @@
     addDishPreference,
     authFailure,
     checkSession,
-    clearCaches,
     getDishPreferences,
     hasConfirmedUserSession,
     hasUserSession,
-    refreshDishes,
     removeDishPreference,
+    setRefreshTimeout,
   } from '../data';
   import {
     resetSettings,
@@ -62,17 +61,10 @@
         inProgressDishPreferences.push(dish.value);
         const result = await addDishPreference(dish.value, true);
         if (result) {
-          if (timeoutId) {
-            window.clearTimeout(timeoutId);
-          }
-          timeoutId = window.setTimeout(async () => {
-            timeoutId = 0;
-            clearCaches(false, true, false, false);
-            refreshDishes.next();
-          }, 1000 * 65);
           inProgressDishPreferences.splice(
             inProgressDishPreferences.indexOf(dish.value)
           );
+          setRefreshTimeout();
           resetState();
           dishPreferences.value = result;
           dish.value = '';
@@ -84,20 +76,11 @@
     }
   });
 
-  let timeoutId = 0;
-
   const deletePreferences = async (dish: string) => {
     try {
       const result = await removeDishPreference(dish);
       if (result) {
-        if (timeoutId) {
-          window.clearTimeout(timeoutId);
-        }
-        timeoutId = window.setTimeout(async () => {
-          timeoutId = 0;
-          clearCaches(false, true, false, false);
-          refreshDishes.next();
-        }, 1000 * 65);
+        setRefreshTimeout();
         dishPreferences.value = result;
       }
     } catch (e: unknown) {

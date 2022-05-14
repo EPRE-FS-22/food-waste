@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, onBeforeUnmount, watch } from 'vue';
+  import { ref, onBeforeUnmount, watch, onUnmounted } from 'vue';
   import {
     DisplayType,
     loading,
@@ -70,6 +70,12 @@
         clearCaches(!hasUserSession(), true, false, false);
         getDishes();
       }, 1000);
+    }
+  });
+
+  onUnmounted(() => {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId);
     }
   });
 

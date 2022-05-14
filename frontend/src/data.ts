@@ -1123,3 +1123,16 @@ export const lastDish: BehaviorSubject<CurrentDish | null> =
   new BehaviorSubject(null as CurrentDish | null);
 
 export const refreshDishes: Subject<void> = new Subject();
+
+let timeoutId = 0;
+
+export const setRefreshTimeout = () => {
+  if (timeoutId) {
+    window.clearTimeout(timeoutId);
+  }
+  timeoutId = window.setTimeout(async () => {
+    timeoutId = 0;
+    clearCaches(false, true, false, false);
+    refreshDishes.next();
+  }, 1000 * 65);
+};
