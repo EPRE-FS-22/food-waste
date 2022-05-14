@@ -34,6 +34,12 @@
     }
   };
 
+  let showModal = ref(false);
+
+  const clickModal = () => {
+    showModal.value = !showModal.value;
+  };
+
   const depopulateOnClick = async () => {
     try {
       if (hasSession(true)) {
@@ -74,110 +80,219 @@
         Depopulate
       </button>
     </div>
-    <div class="location-range-container input-container">
-      <label for="location-range"
-        >Location range{{
-          settingsMessages.locationRangeSize
-            ? ': ' + settingsMessages.locationRangeSize
-            : settingsMessages.locationRangeSize
-        }}</label
-      >
-      <input
-        id="location-range"
-        v-model="settings.locationRangeSize"
-        type="number"
-        name="location-range"
-        placeholder="10"
-        :class="{
-          warning:
-            !settings.locationRangeSize || settingsMessages.locationRangeSize,
-        }"
-      />
-    </div>
-    <div class="age-range-container input-container">
-      <label for="age-range"
-        >Age range{{
-          settingsMessages.ageRangeSize
-            ? ': ' + settingsMessages.ageRangeSize
-            : settingsMessages.ageRangeSize
-        }}</label
-      >
-      <input
-        id="age-range"
-        v-model="settings.ageRangeSize"
-        type="number"
-        name="age-range"
-        placeholder="10"
-        :class="{
-          warning: !settings.ageRangeSize || settingsMessages.ageRangeSize,
-        }"
-      />
-    </div>
-    <div class="date-start-container input-container">
-      <label for="date-start"
-        >Date from{{
-          settingsMessages.dateStart
-            ? ': ' + settingsMessages.dateStart
-            : settingsMessages.dateStart
-        }}</label
-      >
-      <div class="date-inner-container">
-        <input
-          id="date-start"
-          v-model="settings.dateStart"
-          type="datetime-local"
-          name="date-start"
-          placeholder="Date"
-          :class="{
-            warning: !settings.dateStart || settingsMessages.dateStart,
-          }"
-        />
+    <button class="showModal-button" @click="clickModal()">
+      show Settings
+    </button>
+    <Transition name="modal">
+      <div v-if="showModal" class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+            <div class="modal-header">
+              <slot name="header">Range Settings</slot>
+            </div>
+            <div class="modal-body">
+              <div class="location-range-container input-container">
+                <label for="location-range"
+                  >Location range{{
+                    settingsMessages.locationRangeSize
+                      ? ': ' + settingsMessages.locationRangeSize
+                      : settingsMessages.locationRangeSize
+                  }}</label
+                >
+                <input
+                  id="location-range"
+                  v-model="settings.locationRangeSize"
+                  type="number"
+                  name="location-range"
+                  placeholder="10"
+                  :class="{
+                    warning:
+                      !settings.locationRangeSize ||
+                      settingsMessages.locationRangeSize,
+                  }"
+                />
+              </div>
+              <div class="age-range-container input-container">
+                <label for="age-range"
+                  >Age range{{
+                    settingsMessages.ageRangeSize
+                      ? ': ' + settingsMessages.ageRangeSize
+                      : settingsMessages.ageRangeSize
+                  }}</label
+                >
+                <input
+                  id="age-range"
+                  v-model="settings.ageRangeSize"
+                  type="number"
+                  name="age-range"
+                  placeholder="10"
+                  :class="{
+                    warning:
+                      !settings.ageRangeSize || settingsMessages.ageRangeSize,
+                  }"
+                />
+              </div>
+              <div class="date-start-container input-container">
+                <label for="date-start"
+                  >Date from{{
+                    settingsMessages.dateStart
+                      ? ': ' + settingsMessages.dateStart
+                      : settingsMessages.dateStart
+                  }}</label
+                >
+                <div class="date-inner-container">
+                  <input
+                    id="date-start"
+                    v-model="settings.dateStart"
+                    type="datetime-local"
+                    name="date-start"
+                    placeholder="Date"
+                    :class="{
+                      warning:
+                        !settings.dateStart || settingsMessages.dateStart,
+                    }"
+                  />
+                </div>
+              </div>
+              <div class="date-end-container input-container">
+                <label for="date-end"
+                  >Date to{{
+                    settingsMessages.dateEnd
+                      ? ': ' + settingsMessages.dateEnd
+                      : settingsMessages.dateEnd
+                  }}</label
+                >
+                <div class="date-inner-container">
+                  <input
+                    id="date-end"
+                    v-model="settings.dateEnd"
+                    type="datetime-local"
+                    name="date-end"
+                    placeholder="Date"
+                    :class="{
+                      warning: !settings.dateEnd || settingsMessages.dateEnd,
+                    }"
+                  />
+                </div>
+              </div>
+              <div class="location-city-container input-container">
+                <label for="location-city"
+                  >City{{
+                    settingsMessages.locationCity
+                      ? ': ' + settingsMessages.locationCity
+                      : settingsMessages.locationCity
+                  }}</label
+                >
+                <SearchWiki
+                  id="city"
+                  v-model="settings.locationCity"
+                  :only-coords="true"
+                  name="city"
+                  placeholder="Zug"
+                  class="field city panel-item"
+                  :maxlength="100"
+                  :previous-value="settings.previousLocationCity"
+                ></SearchWiki>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="modal-default-button" @click="clickModal()">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="date-end-container input-container">
-      <label for="date-end"
-        >Date to{{
-          settingsMessages.dateEnd
-            ? ': ' + settingsMessages.dateEnd
-            : settingsMessages.dateEnd
-        }}</label
-      >
-      <div class="date-inner-container">
-        <input
-          id="date-end"
-          v-model="settings.dateEnd"
-          type="datetime-local"
-          name="date-end"
-          placeholder="Date"
-          :class="{
-            warning: !settings.dateEnd || settingsMessages.dateEnd,
-          }"
-        />
-      </div>
-    </div>
-    <div class="location-city-container input-container">
-      <label for="location-city"
-        >City{{
-          settingsMessages.locationCity
-            ? ': ' + settingsMessages.locationCity
-            : settingsMessages.locationCity
-        }}</label
-      >
-      <SearchWiki
-        id="city"
-        v-model="settings.locationCity"
-        :only-coords="true"
-        name="city"
-        placeholder="Zug"
-        class="field city panel-item"
-        :maxlength="100"
-        :previous-value="settings.previousLocationCity"
-      ></SearchWiki>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <style scoped lang="scss">
+  .showModal-button {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 0;
+    margin-bottom: 0.6rem;
+    height: 2.1rem;
+    font-size: 1rem;
+    line-height: 1rem;
+    font-weight: bold;
+    padding: 0.45rem;
+    background-color: #ffffff;
+    border: solid 0.1rem rgb(179, 179, 179);
+    border-radius: 1rem;
+    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: #000000;
+  }
+  .modal-mask {
+    position: fixed;
+    z-index: 9998;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: table;
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-wrapper {
+    display: table-cell;
+    vertical-align: middle;
+  }
+
+  .modal-container {
+    width: 70%;
+    height: 90%;
+    margin: 0px auto;
+    padding: 20px 30px;
+    background-color: gray;
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
+    transition: all 0.3s ease;
+  }
+
+  .modal-header {
+    margin-top: 0;
+    font-size: 4vh;
+  }
+
+  .modal-body {
+    margin: 20px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .modal-default-button {
+    float: right;
+    height: 2.1rem;
+    font-size: 1rem;
+    line-height: 1rem;
+    font-weight: bold;
+    padding: 0.45rem;
+    background-color: #ffffff;
+    border: solid 0.1rem rgb(179, 179, 179);
+    border-radius: 1rem;
+    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: #000000;
+  }
+
+  .modal-enter-from {
+    opacity: 0;
+  }
+
+  .modal-leave-to {
+    opacity: 0;
+  }
+
+  .modal-enter-from .modal-container,
+  .modal-leave-to .modal-container {
+    -webkit-transform: scale(1.1);
+    transform: scale(1.1);
+  }
   .panel {
     display: flex;
     flex-direction: row;
@@ -225,7 +340,7 @@
     .input-container {
       display: flex;
       flex-direction: column;
-      width: 25%;
+      width: 90%;
       padding: 0.5rem;
       font-size: 3vh;
       font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
@@ -298,8 +413,8 @@
       height: calc(15vw - 1rem);
 
       .input-container {
-        padding: 0.1rem;
-        font-size: 3vw;
+        padding: 0.6rem;
+        font-size: 3.75vw;
         line-height: 3vw;
 
         label {
@@ -315,10 +430,10 @@
         }
 
         input {
-          height: 2vw;
-          font-size: 2vw;
+          height: 2.5vw;
+          font-size: 4vw;
           line-height: 2vw;
-          padding: 0.5vw;
+          padding: 3vw;
           margin: 0.5vw;
           margin-top: 1.5vw;
           border: solid 0.2vw rgb(179, 179, 179);

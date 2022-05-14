@@ -182,7 +182,7 @@
     .logo {
       margin-left: 1.75vw;
       margin-right: 1.75vw;
-      height: 10vw;
+      height: 5vw;
     }
 
     .view-toggle {
@@ -195,13 +195,19 @@
 
   @media (max-aspect-ratio: 9/16) {
     .header {
-      height: 16vw;
+      height: 17vw;
     }
 
     .logo {
       margin-left: 2.333vw;
       margin-right: 2.333vw;
-      height: 13.333vw;
+      height: 11.333vw;
+    }
+    .view-toggle {
+      height: 1.3rem;
+      font-size: 0.6rem;
+      line-height: 0.8rem;
+      padding: 0.15rem;
     }
   }
 </style>
