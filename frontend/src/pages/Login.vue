@@ -299,14 +299,14 @@
         return;
       }
       clearMessages();
-      previousCity.value = city.value;
-      previousLocation.value = location.value;
       buttonDisabled.value = true;
       const result = await reset(
         newPassword.value,
         city.value === previousCity.value ? undefined : city.value,
         location.value === previousLocation.value ? undefined : location.value
       );
+      previousCity.value = city.value;
+      previousLocation.value = location.value;
       buttonDisabled.value = false;
       resetState();
       if (result) {
@@ -345,8 +345,6 @@
         return;
       }
       clearMessages();
-      previousCity.value = city.value;
-      previousLocation.value = location.value;
       buttonDisabled.value = true;
       const result = await change(
         password.value,
@@ -354,6 +352,8 @@
         city.value === previousCity.value ? undefined : city.value,
         location.value === previousLocation.value ? undefined : location.value
       );
+      previousCity.value = city.value;
+      previousLocation.value = location.value;
       buttonDisabled.value = false;
       resetState();
       if (result) {

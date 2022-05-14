@@ -93,8 +93,9 @@
 <template>
   <div class="content-base preferences-section">
     <div class="preferences">Set Up Your preferences</div>
-    <div class="preferences-list-title">
-      Your Preferences (recommendations take a couple of minutes to update):
+    <div class="preferences-list-title">Your Preferences:</div>
+    <div class="preferences-list-subtitle">
+      Recommendations take a couple minutes to update
     </div>
     <div
       v-for="(dishPreference, index) in dishPreferences"
@@ -136,6 +137,11 @@
 
   .preferences-list-text {
     font-size: 1.5rem;
+  }
+
+  .preferences-list-subtitle {
+    margin-top: 0.5rem;
+    font-size: 1rem;
   }
 
   .preference {

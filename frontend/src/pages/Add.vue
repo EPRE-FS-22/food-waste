@@ -4,6 +4,8 @@
     addDish,
     authFailure,
     checkSession,
+    clearCaches,
+    getUserInfo,
     hasConfirmedUserSession,
     hasConfirmedUserSessionWithPreferences,
     hasUserSession,
@@ -25,18 +27,14 @@
     router.push('/login');
   });
 
-  if (!hasUserSession()) {
-    router.push('/admin');
-  } else if (!hasConfirmedUserSession()) {
-    router.push('/login');
-  } else if (!hasConfirmedUserSessionWithPreferences()) {
-    router.push('/preferences');
-  } else {
-    checkSession();
-  }
-
   const inProgress = ref(false);
 
+  const previousCity = ref('');
+  const city = ref('');
+  const cityMessage = ref('');
+  const previousLocation = ref('');
+  const location = ref('');
+  const locationMessage = ref('');
   const dish = ref('');
   const dishMessage = ref('');
   const personNr = ref(1);
@@ -45,6 +43,34 @@
   const descriptionMessage = ref('');
   const dateOfEvent = ref(null as Date | null);
   const dateOfEventMessage = ref('');
+
+  if (!hasUserSession()) {
+    router.push('/admin');
+  } else if (!hasConfirmedUserSession()) {
+    router.push('/login');
+  } else if (!hasConfirmedUserSessionWithPreferences()) {
+    router.push('/preferences');
+  } else {
+    checkSession();
+    (async () => {
+      try {
+        const userInfo = await getUserInfo();
+        if (userInfo) {
+          if (!city.value && userInfo.locationCity) {
+            previousCity.value = userInfo.locationCity;
+            city.value = userInfo.locationCity;
+          }
+          if (!location.value && userInfo.exactLocation) {
+            previousLocation.value = userInfo.exactLocation;
+            location.value = userInfo.exactLocation;
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    })();
+  }
 
   const addInvite = async () => {
     try {
@@ -63,7 +89,9 @@
           description.value === '' ||
           !date ||
           isNaN(date.getTime()) ||
-          date.getTime() < Date.now()
+          date.getTime() < Date.now() ||
+          city.value === '' ||
+          location.value === ''
         )
       ) {
         inProgress.value = true;
@@ -71,11 +99,14 @@
           dish.value,
           personNr.value,
           date,
-          undefined,
-          undefined,
+          city.value === previousCity.value ? undefined : city.value,
+          location.value === previousLocation.value
+            ? undefined
+            : location.value,
           description.value
         );
         if (result) {
+          clearCaches(false, false, true, false);
           router.push('/plans');
         }
       } else {
@@ -93,6 +124,13 @@
         if (personNr.value <= 0) {
           personNrMessage.value =
             'Number of people is incorrect, set 1 or higher';
+        }
+        if (!city.value) {
+          cityMessage.value =
+            'Please enter your city, find a city for which a dropdown appears and pick one of the options, it may take some time for the dropdown to appear';
+        }
+        if (!location.value) {
+          locationMessage.value = 'Please enter your address';
         }
       }
     } catch (e) {
@@ -117,6 +155,7 @@
         placeholder="Pizza"
         class="field dish add-item"
         :maxlength="50"
+        @keyup.enter="addInvite()"
       ></SearchWiki>
       <label class="label name-label add-item" for="name"
         >How many people?{{ personNrMessage ? ': ' + personNrMessage : ''
@@ -132,6 +171,7 @@
         maxlength="2"
         min="1"
         max="20"
+        @keyup.enter="addInvite()"
       />
 
       <label class="label date-of-birth-label" for="date-of-event"
@@ -146,6 +186,7 @@
         class="field date-of-event"
         name="date-of-event"
         placeholder="20.06.2022"
+        @keyup.enter="addInvite()"
       />
 
       <label class="label name-label add-item" for="name"
@@ -161,6 +202,38 @@
         placeholder="Hello..."
         maxlength="200"
       ></textarea>
+
+      <label class="label city-label add-item" for="city"
+        >Please enter the city you live in{{
+          cityMessage ? ': ' + cityMessage : ''
+        }}
+      </label>
+      <SearchWiki
+        id="city"
+        v-model="city"
+        :only-coords="true"
+        name="city"
+        placeholder="Zug"
+        class="field city add-item"
+        :maxlength="100"
+        :previous-value="previousCity"
+        @keyup.enter="addInvite()"
+      ></SearchWiki>
+      <label class="label location-label add-item" for="location"
+        >Please enter your exact address{{
+          locationMessage ? ': ' + locationMessage : ''
+        }}
+      </label>
+      <input
+        id="location"
+        v-model="location"
+        type="text"
+        class="field location add-item"
+        name="location"
+        placeholder="Teststrasse 1, 6300 Zug"
+        maxlength="1000"
+        @keyup.enter="addInvite()"
+      />
       <button class="invite-button" :disabled="inProgress" @click="addInvite()">
         Invite Now
       </button>

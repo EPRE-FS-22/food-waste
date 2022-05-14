@@ -46,6 +46,9 @@
   }>();
 
   const searchText = ref(props.modelValue);
+
+  let lastEmit = searchText.value;
+
   let searchResults = ref([] as string[]);
   let showResult = ref(false);
 
@@ -53,18 +56,26 @@
   let requestOngoing = false;
 
   let ignoreNextChange = false;
+  let ignoreNextPropsChange = false;
 
   const selectResult = (selectedText: string) => {
     ignoreNextChange = true;
+    ignoreNextPropsChange = true;
     showResult.value = false;
     searchText.value = selectedText;
     emit('update:modelValue', selectedText);
+    lastEmit = selectedText;
   };
 
   watch(
     () => props.modelValue,
     (item) => {
-      searchText.value = item;
+      if (ignoreNextPropsChange) {
+        ignoreNextPropsChange = false;
+      } else {
+        searchText.value = item;
+        lastEmit = item;
+      }
     }
   );
 
@@ -73,21 +84,28 @@
       ignoreNextChange = false;
       return;
     }
-    if (
-      searchText.value.length > 1 &&
-      searchText.value !== props.previousValue
-    ) {
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
+    if (searchText.value !== props.previousValue) {
+      if (lastEmit !== '') {
+        ignoreNextPropsChange = true;
+        emit('update:modelValue', '');
+        lastEmit = '';
       }
-      if (requestOngoing) {
-        return;
+      if (searchText.value.length > 1) {
+        if (timeoutId) {
+          window.clearTimeout(timeoutId);
+        }
+        if (requestOngoing) {
+          return;
+        }
+        const searchString = searchText.value;
+        timeoutId = window.setTimeout(() => {
+          timeoutId = 0;
+          listWiki(searchString);
+        }, 500);
+      } else {
+        searchResults.value = [];
+        showResult.value = false;
       }
-      const searchString = searchText.value;
-      timeoutId = window.setTimeout(async () => {
-        timeoutId = 0;
-        listWiki(searchString);
-      }, 500);
     } else {
       searchResults.value = [];
       showResult.value = false;

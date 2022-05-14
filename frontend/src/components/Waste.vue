@@ -65,7 +65,7 @@
       if (requestOngoing) {
         return;
       }
-      timeoutId = window.setTimeout(async () => {
+      timeoutId = window.setTimeout(() => {
         timeoutId = 0;
         clearCaches(!hasUserSession(), true, false, false);
         getDishes();

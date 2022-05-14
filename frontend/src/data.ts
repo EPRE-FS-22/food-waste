@@ -1130,9 +1130,9 @@ export const setRefreshTimeout = () => {
   if (timeoutId) {
     window.clearTimeout(timeoutId);
   }
-  timeoutId = window.setTimeout(async () => {
+  timeoutId = window.setTimeout(() => {
     timeoutId = 0;
     clearCaches(false, true, false, false);
     refreshDishes.next();
-  }, 1000 * 65);
+  }, 1000 * 75);
 };
