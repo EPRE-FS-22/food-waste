@@ -20,6 +20,7 @@
     resetSettingsMessages,
     resetState,
   } from '../settings';
+  import moment from 'moment';
   const router = useRouter();
 
   authFailure.subscribe(() => {
@@ -140,6 +141,7 @@
       throw e;
     }
   };
+  var dt = moment(currentDish.value?.dish.date);
 </script>
 
 <template>
@@ -151,12 +153,15 @@
           <h4>Description</h4>
           <p>{{ currentDish.dish.dishDescription }}</p>
         </div>
+        <p class="info-section">Name: {{ currentDish.dish.name }}</p>
+        <p class="info-section">Date of Eating: {{ dt.format('LL') }}</p>
         <p class="info-section">
           Number of people: {{ currentDish.dish.slots }}
         </p>
         <p class="info-section">
           Current number of people: {{ currentDish.dish.filled }}
         </p>
+
         <div v-if="currentDish.type === 'normal'" class="button-section">
           <router-link to="/user">
             <span class="icon cancel icon-cancel-circled"></span>
@@ -190,6 +195,7 @@
           </template>
         </div>
         <div v-else>
+          State of Request:
           {{
             currentDish.dish.accepted
               ? 'Your request was accepted'
