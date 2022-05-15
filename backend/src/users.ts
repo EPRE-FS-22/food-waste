@@ -74,6 +74,16 @@ export const changeUserInfo = async (
   if (await verifyPassword(registeredUser.hash, password)) {
     const passwordHashed = newPassword ? await hashPassword(newPassword) : '';
 
+    let locationCityCoords: [number, number] | null = null;
+
+    if (locationCity) {
+      locationCityCoords = await getCoords(locationCity);
+    }
+
+    if (!locationCityCoords && !newPassword && !exactLocation) {
+      return false;
+    }
+
     await usersCollection.updateOne(
       {
         customId: userId,
@@ -81,7 +91,8 @@ export const changeUserInfo = async (
       {
         $set: {
           ...(passwordHashed ? { hash: passwordHashed } : {}),
-          ...(locationCity ? { locationCity } : {}),
+          ...(locationCityCoords ? { locationCity } : {}),
+          ...(locationCityCoords ? { locationCityCoords } : {}),
           ...(exactLocation ? { exactLocation } : {}),
         },
         $currentDate: { changedDate: true },
@@ -177,6 +188,7 @@ export const setUserInfoInternal = async (
               name,
               dateOfBirth,
               locationCity,
+              locationCityCoords,
               exactLocation,
               identityConfirmed: true,
               infosSet: true,
@@ -308,6 +320,10 @@ export const resetUserInfo = async (
 
     if (locationCity) {
       locationCityCoords = await getCoords(locationCity);
+    }
+
+    if (!locationCityCoords && !newPassword && !exactLocation) {
+      return false;
     }
 
     await usersCollection.updateOne(

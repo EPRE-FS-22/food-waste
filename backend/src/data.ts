@@ -99,6 +99,7 @@ const ensureDBConnection = () => {
         );
         settingsCollection = db.collection(settingsCollectionName);
         usersCollection = db.collection(usersCollectionName);
+        dishesCollection.createIndex({ locationCityCoords: '2dsphere' });
 
         const passwordObject = (await settingsCollection.findOne({
           key: 'password',

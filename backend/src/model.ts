@@ -27,7 +27,7 @@ export interface DishInfoBase extends Dish {
   createdDate: Date;
 }
 
-export interface DishInfo extends DishInfoBase {
+export interface DishInfo extends DishInfoBase, UserInfoBasePrivate {
   participantNames: string[];
   participantMessages: (string | undefined)[];
   responses: (string | undefined)[];
@@ -51,7 +51,21 @@ export interface DishEventBase extends DishPlan {
   dishId: string;
 }
 
-export interface DishEvent extends DishEventBase, Dish {}
+export interface DishEventGeneral extends DishEventBase, Dish {}
+
+export interface DishEventAccepted
+  extends DishEventGeneral,
+    UserInfoBasePrivate {
+  accepted: true;
+}
+
+export interface DishEventNotAccepted
+  extends DishEventGeneral,
+    UserInfoBasePrivate {
+  accepted: false;
+}
+
+export type DishEvent = DishEventAccepted | DishEventNotAccepted;
 
 export interface DBDishEvent extends DishEventBase, DBDishBase {
   participantId: string;

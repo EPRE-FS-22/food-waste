@@ -111,13 +111,13 @@
 
 @font-face {
   font-family: 'food-waste';
-  src: url('./assets/fonts/food-waste.eot?7624707');
-  src: url('./assets/fonts/food-waste.eot?7624707#iefix')
+  src: url('./assets/fonts/food-waste.eot?16572010');
+  src: url('./assets/fonts/food-waste.eot?16572010#iefix')
       format('embedded-opentype'),
-    url('./assets/fonts/food-waste.woff2?7624707') format('woff2'),
-    url('./assets/fonts/food-waste.woff?7624707') format('woff'),
-    url('./assets/fonts/food-waste.ttf?7624707') format('truetype'),
-    url('./assets/fonts/food-waste.svg?7624707#food-waste') format('svg');
+    url('./assets/fonts/food-waste.woff2?16572010') format('woff2'),
+    url('./assets/fonts/food-waste.woff?16572010') format('woff'),
+    url('./assets/fonts/food-waste.ttf?16572010') format('truetype'),
+    url('./assets/fonts/food-waste.svg?16572010#food-waste') format('svg');
   font-weight: normal;
   font-style: normal;
 }
@@ -244,9 +244,42 @@
 .icon-calendar:before {
   content: '\e81d';
 } /* '' */
+.icon-pencil:before {
+  content: '\e81e';
+} /* '' */
+.icon-edit:before {
+  content: '\e81f';
+} /* '' */
+.icon-font:before {
+  content: '\e820';
+} /* '' */
+.icon-bold:before {
+  content: '\e821';
+} /* '' */
+.icon-italic:before {
+  content: '\e822';
+} /* '' */
+.icon-text-height:before {
+  content: '\e823';
+} /* '' */
+.icon-text-width:before {
+  content: '\e824';
+} /* '' */
+.icon-comment:before {
+  content: '\e825';
+} /* '' */
+.icon-chat:before {
+  content: '\e826';
+} /* '' */
 .icon-mail-alt:before {
   content: '\f0e0';
 } /* '' */
+.icon-comment-empty:before {
+  content: '\f0e5';
+} /* '' */
+.icon-chat-empty:before {
+  content: '\f0e6';
+} /* '' */
 .icon-coffee:before {
   content: '\f0f4';
 } /* '' */
@@ -268,6 +301,9 @@
 .icon-ok-squared:before {
   content: '\f14a';
 } /* '' */
+.icon-pencil-squared:before {
+  content: '\f14b';
+} /* '' */
 .icon-plus-squared-alt:before {
   content: '\f196';
 } /* '' */

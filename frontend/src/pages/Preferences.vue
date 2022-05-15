@@ -120,7 +120,7 @@
   </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
   .preferences-section {
     display: flex;
     flex-direction: column;

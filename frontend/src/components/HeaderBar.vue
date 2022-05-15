@@ -13,7 +13,8 @@
       :to="loggedIn ? (userLoggedIn ? '/user' : '/admin') : '/'"
       class="header-container"
     >
-      <img src="../assets/logofullwhite.png" class="logo" />
+      <img src="../assets/logofullwhite.png" class="logo logo-big" />
+      <img src="../assets/logosmall.png" class="logo logo-small" />
     </router-link>
     <div class="right-hand-buttons">
       <router-link
@@ -136,6 +137,10 @@
     height: 10vh;
     height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100));
     cursor: pointer;
+
+    &.logo-small {
+      display: none;
+    }
   }
 
   .view-toggle {
@@ -182,7 +187,7 @@
     .logo {
       margin-left: 1.75vw;
       margin-right: 1.75vw;
-      height: 5vw;
+      height: 10vw;
     }
 
     .view-toggle {
@@ -195,19 +200,21 @@
 
   @media (max-aspect-ratio: 9/16) {
     .header {
-      height: 17vw;
+      height: 16vw;
     }
 
     .logo {
       margin-left: 2.333vw;
       margin-right: 2.333vw;
-      height: 11.333vw;
-    }
-    .view-toggle {
-      height: 1.3rem;
-      font-size: 0.6rem;
-      line-height: 0.8rem;
-      padding: 0.15rem;
+      height: 13.333vw;
+
+      &.logo-small {
+        display: block;
+      }
+
+      &.logo-big {
+        display: none;
+      }
     }
   }
 </style>

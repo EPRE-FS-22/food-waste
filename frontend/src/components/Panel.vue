@@ -83,11 +83,12 @@
     </div>
     <button class="showModal-button" @click="clickModal()">
       {{
-        moment(settings.dateStart).format('L') +
+        (settings.locationCity ? settings.locationCity + ' | ' : '') +
+        moment(settings.dateStart).format('DD. MM. YYYY HH:MM') +
         ' - ' +
-        moment(settings.dateEnd).format('L')
+        moment(settings.dateEnd).format('DD. MM. YYYY HH:MM')
       }}
-      [Edit]
+      <span class="icon icon-pencil"></span>
     </button>
     <Transition name="modal">
       <div v-if="showModal" class="modal-mask">
@@ -215,15 +216,15 @@
 
 <style scoped lang="scss">
   .showModal-button {
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 0;
-    margin-bottom: 0.6rem;
-    height: 2.1rem;
+    margin: 0;
+    min-height: 2.1rem;
+    height: min-content;
     font-size: 1rem;
-    line-height: 1rem;
+    line-height: 1.5rem;
     font-weight: bold;
-    padding: 0.45rem;
+    padding: 0.15rem;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
     background-color: #ffffff;
     border: solid 0.1rem rgb(179, 179, 179);
     border-radius: 1rem;
@@ -257,6 +258,7 @@
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
     transition: all 0.3s ease;
+    overflow-y: auto;
   }
 
   .modal-header {
@@ -303,9 +305,10 @@
     display: flex;
     flex-direction: row;
     justify-content: center;
+    align-items: center;
     width: calc(100% - 1rem);
-    height: calc(15vh - 1rem);
-    height: calc((15 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
+    height: calc(10vh - 1rem);
+    height: calc((10 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
     padding: 0.5rem;
     margin: 0;
     border: none;
@@ -328,6 +331,15 @@
       box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
       text-decoration: none;
       color: #000000;
+    }
+
+    .icon {
+      color: #000000;
+      font-size: 0.85rem;
+      margin: 0;
+      padding: 0;
+      border: none;
+      margin-right: -0.2rem;
     }
 
     .field {
@@ -412,11 +424,18 @@
     }
   }
 
+  @media (min-aspect-ratio: 3/1) {
+    .panel {
+      height: calc(15vh - 1rem);
+      height: calc((15 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
+    }
+  }
+
   @media (max-aspect-ratio: 1/1) {
     .panel {
       padding: 0.125rem;
       width: calc(100% - 0.25rem);
-      height: calc(15vw - 1rem);
+      height: calc(12vw - 1rem);
 
       .input-container {
         padding: 0.6rem;
@@ -460,6 +479,12 @@
           margin-top: 1.5vw;
         }
       }
+    }
+  }
+
+  @media (max-aspect-ratio: 9/16) {
+    .panel {
+      height: calc(25vw - 1rem);
     }
   }
 </style>

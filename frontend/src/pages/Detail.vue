@@ -14,6 +14,7 @@
     getMyDish,
     getSignedUpDish,
     clearCaches,
+    unacceptDishRequest,
   } from '../data';
   import {
     resetSettings,
@@ -141,7 +142,29 @@
       throw e;
     }
   };
-  var dt = moment(currentDish.value?.dish.date);
+
+  const unacceptNames = async (index: number) => {
+    try {
+      if (currentDish.value && currentDish.value.type === 'info') {
+        const event = currentDish.value.dish.eventIds[index];
+        if (event && !acceptIdsInProgress.includes(event)) {
+          acceptIdsInProgress.push(event);
+          const result = await unacceptDishRequest(event);
+          if (result) {
+            clearCaches(false, false, true, false);
+            const newDish = await getMyDish(route.params.id as string);
+            acceptIdsInProgress.splice(acceptIdsInProgress.indexOf(event), 1);
+            if (newDish) {
+              currentDish.value = { type: 'info', dish: newDish };
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
 </script>
 
 <template>
@@ -153,10 +176,27 @@
           <h4>Description</h4>
           <p>{{ currentDish.dish.dishDescription }}</p>
         </div>
-        <p class="info-section">Name: {{ currentDish.dish.name }}</p>
-        <p class="info-section">Date of Eating: {{ dt.format('LL') }}</p>
         <p class="info-section">
-          Number of people: {{ currentDish.dish.slots }}
+          Hosted by
+          {{ currentDish.type !== 'info' ? currentDish.dish.name : 'you' }}
+        </p>
+        <p v-if="currentDish.type !== 'info'" class="info-section">
+          In {{ currentDish.dish.locationCity }}
+        </p>
+        <p
+          v-if="
+            currentDish.type !== 'normal' &&
+            (currentDish.type !== 'event' || currentDish.dish.accepted)
+          "
+          class="info-section"
+        >
+          At {{ currentDish.dish.exactLocation }}
+        </p>
+        <p class="info-section">
+          {{ moment(currentDish.dish.date).format('DD. MM. YYYY HH:MM') }}
+        </p>
+        <p class="info-section">
+          Maximum number of people: {{ currentDish.dish.slots }}
         </p>
         <p class="info-section">
           Current number of people: {{ currentDish.dish.filled }}
@@ -175,18 +215,31 @@
             <p>Your event is full</p>
           </template>
           <template v-else>
+            <p v-if="currentDish.dish.participantNames.length > 0">
+              Participants:
+            </p>
+            <div
+              v-for="(name, index) in currentDish.dish.participantNames"
+              :key="index"
+            >
+              <p>{{ name }}</p>
+              <div class="button-section" >
+                <div @click="unacceptNames(index)">
+                  <span
+                    class="icon icon-small cancel icon-cancel-circled"
+                  ></span>
+                </div>
+              </div>
+            </div>
             <p v-if="currentDish.dish.participantRequestsNames.length > 0">
-              people requests to join:
+              People's requests to join:
             </p>
             <div
               v-for="(name, index) in currentDish.dish.participantRequestsNames"
               :key="index"
             >
               <p>{{ name }}</p>
-              <div
-                v-if="currentDish.dish.participantRequestsNames.length > 0"
-                class="button-section"
-              >
+              <div class="button-section">
                 <div @click="acceptNames(index)">
                   <span class="icon icon-small ok icon-ok-circled"></span>
                 </div>
@@ -194,8 +247,7 @@
             </div>
           </template>
         </div>
-        <div v-else>
-          State of Request:
+        <div v-else class="info-section">
           {{
             currentDish.dish.accepted
               ? 'Your request was accepted'

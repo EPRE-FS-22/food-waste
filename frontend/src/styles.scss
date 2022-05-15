@@ -60,8 +60,8 @@ body {
   border: none;
 
   &.small {
-    height: calc(70vh - 1rem);
-    height: calc((70 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
+    height: calc(75vh - 1rem);
+    height: calc((75 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem);
   }
 }
 
@@ -83,8 +83,8 @@ body {
     height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 15vw);
 
     &.small {
-      height: calc(100vh - 28vw - 1rem);
-      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 28vw);
+      height: calc(100vh - 26vw - 1rem);
+      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 26vw);
     }
   }
 }
@@ -95,8 +95,8 @@ body {
     height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 22vw);
 
     &.small {
-      height: calc(100vh - 35vw - 1rem);
-      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 35vw);
+      height: calc(100vh - 45vw - 1rem);
+      height: calc((100 * (100vh - var(--vh-offset, 0px)) / 100) - 1rem - 45vw);
     }
   }
 }

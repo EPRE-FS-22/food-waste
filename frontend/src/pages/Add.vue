@@ -241,7 +241,7 @@
   </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
   .add {
     overflow-y: auto;
   }

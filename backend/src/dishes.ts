@@ -27,7 +27,7 @@ import {
   DEFAULT_SEARCH_AGE_RANGE,
   DEFAULT_SEARCH_LOCATION_RANGE,
 } from './constants.js';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { getCoords } from './geo.js';
 import { getWikiPageSummary } from './wiki.js';
 import { getPicture, getPictures } from './pictures.js';
@@ -46,6 +46,7 @@ const combineDishDBValues = (dish: WithId<DBDish>, image?: string): Dish => {
     filled: dish.filled,
     dish: dish.dish,
     dishDescription: dish.dishDescription,
+    locationCity: dish.locationCity,
     image,
   };
 };
@@ -88,6 +89,8 @@ const combineDishInfoDBValues = (
     eventRequestsIds: dishEvents
       .filter((d) => !d.accepted)
       .map((e) => e.customId),
+    locationCity: dish.locationCity,
+    exactLocation: dish.exactLocation,
     createdDate: dish.createdDate,
     lastAcceptedDate: dish.lastAcceptedDate,
   };
@@ -116,6 +119,8 @@ const combineDishEventDBValues = (
     accepted: dishEvent.accepted,
     message: dishEvent.message,
     response: dishEvent.response,
+    locationCity: dish.locationCity,
+    exactLocation: dishEvent.accepted ? dish.exactLocation : undefined,
     signupDate: dishEvent.signupDate,
     acceptedDate: dishEvent.acceptedDate,
   };
@@ -217,7 +222,7 @@ export const getAvailableDishes = async (
                     coordinates: locationCityCoords,
                   },
                   $maxDistance:
-                    locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE,
+                    (locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE) * 1000,
                 },
               },
             }
@@ -308,7 +313,7 @@ const getRecommendedDishesInternal = async (
                     coordinates: locationCityCoords,
                   },
                   $maxDistance:
-                    locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE,
+                    (locationRangeSize ?? DEFAULT_SEARCH_LOCATION_RANGE) * 1000,
                 },
               },
             }
@@ -789,18 +794,18 @@ export const removeDish = async (customId: string, userId?: string) => {
 
 Thank your for using the ${APP_NAME} App.
 
-Unfortunately the plan for eating ${dish.dish} on ${moment(
-                dish.date
-              ).calendar()} has been cancelled by the host.
+Unfortunately the plan for eating ${dish.dish} on ${moment(dish.date)
+                .tz('Europe/Zurich')
+                .calendar()} has been cancelled by the host.
 
 Use the site to search for alternatives: ${generateFrontendLink('/user')}`
             : `Hello ${dishEvent.participantName}
 
 Thank your for using the ${APP_NAME} App.
 
-Unfortunately the plan for eating ${dish.dish} on ${moment(
-                dish.date
-              ).calendar()} has been cancelled by an admin.
+Unfortunately the plan for eating ${dish.dish} on ${moment(dish.date)
+                .tz('Europe/Zurich')
+                .calendar()} has been cancelled by an admin.
 
 Use the site to search for alternatives: ${generateFrontendLink('/user')}`;
           await sendUserMail(
@@ -817,9 +822,9 @@ Use the site to search for alternatives: ${generateFrontendLink('/user')}`;
 
 Thank your for using the ${APP_NAME} App.
 
-Unfortunately your plan for eating ${dish.dish} on ${moment(
-          dish.date
-        ).calendar()} has been cancelled by an admin.
+Unfortunately your plan for eating ${dish.dish} on ${moment(dish.date)
+          .tz('Europe/Zurich')
+          .calendar()} has been cancelled by an admin.
 
 If you do not agree with this decision use the contact option on our site: ${generateFrontendLink(
           '/user'
@@ -926,9 +931,9 @@ export const addDishEvent = async (
   ) {
     const body = `Congratulations ${result.dishName}
 
-Your plan on ${APP_NAME} for eating ${result.dish} on ${moment(
-      result.dishDate
-    ).calendar()} has received a new guest request from ${
+Your plan on ${APP_NAME} for eating ${result.dish} on ${moment(result.dishDate)
+      .tz('Europe/Zurich')
+      .calendar()} has received a new guest request from ${
       result.participantName
     }.
 
@@ -984,7 +989,7 @@ Thank your for using the ${APP_NAME} App.
 
 Unfortunately your guest ${dishEvent.participantName} for eating ${
           dish.dish
-        } on ${moment(dish.date).calendar()} has cancelled.
+        } on ${moment(dish.date).tz('Europe/Zurich').calendar()} has cancelled.
 
 Use the site to see and accept other requests: ${generateFrontendLink(
           '/plans'
@@ -1094,7 +1099,9 @@ export const acceptDishEvent = async (
 
 Your request on ${APP_NAME} for eating ${result.dish} on ${moment(
       result.dishDate
-    ).calendar()} with ${result.dishName} has been accepted.
+    )
+      .tz('Europe/Zurich')
+      .calendar()} with ${result.dishName} has been accepted.
 
 Use the site to see more details: ${generateFrontendLink('/plans')}`;
     await sendUserMail(
@@ -1161,7 +1168,9 @@ Thank your for using the ${APP_NAME} App.
 
 Unfortunately your host ${dish.name} for eating ${dish.dish} on ${moment(
           dish.date
-        ).calendar()} has cancelled your invite.
+        )
+          .tz('Europe/Zurich')
+          .calendar()} has cancelled your invite.
 
 Use the site to search for alternatives: ${generateFrontendLink('/user')}`;
         await sendUserMail(

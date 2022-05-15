@@ -22,7 +22,7 @@
   </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
   .captcha-wrapper {
     padding: 0.5rem;
     padding-top: 0.75rem;
