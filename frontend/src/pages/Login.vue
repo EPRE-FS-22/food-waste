@@ -707,6 +707,7 @@
         name="city"
         placeholder="Zug"
         class="field city login-item"
+        results-class="results-wrapper"
         :maxlength="100"
         :previous-value="previousCity"
         @keyup.enter="triggerAction()"
@@ -808,6 +809,14 @@
       margin: 0.5rem;
     }
 
+    :deep(.results-wrapper) {
+      width: 90%;
+      margin-left: -1%;
+      margin-top: -0.85vh;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+    }
+
     .label {
       font-size: 1.2rem;
       line-height: 1.2rem;
@@ -846,8 +855,9 @@
       border: none;
       width: 100%;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       justify-content: center;
+      align-items: center;
     }
 
     :deep(.field) {

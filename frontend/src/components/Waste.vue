@@ -14,6 +14,8 @@
     getRecommendedDishes,
     getSignedUpDishes,
     getUserInfo,
+    goBackMyDishes,
+    goBackSignedUpDishes,
     hasSession,
     hasUserSession,
     lastDish,
@@ -52,6 +54,8 @@
 
   let ignoreNextChange = false;
 
+  const notOnFirstPage = ref(false);
+
   watch(settings, () => {
     if (ignoreNextChange) {
       ignoreNextChange = false;
@@ -67,8 +71,7 @@
       }
       timeoutId = window.setTimeout(() => {
         timeoutId = 0;
-        clearCaches(!hasUserSession(), true, false, false);
-        getDishes();
+        getDishes(false, true);
       }, 1000);
     }
   });
@@ -79,7 +82,7 @@
     }
   });
 
-  const getDishes = () => {
+  const getDishes = (next = false, reset = false) => {
     (async () => {
       try {
         let success = false;
@@ -188,15 +191,26 @@
         requestOngoing = true;
         switch (props.type) {
           case DisplayType.available:
+            if (reset) {
+              clearCaches(true, false, false, false);
+            }
             const availableResult = hasSession(true)
               ? await getAvailableDishes(
                   locationCityChecked,
                   dateStartChecked,
                   dateEndChecked,
                   locationRangeSizeChecked,
-                  ageRangeSizeChecked
+                  ageRangeSizeChecked,
+                  next
                 )
-              : await getAvailableDishes();
+              : await getAvailableDishes(
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  undefined,
+                  next
+                );
             if (availableResult) {
               success = true;
               dishes.value = availableResult.map((item) => ({
@@ -207,12 +221,16 @@
             break;
 
           case DisplayType.recommended:
+            if (reset) {
+              clearCaches(true, true, false, false);
+            }
             const recommendedResult = await getRecommendedDishes(
               locationCityChecked,
               dateStartChecked,
               dateEndChecked,
               locationRangeSizeChecked,
-              ageRangeSizeChecked
+              ageRangeSizeChecked,
+              next
             );
             if (recommendedResult) {
               success = true;
@@ -224,13 +242,16 @@
             break;
 
           case DisplayType.plans:
+            if (reset) {
+              clearCaches(false, false, true, true);
+            }
             const myAndSignedUpResult = (await Promise.all([
-              getMyDishes(),
-              getSignedUpDishes(),
+              getMyDishes(next),
+              getSignedUpDishes(next),
             ])) as [false | DishInfo[], false | DishEvent[]];
             if (myAndSignedUpResult[0] && myAndSignedUpResult[1]) {
               success = true;
-              dishes.value = (
+              const plans = (
                 [
                   ...myAndSignedUpResult[0].map((item) => ({
                     type: 'info',
@@ -244,12 +265,47 @@
               ).sort((a, b) => {
                 return b.dish.date.getTime() - a.dish.date.getTime();
               });
+
+              if (plans.length > 6) {
+                let myTooMany = 0;
+                let signedUpTooMany = 0;
+                plans.slice(6).forEach((item) => {
+                  if (item.type === 'info') {
+                    myTooMany++;
+                  } else {
+                    signedUpTooMany++;
+                  }
+                });
+
+                if (myTooMany) {
+                  goBackMyDishes(myTooMany);
+                }
+
+                if (signedUpTooMany) {
+                  goBackSignedUpDishes(signedUpTooMany);
+                }
+              }
+
+              dishes.value = plans.slice(0, 6);
             }
             break;
         }
         requestOngoing = false;
-        if (success && loading.value) {
-          loading.value = false;
+        if (success) {
+          if (next) {
+            if (!reset) {
+              notOnFirstPage.value = true;
+            }
+            resetInterval();
+          }
+
+          if (reset) {
+            notOnFirstPage.value = false;
+          }
+
+          if (loading.value) {
+            loading.value = false;
+          }
         }
       } catch (e) {
         console.error(e);
@@ -270,15 +326,28 @@
   );
 
   let intervalCounter = 0;
+  let intervalId = 0;
 
-  const interval = setInterval(() => {
-    if (props.type !== DisplayType.recommended) {
-      getDishes();
-    } else if (intervalCounter % 5 === 0) {
-      getDishes();
+  const resetInterval = () => {
+    if (intervalId) {
+      window.clearInterval(intervalId);
+      intervalCounter = 0;
     }
-    intervalCounter++;
-  }, 1000 * 60 * 3);
+    intervalId = window.setInterval(() => {
+      if (props.type !== DisplayType.recommended) {
+        getDishes();
+      } else if (intervalCounter % 5 === 0) {
+        getDishes();
+      }
+      intervalCounter++;
+    }, 1000 * 60 * 2);
+
+    refreshDishes.subscribe(() => {
+      getDishes();
+    });
+  };
+
+  resetInterval();
 
   refreshDishes.subscribe(() => {
     getDishes();
@@ -286,7 +355,9 @@
 
   onBeforeUnmount(() => {
     loading.value = true;
-    clearInterval(interval);
+    if (intervalId) {
+      window.clearInterval(intervalId);
+    }
   });
 </script>
 
@@ -298,38 +369,59 @@
   >
     Nothing to see here
   </div>
-  <div v-else class="content-base content" :class="{ small: !!small }">
-    <div
-      v-for="(data, index) in dishes"
-      :key="data.dish.customId"
-      class="dish"
-      :class="{
-        ['dish-' + (index + 1)]: true,
-      }"
-      :style="{
-        backgroundImage: data.dish.image ? 'url(' + data.dish.image + ')' : '',
-      }"
-      @click="clickDish(index)"
-    >
-      <div class="name">
-        {{ data.dish.dish }}
-      </div>
-      <div class="dish-date">
-        {{ moment(data.dish.date).format('DD. MM. YYYY HH:MM') }}
-      </div>
-      <div class="dish-city">
-        {{ data.dish.locationCity }}
-      </div>
-      <div v-if="data.type === 'info'" class="icon icon-home"></div>
+  <div v-else class="content-base content-wrapper" :class="{ small: !!small }">
+    <div class="content">
       <div
-        v-if="data.type === 'event' && !data.dish.accepted"
-        class="icon icon-question-circle-o"
-      ></div>
-      <div
-        v-if="data.type === 'event' && data.dish.accepted"
-        class="icon icon-ok-circled2"
-      ></div>
+        v-for="(data, index) in dishes"
+        :key="data.dish.customId"
+        class="dish"
+        :class="{
+          ['dish-' + (index + 1)]: true,
+        }"
+        :style="{
+          backgroundImage: data.dish.image
+            ? 'url(' + data.dish.image + ')'
+            : '',
+        }"
+        @click="clickDish(index)"
+      >
+        <div class="name">
+          {{ data.dish.dish }}
+        </div>
+        <div class="dish-date">
+          {{ moment(data.dish.date).format('DD. MM. YYYY HH:MM') }}
+        </div>
+        <div class="dish-city">
+          {{ data.dish.locationCity }}
+        </div>
+        <div
+          v-if="data.type === 'info'"
+          class="icon corner-icon icon-home"
+        ></div>
+        <div
+          v-if="data.type === 'event' && !data.dish.accepted"
+          class="icon corner-icon icon-question-circle-o"
+        ></div>
+        <div
+          v-if="data.type === 'event' && data.dish.accepted"
+          class="icon corner-icon icon-ok-circled2"
+        ></div>
+      </div>
     </div>
+    <button
+      v-if="notOnFirstPage"
+      class="paging-button reset-button"
+      @click="getDishes(false, true)"
+    >
+      <span class="icon button-icon icon-cw"></span>
+    </button>
+    <button
+      v-if="dishes.length >= 6"
+      class="paging-button next-button"
+      @click="getDishes(true)"
+    >
+      <span class="icon button-icon icon-right-open"></span>
+    </button>
   </div>
 </template>
 
@@ -341,7 +433,53 @@
     align-items: center;
     font-size: 2rem;
   }
+
+  .paging-button {
+    position: absolute;
+    bottom: 2rem;
+    height: 2.1rem;
+    font-size: 1rem;
+    line-height: 1rem;
+    font-weight: bold;
+    padding: 0;
+    background-color: #ffffff;
+    border: solid 0.1rem rgb(179, 179, 179);
+    border-radius: 1rem;
+    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    text-decoration: none;
+    color: #000000;
+    cursor: pointer;
+
+    &.reset-button {
+      left: 2rem;
+    }
+
+    &.next-button {
+      right: 2rem;
+
+      .button-icon {
+        font-size: 1rem;
+        margin-left: 0.25rem;
+        margin-right: 0.05rem;
+      }
+    }
+  }
+
+  .button-icon {
+    color: #000000;
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 1.25rem;
+  }
+
+  .content-wrapper {
+    position: relative;
+  }
+
   .content {
+    width: 100%;
+    height: 100%;
     display: grid;
     grid-template-rows: 1fr 1fr;
     grid-template-columns: 1fr 1fr 1fr;
@@ -384,10 +522,11 @@
       content: '';
     }
 
-    .icon {
+    .corner-icon {
       position: absolute;
       bottom: 0.5rem;
       left: 0.5rem;
+      font-size: 1.25rem;
     }
   }
 

@@ -144,7 +144,7 @@
   <div class="content-base add">
     <div class="add-margin">
       <label class="label name-label add-item" for="name"
-        >Search your Dish (Select from shown List){{
+        >Search your dish (Select from shown list){{
           dishMessage ? ': ' + dishMessage : ''
         }}<br />
       </label>
@@ -154,6 +154,7 @@
         name="dish"
         placeholder="Pizza"
         class="field dish add-item"
+        results-class="results-wrapper"
         :maxlength="50"
         @keyup.enter="addInvite()"
       ></SearchWiki>
@@ -175,7 +176,7 @@
       />
 
       <label class="label date-of-birth-label" for="date-of-event"
-        >Please enter the Date{{
+        >Please enter the date{{
           dateOfEventMessage ? ': ' + dateOfEventMessage : ''
         }}<br />
       </label>
@@ -190,7 +191,7 @@
       />
 
       <label class="label name-label add-item" for="name"
-        >Short Description{{
+        >Short description{{
           descriptionMessage ? ': ' + descriptionMessage : ''
         }}<br />
       </label>
@@ -215,6 +216,7 @@
         name="city"
         placeholder="Zug"
         class="field city add-item"
+        results-class="results-wrapper"
         :maxlength="100"
         :previous-value="previousCity"
         @keyup.enter="addInvite()"
@@ -251,8 +253,9 @@
       border: none;
       width: 100%;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       justify-content: center;
+      align-items: center;
     }
 
     .add-margin {
@@ -265,6 +268,14 @@
 
     :deep(.add-item) {
       margin: 0.5rem;
+    }
+
+    :deep(.results-wrapper) {
+      width: 90%;
+      margin-left: -1%;
+      margin-top: -0.85vh;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
     }
 
     .label {

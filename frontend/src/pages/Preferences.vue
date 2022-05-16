@@ -115,6 +115,7 @@
       name="dish"
       placeholder="Pizza"
       class="field dish preferences-item"
+      results-class="results-wrapper"
       :maxlength="50"
     ></SearchWiki>
   </div>
@@ -133,6 +134,14 @@
 
     :deep(.preferences-item) {
       margin: 0.5rem;
+    }
+
+    :deep(.results-wrapper) {
+      width: 90%;
+      margin-left: -1%;
+      margin-top: -0.85vh;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
     }
 
     .preferences-list-text {
@@ -162,8 +171,9 @@
       border: none;
       width: 100%;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;
       justify-content: center;
+      align-items: center;
     }
 
     :deep(.field) {

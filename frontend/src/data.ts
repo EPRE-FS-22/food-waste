@@ -302,6 +302,10 @@ export const getMyDishes = async (next = false) => {
   }
 };
 
+export const goBackMyDishes = (count: number) => {
+  myDishesIndex -= count;
+};
+
 export const getMyDish = async (dishId: string) => {
   try {
     if (!hasConfirmedUserSessionWithPreferences()) {
@@ -373,6 +377,10 @@ export const getSignedUpDishes = async (next = false) => {
     console.error(e);
     throw e;
   }
+};
+
+export const goBackSignedUpDishes = (count: number) => {
+  signedUpDishesIndex -= count;
 };
 
 export const getSignedUpDish = async (dishEventId: string) => {

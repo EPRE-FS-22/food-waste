@@ -15,6 +15,10 @@
       type: String,
       default: '',
     },
+    resultsClass: {
+      type: String,
+      default: '',
+    },
     placeholder: {
       type: String,
       default: '',
@@ -152,25 +156,39 @@
       :placeholder="placeholder"
       :maxlength="maxlength"
     />
-    <div v-if="showResult" class="resultSection">
-      <div
-        v-for="(searchResult, index) in searchResults"
-        :key="index"
-        class="results"
-        @click="selectResult(searchResult)"
-      >
-        {{ searchResult }}
+    <div
+      v-if="showResult"
+      :class="
+        'resultWrapper' + (props.resultsClass ? ' ' + props.resultsClass : '')
+      "
+    >
+      <div v-if="showResult" class="resultSection">
+        <div
+          v-for="(searchResult, index) in searchResults"
+          :key="index"
+          class="results"
+          @click="selectResult(searchResult)"
+        >
+          {{ searchResult }}
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
+  .resultWrapper {
+    position: relative;
+  }
   .resultSection {
     display: flex;
     position: absolute;
     flex-direction: column;
+    justify-content: center;
     overflow-y: scroll;
+    z-index: 1;
+    border-radius: 0.5rem;
+    border: solid 0.125rem rgb(179, 179, 179);
   }
   .results {
     color: black;
@@ -178,10 +196,12 @@
     min-width: 160px;
     box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
     padding: 12px 16px;
-    z-index: 1;
     cursor: pointer;
   }
   .searchWiki {
+    display: flex;
+    flex-direction: column;
+
     input {
       height: 1rem;
       font-size: 1rem;

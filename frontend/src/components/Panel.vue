@@ -146,6 +146,7 @@
                       ? ' warning'
                       : '')
                   "
+                  results-class="results-wrapper"
                   :maxlength="100"
                 ></SearchWiki>
               </div>
@@ -453,6 +454,13 @@
         }
       }
 
+      :deep(.results-wrapper) {
+        width: 90%;
+        margin-left: -1%;
+        margin-top: -0.85vh;
+        margin-top: calc((-0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+      }
+
       .date-inner-container {
         display: flex;
         flex-direction: column;
@@ -511,6 +519,10 @@
           &.warning {
             border: solid 0.3vw rgb(194, 0, 0);
           }
+        }
+
+        :deep(.results-wrapper) {
+          margin-top: -0.85vw;
         }
 
         .date-inner-container {
