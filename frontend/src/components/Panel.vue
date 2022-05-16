@@ -122,124 +122,122 @@
       <div v-if="showModal" class="modal-mask">
         <div class="modal-wrapper">
           <div class="modal-container">
-            <div class="modal-container-inner">
-              <div class="modal-header">
-                <slot name="header">Search Settings</slot>
+            <div class="modal-header">
+              <slot name="header">Search Settings</slot>
+            </div>
+            <div class="modal-body">
+              <div class="location-city-container input-container">
+                <label for="location-city"
+                  >City{{
+                    settingsMessages.locationCity
+                      ? ': ' + settingsMessages.locationCity
+                      : settingsMessages.locationCity
+                  }}</label
+                >
+                <SearchWiki
+                  id="city"
+                  v-model="settings.locationCity"
+                  :only-coords="true"
+                  name="city"
+                  placeholder="Zug"
+                  :class="
+                    'city panel-item' +
+                    (!settings.locationCity || settingsMessages.locationCity
+                      ? ' warning'
+                      : '')
+                  "
+                  :maxlength="100"
+                ></SearchWiki>
               </div>
-              <div class="modal-body">
-                <div class="location-city-container input-container">
-                  <label for="location-city"
-                    >City{{
-                      settingsMessages.locationCity
-                        ? ': ' + settingsMessages.locationCity
-                        : settingsMessages.locationCity
-                    }}</label
-                  >
-                  <SearchWiki
-                    id="city"
-                    v-model="settings.locationCity"
-                    :only-coords="true"
-                    name="city"
-                    placeholder="Zug"
-                    :class="
-                      'city panel-item' +
-                      (!settings.locationCity || settingsMessages.locationCity
-                        ? ' warning'
-                        : '')
-                    "
-                    :maxlength="100"
-                  ></SearchWiki>
-                </div>
-                <div class="location-range-container input-container">
-                  <label for="location-range"
-                    >Location range{{
-                      settingsMessages.locationRangeSize
-                        ? ': ' + settingsMessages.locationRangeSize
-                        : settingsMessages.locationRangeSize
-                    }}</label
-                  >
+              <div class="location-range-container input-container">
+                <label for="location-range"
+                  >Location range{{
+                    settingsMessages.locationRangeSize
+                      ? ': ' + settingsMessages.locationRangeSize
+                      : settingsMessages.locationRangeSize
+                  }}</label
+                >
+                <input
+                  id="location-range"
+                  v-model="settings.locationRangeSize"
+                  type="number"
+                  name="location-range"
+                  placeholder="10"
+                  :class="{
+                    warning:
+                      !settings.locationRangeSize ||
+                      settingsMessages.locationRangeSize,
+                  }"
+                />
+              </div>
+              <div class="date-start-container input-container">
+                <label for="date-start"
+                  >Date from{{
+                    settingsMessages.dateStart
+                      ? ': ' + settingsMessages.dateStart
+                      : settingsMessages.dateStart
+                  }}</label
+                >
+                <div class="date-inner-container">
                   <input
-                    id="location-range"
-                    v-model="settings.locationRangeSize"
-                    type="number"
-                    name="location-range"
-                    placeholder="10"
+                    id="date-start"
+                    v-model="settings.dateStart"
+                    type="datetime-local"
+                    name="date-start"
+                    placeholder="Date"
                     :class="{
                       warning:
-                        !settings.locationRangeSize ||
-                        settingsMessages.locationRangeSize,
-                    }"
-                  />
-                </div>
-                <div class="date-start-container input-container">
-                  <label for="date-start"
-                    >Date from{{
-                      settingsMessages.dateStart
-                        ? ': ' + settingsMessages.dateStart
-                        : settingsMessages.dateStart
-                    }}</label
-                  >
-                  <div class="date-inner-container">
-                    <input
-                      id="date-start"
-                      v-model="settings.dateStart"
-                      type="datetime-local"
-                      name="date-start"
-                      placeholder="Date"
-                      :class="{
-                        warning:
-                          !settings.dateStart || settingsMessages.dateStart,
-                      }"
-                    />
-                  </div>
-                </div>
-                <div class="date-end-container input-container">
-                  <label for="date-end"
-                    >Date to{{
-                      settingsMessages.dateEnd
-                        ? ': ' + settingsMessages.dateEnd
-                        : settingsMessages.dateEnd
-                    }}</label
-                  >
-                  <div class="date-inner-container">
-                    <input
-                      id="date-end"
-                      v-model="settings.dateEnd"
-                      type="datetime-local"
-                      name="date-end"
-                      placeholder="Date"
-                      :class="{
-                        warning: !settings.dateEnd || settingsMessages.dateEnd,
-                      }"
-                    />
-                  </div>
-                </div>
-                <div class="age-range-container input-container">
-                  <label for="age-range"
-                    >Age range{{
-                      settingsMessages.ageRangeSize
-                        ? ': ' + settingsMessages.ageRangeSize
-                        : settingsMessages.ageRangeSize
-                    }}</label
-                  >
-                  <input
-                    id="age-range"
-                    v-model="settings.ageRangeSize"
-                    type="number"
-                    name="age-range"
-                    placeholder="10"
-                    :class="{
-                      warning:
-                        !settings.ageRangeSize || settingsMessages.ageRangeSize,
+                        !settings.dateStart || settingsMessages.dateStart,
                     }"
                   />
                 </div>
               </div>
-              <div class="modal-footer">
-                <button class="modal-default-button" @click="clickModal()">
-                  <span class="icon button-icon icon-cancel"></span>
-                </button>
+              <div class="date-end-container input-container">
+                <label for="date-end"
+                  >Date to{{
+                    settingsMessages.dateEnd
+                      ? ': ' + settingsMessages.dateEnd
+                      : settingsMessages.dateEnd
+                  }}</label
+                >
+                <div class="date-inner-container">
+                  <input
+                    id="date-end"
+                    v-model="settings.dateEnd"
+                    type="datetime-local"
+                    name="date-end"
+                    placeholder="Date"
+                    :class="{
+                      warning: !settings.dateEnd || settingsMessages.dateEnd,
+                    }"
+                  />
+                </div>
               </div>
+              <div class="age-range-container input-container">
+                <label for="age-range"
+                  >Age range{{
+                    settingsMessages.ageRangeSize
+                      ? ': ' + settingsMessages.ageRangeSize
+                      : settingsMessages.ageRangeSize
+                  }}</label
+                >
+                <input
+                  id="age-range"
+                  v-model="settings.ageRangeSize"
+                  type="number"
+                  name="age-range"
+                  placeholder="10"
+                  :class="{
+                    warning:
+                      !settings.ageRangeSize || settingsMessages.ageRangeSize,
+                  }"
+                />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="modal-default-button" @click="clickModal()">
+                <span class="icon button-icon icon-cancel"></span>
+              </button>
             </div>
           </div>
         </div>
@@ -277,46 +275,43 @@
     z-index: 9998;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
+    bottom: 0;
+    right: 0;
     background-color: rgba(0, 0, 0, 0.5);
-    display: table;
     transition: opacity 0.3s ease;
   }
 
   .modal-wrapper {
-    display: table-cell;
-    vertical-align: middle;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
   }
 
   .modal-container {
+    height: 80%;
     width: 70%;
-    height: 90%;
-    margin: 0px auto;
-    padding: 0;
-    background-color: gray;
+    padding: 1rem;
+    background-color: rgb(126, 126, 126);
     border-radius: 1rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
     transition: all 0.3s ease;
     overflow-y: auto;
-  }
-
-  .modal-container-inner {
-    width: auto;
-    height: auto;
-    padding: 20px 30px;
-    overflow-y: auto;
+    border: 0.125rem solid rgb(179, 179, 179);
   }
 
   .modal-header {
-    margin-top: 0.5rem;
     font-size: 2rem;
   }
 
   .modal-body {
     margin: 20px 0;
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+    justify-items: center;
     align-items: center;
   }
 
@@ -396,12 +391,18 @@
     .input-container {
       display: flex;
       flex-direction: column;
+      justify-content: center;
+      align-items: center;
       width: 90%;
       padding: 0.5rem;
       font-size: 1.25rem;
       line-height: 1.25rem;
 
       .searchWiki {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
         margin: 0;
         padding: 0;
         border: none;
@@ -453,6 +454,11 @@
       }
 
       .date-inner-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
         margin: 0.5vh;
         margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
         margin-top: 1.5vh;
@@ -475,6 +481,11 @@
       padding: 0.125rem;
       width: calc(100% - 0.25rem);
       height: calc(12vw - 1rem);
+
+      .modal-body {
+        grid-template-rows: 1fr 1fr 1fr 1fr 1fr;
+        grid-template-columns: 1fr;
+      }
 
       .input-container {
         padding: 0.6rem;

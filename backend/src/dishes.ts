@@ -32,10 +32,20 @@ import { getCoords } from './geo.js';
 import { getWikiPageSummary } from './wiki.js';
 import { getPicture, getPictures } from './pictures.js';
 
-const recommender = new ContentBasedRecommender({
+let recommenderInUse = 0;
+
+const firstRecommender = new ContentBasedRecommender({
   minScore: 0.1,
   maxSimilarDocuments: 100,
 });
+
+const secondRecommender = new ContentBasedRecommender({
+  minScore: 0.1,
+  maxSimilarDocuments: 100,
+});
+
+const getRecommender = () =>
+  recommenderInUse ? secondRecommender : firstRecommender;
 
 const combineDishDBValues = (dish: WithId<DBDish>, image?: string): Dish => {
   return {
@@ -62,7 +72,8 @@ const combineDishesDBValues = (
 
 const combineDishInfoDBValues = (
   dish: WithId<DBDish>,
-  dishEvents: WithId<DBDishEvent>[]
+  dishEvents: WithId<DBDishEvent>[],
+  image?: string
 ): DishInfo => {
   return {
     customId: dish.customId,
@@ -93,18 +104,26 @@ const combineDishInfoDBValues = (
     exactLocation: dish.exactLocation,
     createdDate: dish.createdDate,
     lastAcceptedDate: dish.lastAcceptedDate,
+    image,
   };
 };
 
 const combineDishesInfosDBValues = (
-  dishGroups: { dish: WithId<DBDish>; dishEvents: WithId<DBDishEvent>[] }[]
+  dishGroups: {
+    dish: WithId<DBDish>;
+    dishEvents: WithId<DBDishEvent>[];
+    image?: string;
+  }[]
 ): DishInfo[] => {
-  return dishGroups.map((d) => combineDishInfoDBValues(d.dish, d.dishEvents));
+  return dishGroups.map((d) =>
+    combineDishInfoDBValues(d.dish, d.dishEvents, d.image)
+  );
 };
 
 const combineDishEventDBValues = (
   dishEvent: WithId<DBDishEvent>,
-  dish: WithId<DBDish>
+  dish: WithId<DBDish>,
+  image?: string
 ): DishEvent => {
   return {
     customId: dishEvent.customId,
@@ -123,13 +142,20 @@ const combineDishEventDBValues = (
     exactLocation: dishEvent.accepted ? dish.exactLocation : undefined,
     signupDate: dishEvent.signupDate,
     acceptedDate: dishEvent.acceptedDate,
+    image,
   };
 };
 
 const combineDishesEventsDBValues = (
-  dishGroups: { dishEvent: WithId<DBDishEvent>; dish: WithId<DBDish> }[]
+  dishGroups: {
+    dishEvent: WithId<DBDishEvent>;
+    dish: WithId<DBDish>;
+    image?: string;
+  }[]
 ): DishEvent[] => {
-  return dishGroups.map((d) => combineDishEventDBValues(d.dishEvent, d.dish));
+  return dishGroups.map((d) =>
+    combineDishEventDBValues(d.dishEvent, d.dish, d.image)
+  );
 };
 
 const stripDishPreferenceDBValues = (
@@ -253,7 +279,7 @@ const getSimilarDishes = (
   const similarDishes: { id: string }[] = [];
   let currentSimilarDishes: { id: string }[] = [];
   do {
-    currentSimilarDishes = recommender
+    currentSimilarDishes = getRecommender()
       .getSimilarDocuments(dish, index, number)
       .filter((item: { id: string }) =>
         availableDishes.find((searchItem) => searchItem.dish === item.id)
@@ -536,6 +562,7 @@ export const getMyDishes = async (
             dishId: item.customId,
           })
           .toArray(),
+        image: await getPicture(item.dish),
       }))
     )
   );
@@ -567,7 +594,11 @@ export const getSignedUpDishes = async (
             customId: item.dishId,
           });
           if (dish) {
-            return { dishEvent: item, dish };
+            return {
+              dishEvent: item,
+              dish,
+              image: await getPicture(item.dish),
+            };
           }
           return null;
         })
@@ -1161,7 +1192,6 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
         }
       );
 
-
       if (result.modifiedCount > 0) {
         const body = `Hello ${dish.name}
 
@@ -1213,5 +1243,17 @@ export const train = async () => {
     })
     .filter((item) => item);
 
-  await recommender.train(documents);
+  setTimeout(async () => {
+    try {
+      await getRecommender().train(documents);
+      if (recommenderInUse) {
+        recommenderInUse = 0;
+      } else {
+        recommenderInUse = 1;
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  });
 };
