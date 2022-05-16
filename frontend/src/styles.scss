@@ -12,6 +12,11 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
 @media (min-aspect-ratio: 7/2) {
   html,
   body {

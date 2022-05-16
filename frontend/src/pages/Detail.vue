@@ -211,34 +211,34 @@
           </div>
         </div>
         <div v-else-if="currentDish.type === 'info'" class="acceptNames">
+          <p v-if="currentDish.dish.participantNames.length > 0">
+            Participants:
+          </p>
+          <div
+            v-for="(name, index) in currentDish.dish.participantNames"
+            :key="index"
+            class="participant"
+          >
+            <span>{{ name }}</span>
+            <div class="button-section">
+              <div @click="unacceptNames(index)">
+                <span class="icon icon-small cancel icon-cancel-circled"></span>
+              </div>
+            </div>
+          </div>
           <template v-if="currentDish.dish.slots == currentDish.dish.filled">
             <p>Your event is full</p>
           </template>
           <template v-else>
-            <p v-if="currentDish.dish.participantNames.length > 0">
-              Participants:
-            </p>
-            <div
-              v-for="(name, index) in currentDish.dish.participantNames"
-              :key="index"
-            >
-              <p>{{ name }}</p>
-              <div class="button-section">
-                <div @click="unacceptNames(index)">
-                  <span
-                    class="icon icon-small cancel icon-cancel-circled"
-                  ></span>
-                </div>
-              </div>
-            </div>
             <p v-if="currentDish.dish.participantRequestsNames.length > 0">
               People's requests to join:
             </p>
             <div
               v-for="(name, index) in currentDish.dish.participantRequestsNames"
               :key="index"
+              class="participant"
             >
-              <p>{{ name }}</p>
+              <span>{{ name }}</span>
               <div class="button-section">
                 <div @click="acceptNames(index)">
                   <span class="icon icon-small ok icon-ok-circled"></span>
@@ -269,7 +269,7 @@
 
   .acceptNames {
     text-align: center;
-    margin-top: 100px;
+    margin-top: 2.5rem;
   }
 
   .description-section {
@@ -313,5 +313,12 @@
       }
     }
     cursor: pointer;
+  }
+
+  .participant {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
   }
 </style>

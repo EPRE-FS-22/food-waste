@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import moment from 'moment';
-  import { ref } from 'vue';
+  import { onUnmounted, ref } from 'vue';
   import {
     clearCaches,
     depopulate,
@@ -41,6 +41,14 @@
     showModal.value = !showModal.value;
   };
 
+  const eventListener = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      showModal.value = false;
+    }
+  };
+
+  window.addEventListener('keyup', eventListener);
+
   const depopulateOnClick = async () => {
     try {
       if (hasSession(true)) {
@@ -61,10 +69,14 @@
     }
   };
   const buttonDisabled = ref(false);
+
+  onUnmounted(() => {
+    window.removeEventListener('keyup', eventListener);
+  });
 </script>
 
 <template>
-  <div class="panel" @keyup.escape="showModal = false">
+  <div class="panel">
     <div v-if="loggedIn && !userLoggedIn">
       <button
         class="populate-button"
@@ -94,122 +106,124 @@
       <div v-if="showModal" class="modal-mask">
         <div class="modal-wrapper">
           <div class="modal-container">
-            <div class="modal-header">
-              <slot name="header">Search Settings</slot>
-            </div>
-            <div class="modal-body">
-              <div class="location-city-container input-container">
-                <label for="location-city"
-                  >City{{
-                    settingsMessages.locationCity
-                      ? ': ' + settingsMessages.locationCity
-                      : settingsMessages.locationCity
-                  }}</label
-                >
-                <SearchWiki
-                  id="city"
-                  v-model="settings.locationCity"
-                  :only-coords="true"
-                  name="city"
-                  placeholder="Zug"
-                  :class="
-                    'city panel-item' +
-                    (!settings.locationCity || settingsMessages.locationCity
-                      ? ' warning'
-                      : '')
-                  "
-                  :maxlength="100"
-                ></SearchWiki>
+            <div class="modal-container-inner">
+              <div class="modal-header">
+                <slot name="header">Search Settings</slot>
               </div>
-              <div class="location-range-container input-container">
-                <label for="location-range"
-                  >Location range{{
-                    settingsMessages.locationRangeSize
-                      ? ': ' + settingsMessages.locationRangeSize
-                      : settingsMessages.locationRangeSize
-                  }}</label
-                >
-                <input
-                  id="location-range"
-                  v-model="settings.locationRangeSize"
-                  type="number"
-                  name="location-range"
-                  placeholder="10"
-                  :class="{
-                    warning:
-                      !settings.locationRangeSize ||
-                      settingsMessages.locationRangeSize,
-                  }"
-                />
-              </div>
-              <div class="date-start-container input-container">
-                <label for="date-start"
-                  >Date from{{
-                    settingsMessages.dateStart
-                      ? ': ' + settingsMessages.dateStart
-                      : settingsMessages.dateStart
-                  }}</label
-                >
-                <div class="date-inner-container">
+              <div class="modal-body">
+                <div class="location-city-container input-container">
+                  <label for="location-city"
+                    >City{{
+                      settingsMessages.locationCity
+                        ? ': ' + settingsMessages.locationCity
+                        : settingsMessages.locationCity
+                    }}</label
+                  >
+                  <SearchWiki
+                    id="city"
+                    v-model="settings.locationCity"
+                    :only-coords="true"
+                    name="city"
+                    placeholder="Zug"
+                    :class="
+                      'city panel-item' +
+                      (!settings.locationCity || settingsMessages.locationCity
+                        ? ' warning'
+                        : '')
+                    "
+                    :maxlength="100"
+                  ></SearchWiki>
+                </div>
+                <div class="location-range-container input-container">
+                  <label for="location-range"
+                    >Location range{{
+                      settingsMessages.locationRangeSize
+                        ? ': ' + settingsMessages.locationRangeSize
+                        : settingsMessages.locationRangeSize
+                    }}</label
+                  >
                   <input
-                    id="date-start"
-                    v-model="settings.dateStart"
-                    type="datetime-local"
-                    name="date-start"
-                    placeholder="Date"
+                    id="location-range"
+                    v-model="settings.locationRangeSize"
+                    type="number"
+                    name="location-range"
+                    placeholder="10"
                     :class="{
                       warning:
-                        !settings.dateStart || settingsMessages.dateStart,
+                        !settings.locationRangeSize ||
+                        settingsMessages.locationRangeSize,
                     }"
                   />
                 </div>
-              </div>
-              <div class="date-end-container input-container">
-                <label for="date-end"
-                  >Date to{{
-                    settingsMessages.dateEnd
-                      ? ': ' + settingsMessages.dateEnd
-                      : settingsMessages.dateEnd
-                  }}</label
-                >
-                <div class="date-inner-container">
+                <div class="date-start-container input-container">
+                  <label for="date-start"
+                    >Date from{{
+                      settingsMessages.dateStart
+                        ? ': ' + settingsMessages.dateStart
+                        : settingsMessages.dateStart
+                    }}</label
+                  >
+                  <div class="date-inner-container">
+                    <input
+                      id="date-start"
+                      v-model="settings.dateStart"
+                      type="datetime-local"
+                      name="date-start"
+                      placeholder="Date"
+                      :class="{
+                        warning:
+                          !settings.dateStart || settingsMessages.dateStart,
+                      }"
+                    />
+                  </div>
+                </div>
+                <div class="date-end-container input-container">
+                  <label for="date-end"
+                    >Date to{{
+                      settingsMessages.dateEnd
+                        ? ': ' + settingsMessages.dateEnd
+                        : settingsMessages.dateEnd
+                    }}</label
+                  >
+                  <div class="date-inner-container">
+                    <input
+                      id="date-end"
+                      v-model="settings.dateEnd"
+                      type="datetime-local"
+                      name="date-end"
+                      placeholder="Date"
+                      :class="{
+                        warning: !settings.dateEnd || settingsMessages.dateEnd,
+                      }"
+                    />
+                  </div>
+                </div>
+                <div class="age-range-container input-container">
+                  <label for="age-range"
+                    >Age range{{
+                      settingsMessages.ageRangeSize
+                        ? ': ' + settingsMessages.ageRangeSize
+                        : settingsMessages.ageRangeSize
+                    }}</label
+                  >
                   <input
-                    id="date-end"
-                    v-model="settings.dateEnd"
-                    type="datetime-local"
-                    name="date-end"
-                    placeholder="Date"
+                    id="age-range"
+                    v-model="settings.ageRangeSize"
+                    type="number"
+                    name="age-range"
+                    placeholder="10"
                     :class="{
-                      warning: !settings.dateEnd || settingsMessages.dateEnd,
+                      warning:
+                        !settings.ageRangeSize || settingsMessages.ageRangeSize,
                     }"
                   />
                 </div>
               </div>
-              <div class="age-range-container input-container">
-                <label for="age-range"
-                  >Age range{{
-                    settingsMessages.ageRangeSize
-                      ? ': ' + settingsMessages.ageRangeSize
-                      : settingsMessages.ageRangeSize
-                  }}</label
-                >
-                <input
-                  id="age-range"
-                  v-model="settings.ageRangeSize"
-                  type="number"
-                  name="age-range"
-                  placeholder="10"
-                  :class="{
-                    warning:
-                      !settings.ageRangeSize || settingsMessages.ageRangeSize,
-                  }"
-                />
+              <div class="modal-footer">
+                <button class="modal-default-button" @click="clickModal()">
+                  <span class="icon button-icon icon-cancel"></span>
+                </button>
               </div>
-            </div>
-            <div class="modal-footer">
-              <button class="modal-default-button" @click="clickModal()">
-                <span class="icon button-icon icon-cancel"></span>
-              </button>
             </div>
           </div>
         </div>
@@ -254,11 +268,10 @@
   }
 
   .modal-container {
-    position: relative;
     width: 70%;
     height: 90%;
     margin: 0px auto;
-    padding: 20px 30px;
+    padding: 0;
     background-color: gray;
     border-radius: 1rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
@@ -266,8 +279,15 @@
     overflow-y: auto;
   }
 
+  .modal-container-inner {
+    width: auto;
+    height: auto;
+    padding: 20px 30px;
+    overflow-y: auto;
+  }
+
   .modal-header {
-    margin-top: 0;
+    margin-top: 0.5rem;
     font-size: 2rem;
   }
 

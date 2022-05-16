@@ -976,8 +976,8 @@ export const removeDishEvent = async (customId: string, userId?: string) => {
           customId: dishEvent.dishId,
         },
         {
-          $dec: {
-            filled: 1,
+          $inc: {
+            filled: -1,
           },
         }
       );
@@ -1120,6 +1120,7 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
 
   const dishEvent = await dishEventsCollection.findOne({
     customId,
+    participantId: userId,
     accepted: true,
     date: { $gte: new Date() },
   });
@@ -1136,12 +1137,11 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
       (
         await dishesCollection.updateOne(
           {
-            customId,
-            userId,
+            customId: dishEvent.dishId,
           },
           {
-            $dec: {
-              filled: 1,
+            $inc: {
+              filled: -1,
             },
           }
         )
@@ -1160,6 +1160,7 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
           },
         }
       );
+
 
       if (result.modifiedCount > 0) {
         const body = `Hello ${dish.name}

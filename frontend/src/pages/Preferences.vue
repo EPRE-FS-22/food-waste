@@ -141,14 +141,17 @@
 
     .preferences-list-subtitle {
       margin-top: 0.5rem;
+      margin-bottom: 0.75rem;
       font-size: 1rem;
     }
 
     .preference {
       display: flex;
+      flex-direction: row;
+      align-items: center;
 
       .icon {
-        margin-top: 30px;
+        font-size: 1.5rem;
         cursor: pointer;
       }
     }
