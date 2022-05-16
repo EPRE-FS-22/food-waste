@@ -434,6 +434,14 @@
     font-size: 2rem;
   }
 
+  .button-icon {
+    color: #000000;
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: 1.25rem;
+  }
+
   .paging-button {
     position: absolute;
     bottom: 2rem;
@@ -463,14 +471,6 @@
         margin-right: 0.05rem;
       }
     }
-  }
-
-  .button-icon {
-    color: #000000;
-    margin: 0;
-    padding: 0;
-    border: none;
-    font-size: 1.25rem;
   }
 
   .content-wrapper {
