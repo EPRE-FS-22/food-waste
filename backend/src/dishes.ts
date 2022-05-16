@@ -55,6 +55,7 @@ const combineDishDBValues = (dish: WithId<DBDish>, image?: string): Dish => {
     slots: dish.slots,
     filled: dish.filled,
     dish: dish.dish,
+    age: dish.age,
     dishDescription: dish.dishDescription,
     locationCity: dish.locationCity,
     image,
@@ -82,6 +83,7 @@ const combineDishInfoDBValues = (
     slots: dish.slots,
     filled: dish.filled,
     dish: dish.dish,
+    age: dish.age,
     dishDescription: dish.dishDescription,
     participantNames: dishEvents
       .filter((d) => d.accepted)
@@ -133,6 +135,7 @@ const combineDishEventDBValues = (
     slots: dish.slots,
     filled: dish.filled,
     dish: dish.dish,
+    age: dish.age,
     dishDescription: dish.dishDescription,
     participantName: dishEvent.participantName,
     accepted: dishEvent.accepted,
