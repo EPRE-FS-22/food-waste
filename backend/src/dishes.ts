@@ -928,7 +928,7 @@ export const addDishEventInternal = async (
       participantName,
       message,
       signupDate: new Date(),
-      populated,
+      populated: populated || dish.populated,
     });
 
     if (result.acknowledged) {
