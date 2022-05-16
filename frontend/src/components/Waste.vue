@@ -314,6 +314,21 @@
       <div class="name">
         {{ data.dish.dish }}
       </div>
+      <div class="dish-date">
+        {{ moment(data.dish.date).format('DD. MM. YYYY HH:MM') }}
+      </div>
+      <div class="dish-city">
+        {{ data.dish.locationCity }}
+      </div>
+      <div v-if="data.type === 'info'" class="icon icon-home"></div>
+      <div
+        v-if="data.type === 'event' && !data.dish.accepted"
+        class="icon icon-question-circle-o"
+      ></div>
+      <div
+        v-if="data.type === 'event' && data.dish.accepted"
+        class="icon icon-ok-circled2"
+      ></div>
     </div>
   </div>
 </template>
@@ -356,6 +371,24 @@
       color: #e6e6e6;
       transform: scale(1.03);
     }
+
+    &::before {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgb(42, 42, 42);
+      opacity: 0.3;
+      border-radius: 1rem;
+      content: '';
+    }
+
+    .icon {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 0.5rem;
+    }
   }
 
   @media (min-aspect-ratio: 7/2) {
@@ -382,7 +415,9 @@
     }
   }
 
-  .name {
+  .name,
+  .dish-date,
+  .dish-city {
     text-align: center;
     padding: 0;
     margin: 0;
@@ -392,5 +427,10 @@
     margin-right: 5%;
     font-weight: normal;
     font-size: 2rem;
+  }
+
+  .dish-date,
+  .dish-city {
+    font-size: 1.25rem;
   }
 </style>

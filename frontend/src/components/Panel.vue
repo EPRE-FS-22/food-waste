@@ -93,7 +93,23 @@
         Depopulate
       </button>
     </div>
-    <button class="showModal-button" @click="clickModal()">
+    <button
+      class="showModal-button"
+      :class="{
+        warning:
+          !settings.dateStart ||
+          settingsMessages.dateStart ||
+          !settings.dateEnd ||
+          settingsMessages.dateEnd ||
+          !settings.locationCity ||
+          settingsMessages.locationCity ||
+          !settings.locationRangeSize ||
+          settingsMessages.locationRangeSize ||
+          !settings.ageRangeSize ||
+          settingsMessages.ageRangeSize,
+      }"
+      @click="clickModal()"
+    >
       {{
         (settings.locationCity ? settings.locationCity + ' | ' : '') +
         moment(settings.dateStart).format('DD. MM. YYYY HH:MM') +
@@ -249,6 +265,12 @@
     box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
     text-decoration: none;
     color: #000000;
+
+    &.warning {
+      border: solid 0.3vh rgb(194, 0, 0);
+      border: solid calc((0.3 * (100vh - var(--vh-offset, 0px)) / 100))
+        rgb(194, 0, 0);
+    }
   }
   .modal-mask {
     position: fixed;
