@@ -23,6 +23,260 @@ import {
   removePopulatedDishPreferences,
 } from './dishes.js';
 import { getCoords } from './geo.js';
+import { getSettingsCollection } from './data.js';
+import type { BooleanSetting, DateSetting } from './model';
+import { AUTO_POPULATE_INTERVAL } from './constants.js';
+
+let autoPopulate: boolean | undefined = undefined;
+
+export const enableAutoPopulate = async () => {
+  if (autoPopulate !== undefined) {
+    if (autoPopulate) {
+      return true;
+    }
+
+    const settingsCollection = await getSettingsCollection();
+
+    const autoPopulateObject = (await settingsCollection.findOne({
+      key: 'autoPopulate',
+      type: 'boolean',
+    })) as BooleanSetting | undefined;
+    if (autoPopulateObject) {
+      const result =
+        (
+          await settingsCollection.updateOne(
+            {
+              key: 'autoPopulate',
+              type: 'boolean',
+            },
+            {
+              $set: { value: true },
+            }
+          )
+        ).modifiedCount > 0;
+
+      if (result) {
+        autoPopulate = true;
+        await startAutoPopulateAsync();
+        return true;
+      }
+    } else {
+      const result = (
+        await settingsCollection.insertOne({
+          key: 'autoPopulate',
+          type: 'boolean',
+          value: true,
+        })
+      ).acknowledged;
+
+      if (result) {
+        autoPopulate = true;
+        await startAutoPopulateAsync();
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+export const disableAutoPopulate = async () => {
+  if (autoPopulate !== undefined) {
+    if (!autoPopulate) {
+      return true;
+    }
+
+    const settingsCollection = await getSettingsCollection();
+
+    const autoPopulateObject = (await settingsCollection.findOne({
+      key: 'autoPopulate',
+      type: 'boolean',
+    })) as BooleanSetting | undefined;
+    if (autoPopulateObject) {
+      const result =
+        (
+          await settingsCollection.updateOne(
+            {
+              key: 'autoPopulate',
+              type: 'boolean',
+            },
+            {
+              $set: { value: false },
+            }
+          )
+        ).modifiedCount > 0;
+
+      if (result) {
+        autoPopulate = false;
+        if (autoPopulateTimeout) {
+          clearTimeout(autoPopulateTimeout);
+        }
+        if (autoPopulateInterval) {
+          clearInterval(autoPopulateInterval);
+        }
+        return true;
+      }
+    } else {
+      const result = (
+        await settingsCollection.insertOne({
+          key: 'autoPopulate',
+          type: 'boolean',
+          value: false,
+        })
+      ).acknowledged;
+
+      if (result) {
+        autoPopulate = false;
+        if (autoPopulateTimeout) {
+          clearTimeout(autoPopulateTimeout);
+        }
+        if (autoPopulateInterval) {
+          clearInterval(autoPopulateInterval);
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const getAutoPopulateInternal = async () => {
+  if (autoPopulate === undefined) {
+    const settingsCollection = await getSettingsCollection();
+
+    const autoPopulateObject = (await settingsCollection.findOne({
+      key: 'autoPopulate',
+      type: 'boolean',
+    })) as BooleanSetting | undefined;
+
+    if (autoPopulateObject) {
+      autoPopulate = autoPopulateObject.value;
+    } else {
+      autoPopulate = false;
+    }
+  }
+  return autoPopulate;
+};
+
+export const getAutoPopulate = async () => {
+  if (autoPopulate === undefined) {
+    return await getAutoPopulateInternal();
+  }
+  return autoPopulate;
+};
+
+const setAutoPopulateDate = async () => {
+  if (autoPopulate) {
+    const settingsCollection = await getSettingsCollection();
+
+    const autoPopulateDateObject = (await settingsCollection.findOne({
+      key: 'autoPopulateDate',
+      type: 'date',
+    })) as DateSetting | undefined;
+    if (autoPopulateDateObject) {
+      const result =
+        (
+          await settingsCollection.updateOne(
+            {
+              key: 'autoPopulateDate',
+              type: 'date',
+            },
+            {
+              $set: { value: new Date() },
+            }
+          )
+        ).modifiedCount > 0;
+
+      if (result) {
+        return true;
+      }
+    } else {
+      const result = (
+        await settingsCollection.insertOne({
+          key: 'autoPopulateDate',
+          type: 'date',
+          value: new Date(),
+        })
+      ).acknowledged;
+
+      if (result) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const getAutoPopulateDate = async () => {
+  if (autoPopulate) {
+    const settingsCollection = await getSettingsCollection();
+
+    const autoPopulateDateObject = (await settingsCollection.findOne({
+      key: 'autoPopulateDate',
+      type: 'date',
+    })) as DateSetting | undefined;
+
+    if (autoPopulateDateObject) {
+      return autoPopulateDateObject.value;
+    }
+  }
+  return null;
+};
+
+let autoPopulateTimeout: NodeJS.Timeout | null = null;
+let autoPopulateInterval: NodeJS.Timeout | null = null;
+
+const startAutoPopulateAsync = async () => {
+  const autoPopulateDate = await getAutoPopulateDate();
+
+  autoPopulateTimeout = setTimeout(
+    async () => {
+      try {
+        console.log('auto populating data...');
+        autoPopulateTimeout = null;
+        const result = await populateWithData(50, 3, 5, 3);
+        console.log(
+          'finished auto populating data: ' + (result ? 'success' : 'error')
+        );
+        await setAutoPopulateDate();
+        autoPopulateInterval = setInterval(async () => {
+          try {
+            console.log('auto populating data...');
+            autoPopulateInterval = null;
+            const result = await populateWithData(50, 3, 5, 3);
+            console.log(
+              'finished auto populating data: ' + (result ? 'success' : 'error')
+            );
+            await setAutoPopulateDate();
+          } catch (err) {
+            console.error(err);
+            throw err;
+          }
+        }, AUTO_POPULATE_INTERVAL);
+      } catch (err) {
+        console.error(err);
+        throw err;
+      }
+    },
+    autoPopulateDate
+      ? Date.now() - autoPopulateDate.getTime() < AUTO_POPULATE_INTERVAL
+        ? AUTO_POPULATE_INTERVAL - (Date.now() - autoPopulateDate.getTime())
+        : AUTO_POPULATE_INTERVAL
+      : undefined
+  );
+};
+
+export const startAutoPopulate = async () => {
+  try {
+    const doAutoPopulate = await getAutoPopulateInternal();
+
+    if (doAutoPopulate) {
+      await startAutoPopulateAsync();
+    }
+  } catch (err) {
+    console.error(err);
+    throw err;
+  }
+};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

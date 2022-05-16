@@ -35,7 +35,14 @@ import {
   unacceptDishEvent,
 } from './dishes.js';
 import { searchWiki } from './wiki.js';
-import { deletePopulatedData, populateWithData } from './populate.js';
+import {
+  deletePopulatedData,
+  disableAutoPopulate,
+  enableAutoPopulate,
+  getAutoPopulate,
+  populateWithData,
+  startAutoPopulate,
+} from './populate.js';
 import { getPicture, getPictures } from './pictures.js';
 
 let adminSessions: {
@@ -540,6 +547,23 @@ export const appRouter = trpc
           return result;
         }
         return [];
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
+  })
+  .query('getAutoPopulate', {
+    input: z.object({
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId, true)) {
+          return await getAutoPopulate();
+        }
+        return false;
       } catch (e: unknown) {
         throw internalServerError(e);
       }
@@ -1089,6 +1113,26 @@ export const appRouter = trpc
         throw internalServerError(e);
       }
     },
+  })
+  .mutation('setAutoPopulate', {
+    input: z.object({
+      state: z.boolean(),
+      sessionId: z.string().length(20),
+      userId: z.string().length(20),
+    }),
+    async resolve({ input, ctx }) {
+      try {
+        const ip = getIp(ctx as Context);
+        if (verifySession(input.sessionId, ip, input.userId, true)) {
+          return await (input.state
+            ? enableAutoPopulate()
+            : disableAutoPopulate());
+        }
+        return false;
+      } catch (e: unknown) {
+        throw internalServerError(e);
+      }
+    },
   });
 
 const trainAsync = () => {
@@ -1107,5 +1151,7 @@ setInterval(() => {
 }, TRAIN_INTERVAL);
 
 trainAsync();
+
+startAutoPopulate();
 
 export type AppRouter = typeof appRouter;

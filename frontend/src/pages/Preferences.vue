@@ -64,7 +64,7 @@
           inProgressDishPreferences.splice(
             inProgressDishPreferences.indexOf(dish.value)
           );
-          setRefreshTimeout();
+          setRefreshTimeout(false, true);
           resetState();
           dishPreferences.value = result;
           dish.value = '';
@@ -80,7 +80,7 @@
     try {
       const result = await removeDishPreference(dish);
       if (result) {
-        setRefreshTimeout();
+        setRefreshTimeout(false, true);
         dishPreferences.value = result;
       }
     } catch (e: unknown) {

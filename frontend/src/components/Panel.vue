@@ -4,9 +4,12 @@
   import {
     clearCaches,
     depopulate,
+    getAutoPopulate,
     hasSession,
     populate,
     refreshDishes,
+    setAutoPopulate,
+    setRefreshTimeout,
   } from '../data';
   import {
     loggedIn,
@@ -68,6 +71,40 @@
       throw e;
     }
   };
+
+  const toggleAutoPopulateOnClick = async () => {
+    try {
+      if (hasSession(true) && autoPopulate.value !== undefined) {
+        buttonDisabled.value = true;
+        const result = await setAutoPopulate(!autoPopulate.value);
+        buttonDisabled.value = false;
+        if (result) {
+          autoPopulate.value = !autoPopulate.value;
+          setRefreshTimeout(true, false);
+          alert('Success');
+        } else {
+          alert('Error');
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  };
+
+  const autoPopulate = ref(undefined as boolean | undefined);
+
+  (async () => {
+    try {
+      if (hasSession(true)) {
+        autoPopulate.value = await getAutoPopulate();
+      }
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  })();
+
   const buttonDisabled = ref(false);
 
   onUnmounted(() => {
@@ -245,6 +282,16 @@
         </div>
       </div>
     </Transition>
+    <div v-if="loggedIn && !userLoggedIn">
+      <button
+        v-if="autoPopulate !== undefined"
+        class="populate-button"
+        :disabled="buttonDisabled"
+        @click="toggleAutoPopulateOnClick()"
+      >
+        {{ autoPopulate ? 'Disable auto' : 'Enable auto' }}
+      </button>
+    </div>
   </div>
 </template>
 
