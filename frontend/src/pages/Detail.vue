@@ -178,7 +178,12 @@
         </div>
         <p class="info-section">
           Hosted by
-          {{ currentDish.type !== 'info' ? currentDish.dish.name : 'you' }}
+          {{
+            currentDish.type !== 'info'
+              ? currentDish.dish.name +
+                (currentDish.dish.age ? ', ' + currentDish.dish.age : '')
+              : 'you'
+          }}
         </p>
         <p v-if="currentDish.type !== 'info'" class="info-section">
           In {{ currentDish.dish.locationCity }}
