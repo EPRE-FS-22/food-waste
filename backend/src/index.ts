@@ -20,6 +20,8 @@ const makeHTTPSFastify = () => {
       key: fs.readFileSync(key),
       cert: fs.readFileSync(cert),
     },
+    maxParamLength: 5000,
+    bodyLimit: 10000000,
   });
 };
 
@@ -28,7 +30,10 @@ const makeFastify = (): ReturnType<typeof makeHTTPSFastify> => {
     return makeHTTPSFastify();
   }
   // Hack because their signatures are incompatible, but we still want to allow localhost
-  return fastify() as unknown as ReturnType<typeof makeHTTPSFastify>;
+  return fastify({
+    maxParamLength: 5000,
+    bodyLimit: 10000000,
+  }) as unknown as ReturnType<typeof makeHTTPSFastify>;
 };
 
 const server = makeFastify();

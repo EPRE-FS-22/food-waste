@@ -411,11 +411,7 @@
         ></div>
       </div>
     </div>
-    <button
-      v-if="notOnFirstPage"
-      class="paging-button reset-button"
-      @click="getDishes(false, true)"
-    >
+    <button class="paging-button reset-button" @click="getDishes(false, true)">
       <span class="icon button-icon icon-cw"></span>
     </button>
     <button
