@@ -995,6 +995,7 @@ export const logOut = async () => {
 };
 
 export const populate = async (
+  usersNumber = 20,
   preferencesPerUser = 3,
   dishesPerUser = 5,
   dishEventsPerUser = 3
@@ -1007,6 +1008,7 @@ export const populate = async (
     const result = await client.mutation('populate', {
       sessionId: sessionId,
       userId: sessionUserId,
+      usersNumber,
       preferencesPerUser,
       dishesPerUser,
       dishEventsPerUser,

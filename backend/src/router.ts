@@ -1073,7 +1073,7 @@ export const appRouter = trpc
   })
   .mutation('populate', {
     input: z.object({
-      usersNumber: z.number().nonnegative().min(1).max(100).default(10),
+      usersNumber: z.number().nonnegative().min(1).max(100).default(20),
       preferencesPerUser: z.number().nonnegative().min(1).max(10).default(3),
       dishesPerUser: z.number().nonnegative().min(1).max(10).default(5),
       dishEventsPerUser: z.number().nonnegative().min(1).max(10).default(3),

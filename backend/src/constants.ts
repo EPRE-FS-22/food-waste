@@ -6,7 +6,7 @@ export const DEFAULT_SEARCH_AGE_RANGE = 10;
 
 export const TRAIN_INTERVAL = 60 * 1000 * 1;
 
-export const AUTO_POPULATE_INTERVAL = 5 * 24 * 60 * 60 * 1000 * 1;
+export const AUTO_POPULATE_INTERVAL = 1 * 24 * 60 * 60 * 1000 * 1;
 
 export const EMAIL_REGEX =
   // eslint-disable-next-line no-control-regex
