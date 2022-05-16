@@ -223,7 +223,7 @@
               :key="index"
             >
               <p>{{ name }}</p>
-              <div class="button-section" >
+              <div class="button-section">
                 <div @click="unacceptNames(index)">
                   <span
                     class="icon icon-small cancel icon-cancel-circled"

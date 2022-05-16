@@ -96,7 +96,7 @@
           (props.type === DisplayType.available && hasSession(true))
         ) {
           let fail = false;
-          if (!settings.locationCity) {
+          if (!settings.previousLocationCity) {
             if (hasUserSession()) {
               const userInfo = await getUserInfo();
               if (userInfo && userInfo.locationCity) {

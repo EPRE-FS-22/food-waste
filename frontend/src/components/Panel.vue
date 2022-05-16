@@ -64,7 +64,7 @@
 </script>
 
 <template>
-  <div class="panel">
+  <div class="panel" @keyup.escape="showModal = false">
     <div v-if="loggedIn && !userLoggedIn">
       <button
         class="populate-button"
@@ -95,9 +95,32 @@
         <div class="modal-wrapper">
           <div class="modal-container">
             <div class="modal-header">
-              <slot name="header">Range Settings</slot>
+              <slot name="header">Search Settings</slot>
             </div>
             <div class="modal-body">
+              <div class="location-city-container input-container">
+                <label for="location-city"
+                  >City{{
+                    settingsMessages.locationCity
+                      ? ': ' + settingsMessages.locationCity
+                      : settingsMessages.locationCity
+                  }}</label
+                >
+                <SearchWiki
+                  id="city"
+                  v-model="settings.locationCity"
+                  :only-coords="true"
+                  name="city"
+                  placeholder="Zug"
+                  :class="
+                    'city panel-item' +
+                    (!settings.locationCity || settingsMessages.locationCity
+                      ? ' warning'
+                      : '')
+                  "
+                  :maxlength="100"
+                ></SearchWiki>
+              </div>
               <div class="location-range-container input-container">
                 <label for="location-range"
                   >Location range{{
@@ -116,26 +139,6 @@
                     warning:
                       !settings.locationRangeSize ||
                       settingsMessages.locationRangeSize,
-                  }"
-                />
-              </div>
-              <div class="age-range-container input-container">
-                <label for="age-range"
-                  >Age range{{
-                    settingsMessages.ageRangeSize
-                      ? ': ' + settingsMessages.ageRangeSize
-                      : settingsMessages.ageRangeSize
-                  }}</label
-                >
-                <input
-                  id="age-range"
-                  v-model="settings.ageRangeSize"
-                  type="number"
-                  name="age-range"
-                  placeholder="10"
-                  :class="{
-                    warning:
-                      !settings.ageRangeSize || settingsMessages.ageRangeSize,
                   }"
                 />
               </div>
@@ -182,29 +185,30 @@
                   />
                 </div>
               </div>
-              <div class="location-city-container input-container">
-                <label for="location-city"
-                  >City{{
-                    settingsMessages.locationCity
-                      ? ': ' + settingsMessages.locationCity
-                      : settingsMessages.locationCity
+              <div class="age-range-container input-container">
+                <label for="age-range"
+                  >Age range{{
+                    settingsMessages.ageRangeSize
+                      ? ': ' + settingsMessages.ageRangeSize
+                      : settingsMessages.ageRangeSize
                   }}</label
                 >
-                <SearchWiki
-                  id="city"
-                  v-model="settings.locationCity"
-                  :only-coords="true"
-                  name="city"
-                  placeholder="Zug"
-                  class="field city panel-item"
-                  :maxlength="100"
-                  :previous-value="settings.previousLocationCity"
-                ></SearchWiki>
+                <input
+                  id="age-range"
+                  v-model="settings.ageRangeSize"
+                  type="number"
+                  name="age-range"
+                  placeholder="10"
+                  :class="{
+                    warning:
+                      !settings.ageRangeSize || settingsMessages.ageRangeSize,
+                  }"
+                />
               </div>
             </div>
             <div class="modal-footer">
               <button class="modal-default-button" @click="clickModal()">
-                Close
+                <span class="icon button-icon icon-cancel"></span>
               </button>
             </div>
           </div>
@@ -250,12 +254,13 @@
   }
 
   .modal-container {
+    position: relative;
     width: 70%;
     height: 90%;
     margin: 0px auto;
     padding: 20px 30px;
     background-color: gray;
-    border-radius: 2px;
+    border-radius: 1rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
     transition: all 0.3s ease;
     overflow-y: auto;
@@ -263,7 +268,7 @@
 
   .modal-header {
     margin-top: 0;
-    font-size: 4vh;
+    font-size: 2rem;
   }
 
   .modal-body {
@@ -279,7 +284,7 @@
     font-size: 1rem;
     line-height: 1rem;
     font-weight: bold;
-    padding: 0.45rem;
+    padding: 0;
     background-color: #ffffff;
     border: solid 0.1rem rgb(179, 179, 179);
     border-radius: 1rem;
@@ -340,19 +345,10 @@
       padding: 0;
       border: none;
       margin-right: -0.2rem;
-    }
 
-    .field {
-      height: 1rem;
-      font-size: 1rem;
-      line-height: 1rem;
-      width: 90%;
-      max-width: 40vh;
-      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
-      padding: 0.25rem;
-      border: solid 0.1rem rgb(179, 179, 179);
-      border-radius: 1rem;
-      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+      &.button-icon {
+        font-size: 1.125rem;
+      }
     }
 
     .input-container {
@@ -360,10 +356,15 @@
       flex-direction: column;
       width: 90%;
       padding: 0.5rem;
-      font-size: 3vh;
-      font-size: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
-      line-height: 3vh;
-      line-height: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+      font-size: 1.25rem;
+      line-height: 1.25rem;
+
+      .searchWiki {
+        margin: 0;
+        padding: 0;
+        border: none;
+        width: 100%;
+      }
 
       label {
         margin-left: 0.5vh;
@@ -380,16 +381,12 @@
         margin-top: 0;
       }
 
-      input {
-        height: 2vh;
-        height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        font-size: 2vh;
-        font-size: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
-        line-height: 2vh;
-        line-height: calc((2 * (100vh - var(--vh-offset, 0px)) / 100));
+      :deep(input) {
+        height: 1rem;
+        font-size: 1rem;
+        line-height: 1rem;
         width: 90%;
-        padding: 0.5vh;
-        padding: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
+        padding: 0.5rem;
         margin: 0.5vh;
         margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
         margin-top: 1.5vh;
@@ -407,7 +404,7 @@
             rgb(194, 0, 0);
         }
 
-        &#date {
+        &.date {
           margin: 0;
           margin-top: 0;
         }
@@ -439,8 +436,6 @@
 
       .input-container {
         padding: 0.6rem;
-        font-size: 3.75vw;
-        line-height: 3vw;
 
         label {
           margin-left: 0.5vw;
@@ -454,11 +449,7 @@
           margin-top: 0;
         }
 
-        input {
-          height: 2.5vw;
-          font-size: 4vw;
-          line-height: 2vw;
-          padding: 3vw;
+        :deep(input) {
           margin: 0.5vw;
           margin-top: 1.5vw;
           border: solid 0.2vw rgb(179, 179, 179);
@@ -466,11 +457,6 @@
 
           &.warning {
             border: solid 0.3vw rgb(194, 0, 0);
-          }
-
-          &#date {
-            margin: 0;
-            margin-top: 0;
           }
         }
 

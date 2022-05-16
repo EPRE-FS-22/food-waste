@@ -803,70 +803,80 @@
     flex-direction: column;
     align-items: center;
     overflow-y: auto;
-  }
 
-  .login-item {
-    margin: 0.5rem;
-  }
+    :deep(.login-item) {
+      margin: 0.5rem;
+    }
 
-  .label {
-    font-size: 1.2rem;
-    line-height: 1.2rem;
-    padding: 0;
-    text-align: center;
-    font-weight: bold;
-
-    .label-button {
-      font-size: 1.1rem;
-      font-weight: normal;
+    .label {
+      font-size: 1.2rem;
       line-height: 1.2rem;
-      color: rgb(226, 226, 226);
-      text-decoration: underline;
       padding: 0;
-      margin: 0;
-      margin-top: 0.5rem;
-      cursor: pointer;
+      text-align: center;
+      font-weight: bold;
 
-      &.label-button-solo {
+      .label-button {
+        font-size: 1.1rem;
+        font-weight: normal;
+        line-height: 1.2rem;
+        color: rgb(226, 226, 226);
+        text-decoration: underline;
+        padding: 0;
         margin: 0;
+        margin-top: 0.5rem;
+        cursor: pointer;
+
+        &.label-button-solo {
+          margin: 0;
+        }
       }
     }
-  }
 
-  .id-image {
-    min-height: 30px;
-  }
+    .id-image {
+      min-height: 30px;
+    }
 
-  .date-of-birth {
-    min-height: 30px;
-  }
+    .date-of-birth {
+      min-height: 30px;
+    }
 
-  .field {
-    height: 1rem;
-    font-size: 1rem;
-    line-height: 1rem;
-    width: 90%;
-    max-width: 40vh;
-    max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
-    padding: 0.25rem;
-    border: solid 0.1rem rgb(179, 179, 179);
-    border-radius: 1rem;
-    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-  }
+    .searchWiki {
+      margin: 0;
+      padding: 0;
+      border: none;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+    }
 
-  .login-button {
-    height: 1.9rem;
-    font-size: 1rem;
-    line-height: 1rem;
-    width: 30%;
-    max-width: 12vh;
-    max-width: calc((12 * (100vh - var(--vh-offset, 0px)) / 100));
-    min-width: 10vw;
-    font-weight: bold;
-    padding: 0.35rem;
-    background-color: #ffffff;
-    border: solid 0.05rem rgb(179, 179, 179);
-    border-radius: 1rem;
-    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    :deep(.field) {
+      height: 1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 90%;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0.25rem;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    }
+
+    .login-button {
+      height: 1.9rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 30%;
+      max-width: 12vh;
+      max-width: calc((12 * (100vh - var(--vh-offset, 0px)) / 100));
+      min-width: 10vw;
+      font-weight: bold;
+      padding: 0.35rem;
+      background-color: #ffffff;
+      border: solid 0.05rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    }
   }
 </style>

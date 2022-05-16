@@ -126,43 +126,54 @@
     flex-direction: column;
     align-items: center;
     font-size: 2rem;
-  }
-  .preferences-list-title {
-    font-size: 1.75rem;
-  }
 
-  .preferences-item {
-    margin: 0.5rem;
-  }
-
-  .preferences-list-text {
-    font-size: 1.5rem;
-  }
-
-  .preferences-list-subtitle {
-    margin-top: 0.5rem;
-    font-size: 1rem;
-  }
-
-  .preference {
-    display: flex;
-
-    .icon {
-      margin-top: 30px;
-      cursor: pointer;
+    .preferences-list-title {
+      font-size: 1.75rem;
     }
-  }
 
-  .field {
-    height: 1rem;
-    font-size: 1rem;
-    line-height: 1rem;
-    width: 90%;
-    max-width: 40vh;
-    max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
-    padding: 0.25rem;
-    border: solid 0.1rem rgb(179, 179, 179);
-    border-radius: 1rem;
-    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    :deep(.preferences-item) {
+      margin: 0.5rem;
+    }
+
+    .preferences-list-text {
+      font-size: 1.5rem;
+    }
+
+    .preferences-list-subtitle {
+      margin-top: 0.5rem;
+      font-size: 1rem;
+    }
+
+    .preference {
+      display: flex;
+
+      .icon {
+        margin-top: 30px;
+        cursor: pointer;
+      }
+    }
+
+    .searchWiki {
+      margin: 0;
+      padding: 0;
+      border: none;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+    }
+
+    :deep(.field) {
+      height: 1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 90%;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0.25rem;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    }
   }
 </style>

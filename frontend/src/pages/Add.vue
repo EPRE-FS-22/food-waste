@@ -183,7 +183,7 @@
         id="date-of-event"
         v-model="dateOfEvent"
         type="datetime-local"
-        class="field date-of-event"
+        class="field date-of-event add-item"
         name="date-of-event"
         placeholder="20.06.2022"
         @keyup.enter="addInvite()"
@@ -244,79 +244,92 @@
 <style scoped lang="scss">
   .add {
     overflow-y: auto;
-  }
 
-  .add-margin {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 100px;
-  }
-
-  .add-item {
-    margin: 0.5rem;
-  }
-
-  .label {
-    font-size: 1.2rem;
-    line-height: 1.2rem;
-    padding: 0;
-    text-align: center;
-    font-weight: bold;
-
-    .label-button {
-      font-size: 1.1rem;
-      font-weight: normal;
-      line-height: 1.2rem;
-      color: rgb(226, 226, 226);
-      text-decoration: underline;
-      padding: 0;
+    .searchWiki {
       margin: 0;
-      margin-top: 0.5rem;
-      cursor: pointer;
+      padding: 0;
+      border: none;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+    }
 
-      &.label-button-solo {
+    .add-margin {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 100px;
+    }
+
+    :deep(.add-item) {
+      margin: 0.5rem;
+    }
+
+    .label {
+      font-size: 1.2rem;
+      line-height: 1.2rem;
+      padding: 0;
+      text-align: center;
+      font-weight: bold;
+
+      .label-button {
+        font-size: 1.1rem;
+        font-weight: normal;
+        line-height: 1.2rem;
+        color: rgb(226, 226, 226);
+        text-decoration: underline;
+        padding: 0;
         margin: 0;
+        margin-top: 0.5rem;
+        cursor: pointer;
+
+        &.label-button-solo {
+          margin: 0;
+        }
       }
     }
-  }
 
-  .field {
-    height: 1rem;
-    font-size: 1rem;
-    line-height: 1rem;
-    width: 90%;
-    max-width: 40vh;
-    max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
-    padding: 0.25rem;
-    border: solid 0.1rem rgb(179, 179, 179);
-    border-radius: 1rem;
-    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-  }
+    :deep(.field) {
+      height: 1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 90%;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0.25rem;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    }
 
-  .textarea {
-    font-size: 1rem;
-    line-height: 1rem;
-    width: 70%;
-    padding: 0.25rem;
-    border: solid 0.1rem rgb(179, 179, 179);
-    border-radius: 1rem;
-    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-  }
+    .textarea {
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 90%;
+      max-width: 40vh;
+      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
+      padding: 0.25rem;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+    }
 
-  .invite-button {
-    box-sizing: border-box;
-    height: 2.1rem;
-    font-size: 1rem;
-    line-height: 1rem;
-    font-weight: bold;
-    padding: 0.45rem;
-    background-color: #ffffff;
-    border: solid 0.1rem rgb(179, 179, 179);
-    border-radius: 1rem;
-    box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
-    text-decoration: none;
-    color: #000000;
+    .invite-button {
+      box-sizing: border-box;
+      height: 2.1rem;
+      font-size: 1rem;
+      line-height: 1rem;
+      font-weight: bold;
+      padding: 0.45rem;
+      margin-top: 0.5rem;
+      background-color: #ffffff;
+      border: solid 0.1rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+      text-decoration: none;
+      color: #000000;
+    }
   }
 </style>

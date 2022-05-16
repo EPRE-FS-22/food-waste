@@ -187,8 +187,6 @@
       font-size: 1rem;
       line-height: 1rem;
       width: 90%;
-      max-width: 40vh;
-      max-width: calc((40 * (100vh - var(--vh-offset, 0px)) / 100));
       padding: 0.25rem;
       border: solid 0.1rem rgb(179, 179, 179);
       border-radius: 1rem;
