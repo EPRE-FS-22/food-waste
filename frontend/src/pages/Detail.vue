@@ -185,13 +185,17 @@
               : 'you'
           }}
         </p>
-        <p v-if="currentDish.type !== 'info'" class="info-section">
+        <p
+          v-if="currentDish.type !== 'info' && currentDish.dish.locationCity"
+          class="info-section"
+        >
           In {{ currentDish.dish.locationCity }}
         </p>
         <p
           v-if="
             currentDish.type !== 'normal' &&
-            (currentDish.type !== 'event' || currentDish.dish.accepted)
+            (currentDish.type !== 'event' || currentDish.dish.accepted) &&
+            currentDish.dish.exactLocation
           "
           class="info-section"
         >

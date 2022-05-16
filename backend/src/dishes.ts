@@ -787,7 +787,9 @@ export const addDish = async (
             (1000 * 60 * 60 * 24 * 365)
         ),
         locationCity: locationCityCoords
-          ? locationCity ?? userInfo.locationCity
+          ? locationCity
+          : userInfo.locationCityCoords
+          ? userInfo.locationCity
           : undefined,
         locationCityCoords: locationCityCoords ?? userInfo.locationCityCoords,
         exactLocation: exactLocation ?? userInfo.exactLocation,
