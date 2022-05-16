@@ -101,7 +101,7 @@
           settingsMessages.dateStart ||
           !settings.dateEnd ||
           settingsMessages.dateEnd ||
-          !settings.locationCity ||
+          (!settings.locationCity && userLoggedIn) ||
           settingsMessages.locationCity ||
           !settings.locationRangeSize ||
           settingsMessages.locationRangeSize ||
@@ -142,7 +142,8 @@
                   placeholder="Zug"
                   :class="
                     'city panel-item' +
-                    (!settings.locationCity || settingsMessages.locationCity
+                    ((!settings.locationCity && userLoggedIn) ||
+                    settingsMessages.locationCity
                       ? ' warning'
                       : '')
                   "

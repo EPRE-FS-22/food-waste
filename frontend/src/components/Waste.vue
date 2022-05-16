@@ -368,6 +368,9 @@
     :class="{ small: !!small }"
   >
     Nothing to see here
+    <button class="paging-button reset-button" @click="getDishes(false, true)">
+      <span class="icon button-icon icon-cw"></span>
+    </button>
   </div>
   <div v-else class="content-base content-wrapper" :class="{ small: !!small }">
     <div class="content">
@@ -427,6 +430,7 @@
 
 <style scoped lang="scss">
   .no-content {
+    position: relative;
     display: flex;
     flex-direction: row;
     justify-content: center;
