@@ -203,12 +203,12 @@ export const getAvailableDishes = async (
     if (userInfo) {
       if (!locationCityCoords) {
         locationCityCoords = userInfo.locationCityCoords;
-        agePreference = Math.floor(
-          ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
-            (dateStart ? dateStart.getTime() - Date.now() : 0)) /
-            (1000 * 60 * 60 * 24 * 365)
-        );
       }
+      agePreference = Math.floor(
+        ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
+          (dateStart ? dateStart.getTime() - Date.now() : 0)) /
+          (1000 * 60 * 60 * 24 * 365)
+      );
       if (!userInfo.showPopulated) {
         actuallyShowPopulated = false;
       }
@@ -493,12 +493,12 @@ export const getRecommendedDishes = async (
     if (userInfo) {
       if (!locationCityCoords) {
         locationCityCoords = userInfo.locationCityCoords;
-        agePreference = Math.floor(
-          ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
-            (dateStart ? dateStart.getTime() - Date.now() : 0)) /
-            (1000 * 60 * 60 * 24 * 365)
-        );
       }
+      agePreference = Math.floor(
+        ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
+          (dateStart ? dateStart.getTime() - Date.now() : 0)) /
+          (1000 * 60 * 60 * 24 * 365)
+      );
       if (!userInfo.showPopulated) {
         actuallyShowPopulated = false;
       }
