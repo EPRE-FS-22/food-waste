@@ -43,12 +43,11 @@ export const validateId = async (idBase64: string) => {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const score = tfn.softmax(predictions);
-  const score_array = score.dataSync();
-  const max = Math.max(...score_array);
-  const indexOfMax = score_array.indexOf(max);
+  const scoreArray = score.dataSync();
+  const max = Math.max(...scoreArray);
+  const indexOfMax = scoreArray.indexOf(max);
 
-
-  if (CLASS_NAMES[indexOfMax] == 'swissid') {
+  if (CLASS_NAMES[indexOfMax] != 'nonid') {
     return true;
   }
   return false;
