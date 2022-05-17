@@ -27,7 +27,7 @@ const mailTransporter =
           user: mailUsername,
           pass: mailPassword,
         },
-        logger: true,
+        logger: false,
       })
     : null;
 
