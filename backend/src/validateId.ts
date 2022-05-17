@@ -1,5 +1,4 @@
 import tfn from '@tensorflow/tfjs-node';
-// import {testImage} from "./testimage.js";
 import sharp from 'sharp';
 // import fs from 'fs';
 
@@ -14,15 +13,8 @@ export const validateId = async (idBase64: string) => {
     return false;
   }
   const data = matches[2] + idBase64.slice(100);
-  // const CLASS_NAMES = ['nonid', 'nonswiss', 'swissid']
-  /**const buf = await resizeImg(fs.readFileSync('/Users/oliver/HSLU/EPRE/tensorflow-test/Test/20161207_142428_HDR.jpg'),{
-    width: 180,
-    height: 180
-  })**/
-  // const buf = await fs.readFileSync('/Users/linus/Downloads/beer-820011.jpg');
-  // const str = buf.toString('base64');
-  // console.log(str.slice(0, 20));
-  // console.log(str.slice(-20));
+  const CLASS_NAMES = ['nonid', 'nonswiss', 'swissid']
+
 
   const imgBuffer = Buffer.from(data, 'base64');
   let scaledBuffer: Buffer | undefined = undefined;
@@ -51,19 +43,13 @@ export const validateId = async (idBase64: string) => {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const score = tfn.softmax(predictions);
-  console.log(score.toString());
-  if (idBase64) {
+  const score_array = score.dataSync();
+  const max = Math.max(...score_array);
+  const indexOfMax = score_array.indexOf(max);
+
+
+  if (CLASS_NAMES[indexOfMax] == 'swissid') {
     return true;
   }
   return false;
 };
-
-// (async () => {
-//   try {
-//    console.log(await validateId(testImage));
-//   } catch (e) {
-//     console.error((typeof e === 'object' && e instanceof Error) ? e.stack ?? e : e);
-//     throw e;
-//   }
-
-// })();
