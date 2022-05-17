@@ -94,6 +94,8 @@ To install and run the project you will need the following:
 
 To install and run the subprojects using the helper scripts (from the root level) use the following commands.
 
+WARNING: If you are running windows, these helper script currently don't work. Skip to the manual way further down.
+
 1. Install NPM packages for all subprojects
 
    ```sh
