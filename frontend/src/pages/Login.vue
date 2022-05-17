@@ -134,7 +134,9 @@
         await setFieldsWithPrevious(LoginType.change);
       }
     } catch (e: unknown) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   })();
@@ -189,7 +191,9 @@
           ' your email address, please try again in a bit.';
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -278,10 +282,13 @@
           router.push('/preferences');
         }
       } else if (userLoggedIn.value) {
-        message.value = 'Could not set values, please try again in a bit.';
+        message.value =
+          'Image is not a valid swiss id card, please try a different image.';
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -319,7 +326,9 @@
         message.value = 'Could not set value, please try again in a bit.';
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -366,7 +375,9 @@
         message.value = 'Incorrect password';
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -415,7 +426,9 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -471,7 +484,9 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -689,7 +704,7 @@
         type="file"
         name="id-image"
         accept="image/jpeg,image/png,image/jpg"
-        capture="user"
+        capture="environment"
         @change="idImage = fileInput?.files ?? null"
         @keyup.enter="triggerAction()"
       />

@@ -43,7 +43,9 @@ export const verifyPassword = async (hash: string, password: string) => {
     return await verify(hash, password);
   } catch (err) {
     console.error('Failed verifying password hash');
-    console.error(err);
+    console.error(
+      typeof err === 'object' && err instanceof Error ? err.stack ?? err : err
+    );
     process.exitCode = 1;
     return false;
   }

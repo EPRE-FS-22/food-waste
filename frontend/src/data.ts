@@ -176,7 +176,9 @@ export const getAvailableDishes = async (
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -205,7 +207,9 @@ export const getAvailableDish = async (dishId: string) => {
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -256,7 +260,9 @@ export const getRecommendedDishes = async (
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -297,7 +303,9 @@ export const getMyDishes = async (next = false) => {
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -333,7 +341,9 @@ export const getMyDish = async (dishId: string) => {
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -374,7 +384,9 @@ export const getSignedUpDishes = async (next = false) => {
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -410,7 +422,9 @@ export const getSignedUpDish = async (dishEventId: string) => {
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -432,7 +446,9 @@ export const getDishPreferences = async () => {
       return false;
     }
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -466,7 +482,9 @@ export const addDish = async (
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -489,7 +507,9 @@ export const removeDish = async (dishId: string, admin = false) => {
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -518,7 +538,9 @@ export const addDishPreference = async (dish: string, likes: boolean) => {
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -540,7 +562,9 @@ export const removeDishPreference = async (dish: string) => {
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -563,7 +587,9 @@ export const addDishRequest = async (dishId: string, message?: string) => {
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -585,7 +611,9 @@ export const removeDishRequest = async (eventId: string) => {
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -608,7 +636,9 @@ export const acceptDishRequest = async (eventId: string, response?: string) => {
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -630,7 +660,9 @@ export const unacceptDishRequest = async (eventId: string) => {
     }
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -671,7 +703,9 @@ export const checkSession = (admin = false) => {
     try {
       await checkSessionAsync(admin);
     } catch (e: unknown) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   })();
@@ -686,7 +720,9 @@ export const register = async (email: string, captchaToken?: string) => {
       nextTry: new Date(result.nextTry),
     };
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -700,7 +736,9 @@ export const emailLogIn = async (email: string, captchaToken?: string) => {
       nextTry: new Date(result.nextTry),
     };
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -748,7 +786,9 @@ export const logIn = async (
       nextTry: new Date(result.nextTry),
     };
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -792,7 +832,9 @@ export const verify = async (userId: string, code: string) => {
       code: result.code,
     };
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -843,7 +885,9 @@ export const set = async (
     }
     return result;
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -888,7 +932,9 @@ export const reset = async (
     }
     return result;
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -928,7 +974,9 @@ export const change = async (
     }
     return result;
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -963,7 +1011,9 @@ export const getUserInfo = async () => {
     }
     return result;
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -989,7 +1039,9 @@ export const logOut = async () => {
     localStorage.setItem('preferencesSet', '');
     loggingOut = false;
   } catch (e) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -1015,7 +1067,9 @@ export const populate = async (
     });
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -1032,7 +1086,9 @@ export const depopulate = async () => {
     });
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -1049,7 +1105,9 @@ export const getAutoPopulate = async () => {
     });
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -1067,7 +1125,9 @@ export const setAutoPopulate = async (state: boolean) => {
     });
     return result;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -1107,7 +1167,9 @@ export const searchWiki = async (
     }
     return false;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -1128,7 +1190,9 @@ export const getPicture = async (searchText: string) => {
     }
     return false;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };
@@ -1159,7 +1223,9 @@ export const getPictures = async (searchTexts: string[]) => {
     }
     return false;
   } catch (e: unknown) {
-    console.error(e);
+    console.error(
+      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+    );
     throw e;
   }
 };

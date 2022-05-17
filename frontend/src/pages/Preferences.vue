@@ -45,7 +45,9 @@
         dishPreferences.value = result;
       }
     } catch (e: unknown) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   })();
@@ -71,7 +73,9 @@
         }
       }
     } catch (e: unknown) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   });
@@ -84,7 +88,9 @@
         dishPreferences.value = result;
       }
     } catch (e: unknown) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };

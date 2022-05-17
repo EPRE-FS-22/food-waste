@@ -238,7 +238,7 @@ const getIp = (ctx: Context): string => {
 };
 
 const internalServerError = (e: unknown) => {
-  console.error(e);
+  console.error(typeof e === 'object' && e instanceof Error ? e.stack ?? e : e);
   process.exitCode = 1;
   return new Error('Internal server error');
 };

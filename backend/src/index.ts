@@ -73,7 +73,9 @@ server.register(fastifyCors, {
     );
     console.log('Listening on port 3330');
   } catch (err) {
-    console.error(err);
+    console.error(
+      typeof err === 'object' && err instanceof Error ? err.stack ?? err : err
+    );
     process.exit(1);
   }
 })();

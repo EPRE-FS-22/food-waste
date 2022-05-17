@@ -248,12 +248,20 @@ const startAutoPopulateAsync = async () => {
             );
             await setAutoPopulateDate();
           } catch (err) {
-            console.error(err);
+            console.error(
+              typeof err === 'object' && err instanceof Error
+                ? err.stack ?? err
+                : err
+            );
             throw err;
           }
         }, AUTO_POPULATE_INTERVAL);
       } catch (err) {
-        console.error(err);
+        console.error(
+          typeof err === 'object' && err instanceof Error
+            ? err.stack ?? err
+            : err
+        );
         throw err;
       }
     },
@@ -273,7 +281,9 @@ export const startAutoPopulate = async () => {
       await startAutoPopulateAsync();
     }
   } catch (err) {
-    console.error(err);
+    console.error(
+      typeof err === 'object' && err instanceof Error ? err.stack ?? err : err
+    );
     throw err;
   }
 };
