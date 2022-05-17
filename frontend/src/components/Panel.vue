@@ -33,7 +33,9 @@
         }
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -67,7 +69,9 @@
         }
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -87,7 +91,9 @@
         }
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   };
@@ -100,7 +106,9 @@
         autoPopulate.value = await getAutoPopulate();
       }
     } catch (e) {
-      console.error(e);
+      console.error(
+        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      );
       throw e;
     }
   })();
