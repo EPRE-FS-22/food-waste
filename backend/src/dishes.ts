@@ -1159,18 +1159,16 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
 
   const dishEvent = await dishEventsCollection.findOne({
     customId,
-    participantId: userId,
     accepted: true,
     date: { $gte: new Date() },
   });
-
-  console.log(dishEvent);
 
   if (dishEvent) {
     const dishesCollection = await getDishesCollection();
 
     const dish = await dishesCollection.findOne({
       customId: dishEvent.dishId,
+      userId,
     });
 
     console.log(dish);
@@ -1190,7 +1188,6 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
         )
       ).modifiedCount > 0
     ) {
-      console.log('yep');
       const result = await dishEventsCollection.updateOne(
         {
           customId,
@@ -1204,8 +1201,6 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
           },
         }
       );
-
-      console.log(result);
 
       if (result.modifiedCount > 0) {
         const body = `Hello ${dish.name}

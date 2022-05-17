@@ -146,6 +146,7 @@
   const unacceptNames = async (index: number) => {
     try {
       if (currentDish.value && currentDish.value.type === 'info') {
+        console.log(currentDish.value.dish.eventIds);
         const event = currentDish.value.dish.eventIds[index];
         if (event && !acceptIdsInProgress.includes(event)) {
           acceptIdsInProgress.push(event);
