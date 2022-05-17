@@ -282,7 +282,7 @@ export const startAutoPopulate = async () => {
     }
   } catch (err) {
     console.error(
-      typeof err === 'object' && err instanceof Error ? err.stack ?? err : err
+      err
     );
     throw err;
   }

@@ -177,7 +177,7 @@ export const getAvailableDishes = async (
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -208,7 +208,7 @@ export const getAvailableDish = async (dishId: string) => {
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -261,7 +261,7 @@ export const getRecommendedDishes = async (
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -304,7 +304,7 @@ export const getMyDishes = async (next = false) => {
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -342,7 +342,7 @@ export const getMyDish = async (dishId: string) => {
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -385,7 +385,7 @@ export const getSignedUpDishes = async (next = false) => {
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -423,7 +423,7 @@ export const getSignedUpDish = async (dishEventId: string) => {
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -447,7 +447,7 @@ export const getDishPreferences = async () => {
     }
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -483,7 +483,7 @@ export const addDish = async (
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -508,7 +508,7 @@ export const removeDish = async (dishId: string, admin = false) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -539,7 +539,7 @@ export const addDishPreference = async (dish: string, likes: boolean) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -563,7 +563,7 @@ export const removeDishPreference = async (dish: string) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -588,7 +588,7 @@ export const addDishRequest = async (dishId: string, message?: string) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -612,7 +612,7 @@ export const removeDishRequest = async (eventId: string) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -637,7 +637,7 @@ export const acceptDishRequest = async (eventId: string, response?: string) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -661,7 +661,7 @@ export const unacceptDishRequest = async (eventId: string) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -704,7 +704,7 @@ export const checkSession = (admin = false) => {
       await checkSessionAsync(admin);
     } catch (e: unknown) {
       console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+        e
       );
       throw e;
     }
@@ -721,7 +721,7 @@ export const register = async (email: string, captchaToken?: string) => {
     };
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -737,7 +737,7 @@ export const emailLogIn = async (email: string, captchaToken?: string) => {
     };
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -787,7 +787,7 @@ export const logIn = async (
     };
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -833,7 +833,7 @@ export const verify = async (userId: string, code: string) => {
     };
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -886,7 +886,7 @@ export const set = async (
     return result;
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -933,7 +933,7 @@ export const reset = async (
     return result;
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -975,7 +975,7 @@ export const change = async (
     return result;
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1012,7 +1012,7 @@ export const getUserInfo = async () => {
     return result;
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1040,7 +1040,7 @@ export const logOut = async () => {
     loggingOut = false;
   } catch (e) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1068,7 +1068,7 @@ export const populate = async (
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1087,7 +1087,7 @@ export const depopulate = async () => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1106,7 +1106,7 @@ export const getAutoPopulate = async () => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1126,7 +1126,7 @@ export const setAutoPopulate = async (state: boolean) => {
     return result;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1168,7 +1168,7 @@ export const searchWiki = async (
     return false;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1191,7 +1191,7 @@ export const getPicture = async (searchText: string) => {
     return false;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }
@@ -1224,7 +1224,7 @@ export const getPictures = async (searchTexts: string[]) => {
     return false;
   } catch (e: unknown) {
     console.error(
-      typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+      e
     );
     throw e;
   }

@@ -138,7 +138,7 @@ const ensureDBConnection = () => {
         resolve();
       } catch (e: unknown) {
         console.error(
-          typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+          e
         );
         process.exitCode = 1;
       }
@@ -186,7 +186,7 @@ const ensureNoDBConnection = (forGood = false) => {
         resolve();
       } catch (e: unknown) {
         console.error(
-          typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+          e
         );
         process.exitCode = 1;
       }

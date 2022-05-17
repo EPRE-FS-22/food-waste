@@ -34,7 +34,7 @@
       }
     } catch (e) {
       console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+        e
       );
       throw e;
     }
@@ -70,7 +70,7 @@
       }
     } catch (e) {
       console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+        e
       );
       throw e;
     }
@@ -92,7 +92,7 @@
       }
     } catch (e) {
       console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+        e
       );
       throw e;
     }
@@ -107,7 +107,7 @@
       }
     } catch (e) {
       console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
+        e
       );
       throw e;
     }
