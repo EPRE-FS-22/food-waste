@@ -673,8 +673,14 @@
 
       <label class="label id-image-label login-item" for="id-image"
         >Please upload the front of your swiss identification card{{
-          idImageMessage ? ': ' + idImageMessage : ''
+          (idImageMessage ? ': ' + idImageMessage : '') +
+          (message ? (idImageMessage ? ' - ' : ': ') + message : '')
         }}
+        <br />
+        <div class="login-item upload-button" tabindex="0">Upload</div>
+        <div v-if="idImage && idImage.length" class="upload-name">
+          {{ idImage[0].name }}
+        </div>
       </label>
       <input
         id="id-image"
@@ -682,7 +688,7 @@
         class="field id-image login-item"
         type="file"
         name="id-image"
-        accept="image/jpeg"
+        accept="image/jpeg,image/png,image/jpg"
         capture="user"
         @change="idImage = fileInput?.files ?? null"
         @keyup.enter="triggerAction()"
@@ -842,7 +848,7 @@
     }
 
     .id-image {
-      min-height: 30px;
+      display: none;
     }
 
     .date-of-birth {
@@ -861,6 +867,7 @@
     }
 
     :deep(.field) {
+      font-family: Arial, Helvetica, sans-serif;
       height: 1rem;
       font-size: 1rem;
       line-height: 1rem;
@@ -873,7 +880,40 @@
       box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
     }
 
+    .id-image-label {
+      display: inline-flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .upload-button {
+      color: #000000;
+      font-size: 1rem;
+      line-height: 1rem;
+      width: 30%;
+      max-width: 12vh;
+      max-width: calc((12 * (100vh - var(--vh-offset, 0px)) / 100));
+      min-width: 10vw;
+      font-weight: bold;
+      padding: 0.35rem;
+      margin-top: 1rem;
+      margin-bottom: 0;
+      background-color: #ffffff;
+      border: solid 0.05rem rgb(179, 179, 179);
+      border-radius: 1rem;
+      box-shadow: 0 0.125rem 0.125rem rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+    }
+
+    .upload-name {
+      font-size: 1rem;
+      margin-top: 0.7rem;
+      margin-bottom: 0.25rem;
+    }
+
     .login-button {
+      color: #000000;
       height: 1.9rem;
       font-size: 1rem;
       line-height: 1rem;

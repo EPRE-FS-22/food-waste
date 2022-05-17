@@ -203,6 +203,7 @@
     flex-direction: column;
 
     input {
+      font-family: Arial, Helvetica, sans-serif;
       height: 1rem;
       font-size: 1rem;
       line-height: 1rem;

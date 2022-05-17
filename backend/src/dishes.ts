@@ -781,11 +781,14 @@ export const addDish = async (
         filled: 0,
         date: date,
         createdDate: new Date(),
-        age: Math.floor(
-          ((userInfo.dateOfBirth ? userInfo.dateOfBirth.getTime() : 0) +
-            (date.getTime() - Date.now())) /
-            (1000 * 60 * 60 * 24 * 365)
-        ),
+        age: userInfo.dateOfBirth
+          ? Math.floor(
+              (Date.now() -
+                userInfo.dateOfBirth.getTime() +
+                (date.getTime() - Date.now())) /
+                (1000 * 60 * 60 * 24 * 365)
+            )
+          : undefined,
         locationCity: locationCityCoords
           ? locationCity
           : userInfo.locationCityCoords
@@ -1161,12 +1164,16 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
     date: { $gte: new Date() },
   });
 
+  console.log(dishEvent);
+
   if (dishEvent) {
     const dishesCollection = await getDishesCollection();
 
     const dish = await dishesCollection.findOne({
       customId: dishEvent.dishId,
     });
+
+    console.log(dish);
 
     if (
       dish &&
@@ -1183,6 +1190,7 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
         )
       ).modifiedCount > 0
     ) {
+      console.log('yep');
       const result = await dishEventsCollection.updateOne(
         {
           customId,
@@ -1196,6 +1204,8 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
           },
         }
       );
+
+      console.log(result);
 
       if (result.modifiedCount > 0) {
         const body = `Hello ${dish.name}

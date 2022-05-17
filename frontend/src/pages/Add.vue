@@ -41,7 +41,9 @@
   const personNrMessage = ref('');
   const description = ref('');
   const descriptionMessage = ref('');
-  const dateOfEvent = ref(null as Date | null);
+  const dateOfEvent = ref(
+    moment(new Date(Date.now() + 1000 * 60 * 60 * 5)).format('YYYY-MM-DDTHH:MM')
+  );
   const dateOfEventMessage = ref('');
 
   if (!hasUserSession()) {
@@ -284,25 +286,10 @@
       padding: 0;
       text-align: center;
       font-weight: bold;
-
-      .label-button {
-        font-size: 1.1rem;
-        font-weight: normal;
-        line-height: 1.2rem;
-        color: rgb(226, 226, 226);
-        text-decoration: underline;
-        padding: 0;
-        margin: 0;
-        margin-top: 0.5rem;
-        cursor: pointer;
-
-        &.label-button-solo {
-          margin: 0;
-        }
-      }
     }
 
     :deep(.field) {
+      font-family: Arial, Helvetica, sans-serif;
       height: 1rem;
       font-size: 1rem;
       line-height: 1rem;
@@ -316,6 +303,7 @@
     }
 
     .textarea {
+      font-family: Arial, Helvetica, sans-serif;
       font-size: 1rem;
       line-height: 1rem;
       width: 90%;

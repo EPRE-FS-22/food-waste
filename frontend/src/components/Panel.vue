@@ -474,6 +474,7 @@
       }
 
       :deep(input) {
+        font-family: Arial, Helvetica, sans-serif;
         height: 1rem;
         font-size: 1rem;
         line-height: 1rem;
@@ -559,6 +560,7 @@
         }
 
         :deep(input) {
+          font-family: Arial, Helvetica, sans-serif;
           margin: 0.5vw;
           margin-top: 1.5vw;
           border: solid 0.2vw rgb(179, 179, 179);

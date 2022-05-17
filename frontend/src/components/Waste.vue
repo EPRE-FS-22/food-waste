@@ -457,6 +457,7 @@
     text-decoration: none;
     color: #000000;
     cursor: pointer;
+    z-index: 200;
 
     &.reset-button {
       left: 2rem;
