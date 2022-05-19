@@ -54,9 +54,6 @@
     "superjson": "^1.9.1",
     "vh-check": "^2.0.5",
     "vue": "^3.2.31",
-    "vue-router": "4",
-    "vue-typeahead-bootstrap": "^2.12.0",
-    "vue3-simple-typeahead": "^1.0.5",
-    "wikijs": "^6.3.3"
+    "vue-router": "4"
   }
 }
