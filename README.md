@@ -232,7 +232,7 @@ To configure and build it for production, set the following environment variable
 #### Frontend
 
 ```sh
-VITE_FOOD_WASTE_PROTOCOL="wss"
+VITE_FOOD_WASTE_PROTOCOL="https"
 VITE_FOOD_WASTE_BACKEND_HOST="<domain>"
 VITE_FOOD_WASTE_BACKEND_PORT="3330"
 VITE_FOOD_WASTE_CAPTCHA_SITEKEY="<hCaptcha sitekey (can be omitted to disable captcha)>"
