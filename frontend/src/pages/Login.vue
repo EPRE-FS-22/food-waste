@@ -134,9 +134,7 @@
         await setFieldsWithPrevious(LoginType.change);
       }
     } catch (e: unknown) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   })();
@@ -191,9 +189,7 @@
           ' your email address, please try again in a bit.';
       }
     } catch (e) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   };
@@ -286,9 +282,7 @@
           'Image is not a valid swiss id card, please try a different image.';
       }
     } catch (e) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   };
@@ -326,9 +320,7 @@
         message.value = 'Could not set value, please try again in a bit.';
       }
     } catch (e) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   };
@@ -375,9 +367,7 @@
         message.value = 'Incorrect password';
       }
     } catch (e) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   };
@@ -426,9 +416,7 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   };
@@ -484,9 +472,7 @@
         showCaptcha.value = result.showCaptcha;
       }
     } catch (e) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   };

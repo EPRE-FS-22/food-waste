@@ -1262,9 +1262,7 @@ export const train = async () => {
         recommenderInUse = 1;
       }
     } catch (err) {
-      console.error(
-        typeof err === 'object' && err instanceof Error ? err.stack ?? err : err
-      );
+      console.error(err);
       throw err;
     }
   });

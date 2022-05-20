@@ -26,9 +26,7 @@
         router.push('/');
       }
     } catch (e) {
-      console.error(
-        typeof e === 'object' && e instanceof Error ? e.stack ?? e : e
-      );
+      console.error(e);
       throw e;
     }
   };
