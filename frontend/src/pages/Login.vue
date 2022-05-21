@@ -79,6 +79,7 @@
   const emailMessage = ref('');
   const passwordMessage = ref('');
   const newPasswordMessage = ref('');
+  const nameMessage = ref('');
   const captchaMessage = ref('');
   const dateOfBirthMessage = ref('');
   const idImageMessage = ref('');
@@ -90,6 +91,7 @@
     emailMessage.value = '';
     passwordMessage.value = '';
     newPasswordMessage.value = '';
+    nameMessage.value = '';
     captchaMessage.value = '';
     dateOfBirthMessage.value = '';
     idImageMessage.value = '';
@@ -200,6 +202,10 @@
       let fail = false;
       if (!newPassword.value) {
         newPasswordMessage.value = 'The password cannot be empty';
+        fail = true;
+      }
+      if (!name.value) {
+        nameMessage.value = 'The name cannot be empty';
         fail = true;
       }
       let date: Date | null = null;
@@ -625,7 +631,7 @@
     >
       <label class="label new-password-label login-item" for="new-password"
         >Please{{ type === LoginType.set ? '' : ' (optionally)' }} enter a new
-        password
+        password{{ newPasswordMessage ? ': ' + newPasswordMessage : '' }}
       </label>
       <input
         id="new-password"
@@ -641,9 +647,7 @@
     </template>
     <template v-if="type === LoginType.set">
       <label class="label name-label login-item" for="name"
-        >Please enter your name{{
-          newPasswordMessage ? ': ' + newPasswordMessage : ''
-        }}
+        >Please enter your name{{ nameMessage ? ': ' + nameMessage : '' }}
       </label>
       <input
         id="name"
