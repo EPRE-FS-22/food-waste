@@ -483,7 +483,7 @@
         margin: 0.5vh;
         margin: calc((0.5 * (100vh - var(--vh-offset, 0px)) / 100));
         margin-top: 1.5vh;
-        margin-top: calc((3 * (100vh - var(--vh-offset, 0px)) / 100));
+        margin-top: calc((1.5 * (100vh - var(--vh-offset, 0px)) / 100));
         border: solid 0.2vh rgb(179, 179, 179);
         border: solid calc((0.2 * (100vh - var(--vh-offset, 0px)) / 100))
           rgb(179, 179, 179);
