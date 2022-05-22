@@ -29,7 +29,7 @@
       router.push('/admin');
     }
   } else {
-    checkSession();
+    checkSession(false, true);
   }
 </script>
 

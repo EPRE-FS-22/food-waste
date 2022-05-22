@@ -130,7 +130,7 @@
   (async () => {
     try {
       if (
-        (await checkSessionAsync()) &&
+        (await checkSessionAsync(false, true)) &&
         (type.value !== LoginType.set || (await checkHasSetCode()))
       ) {
         await setFieldsWithPrevious(LoginType.change);

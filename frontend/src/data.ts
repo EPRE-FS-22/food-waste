@@ -635,9 +635,11 @@ export const unacceptDishRequest = async (eventId: string) => {
   }
 };
 
-export const checkSessionAsync = async (admin = false) => {
+export const checkSessionAsync = async (admin = false, skipLocal = false) => {
   if (!hasSession(admin)) {
-    authFailure.next();
+    if (!skipLocal || sessionId) {
+      authFailure.next();
+    }
     return false;
   }
   const data = await client.mutation('checkSession', {
@@ -666,10 +668,10 @@ export const checkSessionAsync = async (admin = false) => {
   return true;
 };
 
-export const checkSession = (admin = false) => {
+export const checkSession = (admin = false, skipLocal = false) => {
   (async () => {
     try {
-      await checkSessionAsync(admin);
+      await checkSessionAsync(admin, skipLocal);
     } catch (e: unknown) {
       console.error(e);
       throw e;
