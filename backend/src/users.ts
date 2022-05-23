@@ -645,13 +645,26 @@ export const loginUser = async (
     if (user && user.hash) {
       const result = await verifyPassword(user.hash, password);
       if (result) {
-        return {
-          success: true,
-          userId: user.customId,
-          infosSet: user.infosSet,
-          identityConfirmed: user.identityConfirmed,
-          preferencesSet: user.preferencesSet,
-        };
+        if (
+          (
+            await usersCollection.updateOne(
+              { customId: user.customId },
+              {
+                $currentDate: {
+                  lastLogin: true,
+                },
+              }
+            )
+          ).modifiedCount > 0
+        ) {
+          return {
+            success: true,
+            userId: user.customId,
+            infosSet: user.infosSet,
+            identityConfirmed: user.identityConfirmed,
+            preferencesSet: user.preferencesSet,
+          };
+        }
       }
     }
     return { success: false };

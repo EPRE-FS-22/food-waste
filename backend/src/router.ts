@@ -1141,7 +1141,8 @@ const trainAsync = () => {
     try {
       await train();
     } catch (e: unknown) {
-      throw internalServerError(e);
+      console.error(e);
+      process.exitCode = 1;
     }
   })();
 };

@@ -229,42 +229,48 @@ const startAutoPopulateAsync = async () => {
   const autoPopulateDate = await getAutoPopulateDate();
 
   autoPopulateTimeout = setTimeout(
-    async () => {
-      try {
-        console.log('auto populating data...');
-        autoPopulateTimeout = null;
-        const result = await populateWithData(50, 3, 5, 3);
-        console.log(
-          'finished auto populating data: ' + (result ? 'success' : 'error')
-        );
-        await setAutoPopulateDate();
-        autoPopulateInterval = setInterval(async () => {
-          try {
-            console.log('auto populating data...');
-            autoPopulateInterval = null;
-            const result = await populateWithData(50, 3, 5, 3);
-            console.log(
-              'finished auto populating data: ' + (result ? 'success' : 'error')
-            );
-            await setAutoPopulateDate();
-          } catch (err) {
-            console.error(
-              typeof err === 'object' && err instanceof Error
-                ? err.stack ?? err
-                : err
-            );
-            throw err;
-          }
-        }, AUTO_POPULATE_INTERVAL);
-      } catch (err) {
-        console.error(
-          typeof err === 'object' && err instanceof Error
-            ? err.stack ?? err
-            : err
-        );
-        throw err;
-      }
-    },
+    () =>
+      (async () => {
+        try {
+          console.log('auto populating data...');
+          autoPopulateTimeout = null;
+          const result = await populateWithData(50, 3, 5, 3);
+          console.log(
+            'finished auto populating data: ' + (result ? 'success' : 'error')
+          );
+          await setAutoPopulateDate();
+          autoPopulateInterval = setInterval(
+            () =>
+              (async () => {
+                try {
+                  console.log('auto populating data...');
+                  autoPopulateInterval = null;
+                  const result = await populateWithData(50, 3, 5, 3);
+                  console.log(
+                    'finished auto populating data: ' +
+                      (result ? 'success' : 'error')
+                  );
+                  await setAutoPopulateDate();
+                } catch (err) {
+                  console.error(
+                    typeof err === 'object' && err instanceof Error
+                      ? err.stack ?? err
+                      : err
+                  );
+                  process.exitCode = 1;
+                }
+              })(),
+            AUTO_POPULATE_INTERVAL
+          );
+        } catch (err) {
+          console.error(
+            typeof err === 'object' && err instanceof Error
+              ? err.stack ?? err
+              : err
+          );
+          process.exitCode = 1;
+        }
+      })(),
     autoPopulateDate
       ? Date.now() - autoPopulateDate.getTime() < AUTO_POPULATE_INTERVAL
         ? AUTO_POPULATE_INTERVAL - (Date.now() - autoPopulateDate.getTime())
@@ -282,7 +288,7 @@ export const startAutoPopulate = async () => {
     }
   } catch (err) {
     console.error(err);
-    throw err;
+    process.exitCode = 1;
   }
 };
 

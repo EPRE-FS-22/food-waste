@@ -3,6 +3,7 @@ import {
   getDishPreferencesCollection,
   getDishesCollection,
   getDishEventsCollection,
+  getUsersCollection,
 } from './data.js';
 import { makeId } from './id.js';
 import type {
@@ -1171,8 +1172,6 @@ export const unacceptDishEvent = async (customId: string, userId: string) => {
       userId,
     });
 
-    console.log(dish);
-
     if (
       dish &&
       (
@@ -1238,9 +1237,20 @@ export const train = async () => {
     })
     .toArray();
 
+  const usersCollection = await getUsersCollection();
+
+  const activeUsers = await usersCollection
+    .find({
+      lastLogin: { $gte: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7) },
+      populated: { $ne: true },
+    })
+    .toArray();
+
   const dishPreferencesCollection = await getDishPreferencesCollection();
 
-  const preferences = await dishPreferencesCollection.find({}).toArray();
+  const preferences = await dishPreferencesCollection
+    .find({ userId: { $in: activeUsers.map((item) => item.customId) } })
+    .toArray();
 
   const allDishes = [...dishes, ...preferences];
 
@@ -1253,17 +1263,19 @@ export const train = async () => {
     })
     .filter((item) => item);
 
-  setTimeout(async () => {
-    try {
-      await getRecommender().train(documents);
-      if (recommenderInUse) {
-        recommenderInUse = 0;
-      } else {
-        recommenderInUse = 1;
+  setTimeout(() =>
+    (async () => {
+      try {
+        getRecommender().train(documents);
+        if (recommenderInUse) {
+          recommenderInUse = 0;
+        } else {
+          recommenderInUse = 1;
+        }
+      } catch (err) {
+        console.error(err);
+        process.exitCode = 1;
       }
-    } catch (err) {
-      console.error(err);
-      throw err;
-    }
-  });
+    })()
+  );
 };

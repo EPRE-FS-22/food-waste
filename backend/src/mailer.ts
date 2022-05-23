@@ -38,20 +38,22 @@ export const sendMail = async (
   html?: string
 ) => {
   if (mailTransporter) {
-    setTimeout(async () => {
-      try {
-        await mailTransporter.sendMail({
-          from: `"${APP_NAME}" <${mailAddress}>`,
-          to,
-          subject,
-          text: body,
-          html,
-        });
-      } catch (e) {
-        console.error(e);
-        throw e;
-      }
-    });
+    setTimeout(() =>
+      (async () => {
+        try {
+          await mailTransporter.sendMail({
+            from: `"${APP_NAME}" <${mailAddress}>`,
+            to,
+            subject,
+            text: body,
+            html,
+          });
+        } catch (e) {
+          console.error(e);
+          process.exitCode = 1;
+        }
+      })()
+    );
     return;
   } else {
     console.log(

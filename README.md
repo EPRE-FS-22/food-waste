@@ -253,6 +253,7 @@ FOOD_WASTE_SSL_KEY="<file path to ssl private key (can be omitted together with 
 FOOD_WASTE_FRONTEND_HOST="mll.one"
 FOOD_WASTE_FRONTEND_PORT="<Port the frontend uses, can be omitted to use dev server. SET IN PRODUCTION!>"
 FOOD_WASTE_FRONTEND_PATH="<Path the frontend uses, can be omitted if path is root or to use dev server.>"
+FOOD_WASTE_FRONTEND_PROTOCOL="<Protocol the frontend uses, default is http://>"
 FOOD_WASTE_DEFAULT_PASSWORD="<default password to be set on first connection to database, if not set already, SHOULD BE REMOVED/OMITTED LATER!!!>"
 FOOD_WASTE_DATABASE_HOST="localhost"
 FOOD_WASTE_DATABASE_PORT="27017"
