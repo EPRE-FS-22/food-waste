@@ -268,7 +268,7 @@ const startAutoPopulateAsync = async () => {
     autoPopulateDate
       ? Date.now() - autoPopulateDate.getTime() < AUTO_POPULATE_INTERVAL
         ? AUTO_POPULATE_INTERVAL - (Date.now() - autoPopulateDate.getTime())
-        : AUTO_POPULATE_INTERVAL
+        : undefined
       : undefined
   );
 };
