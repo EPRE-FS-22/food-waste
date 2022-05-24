@@ -5,6 +5,7 @@ Food waste sharing app
 ## About The Project
 
 The project consists of a frontend as well as a backend which the frontend connects with and where the users are store.
+The frontend is deployed [here](https://foodmatch.live).
 
 ### Built With
 
