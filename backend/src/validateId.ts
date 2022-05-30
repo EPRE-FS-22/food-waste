@@ -68,7 +68,7 @@ export const validateId = async (idBase64: string) => {
   const max = Math.max(...scoreArray);
   const indexOfMax = scoreArray.indexOf(max);
 
-  if (CLASS_NAMES[indexOfMax] != 'nonid') {
+  if (CLASS_NAMES[indexOfMax] == 'swissid') {
     return true;
   }
   return false;
