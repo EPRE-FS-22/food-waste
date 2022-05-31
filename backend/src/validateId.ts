@@ -38,7 +38,6 @@ export const validateId = async (idBase64: string) => {
     return false;
   }
   const data = matches[2] + idBase64.slice(100);
-  const CLASS_NAMES = ['nonid', 'nonswiss', 'swissid'];
 
   const imgBuffer = Buffer.from(data, 'base64');
   let scaledBuffer: Buffer | undefined = undefined;
@@ -66,7 +65,7 @@ export const validateId = async (idBase64: string) => {
   const score = tfn.softmax(predictions);
   const scoreArray = score.dataSync();
 
-  if (scoreArray[2] >= 0.70) {
+  if (scoreArray[2] >= 0.7) {
     return true;
   }
   return false;
