@@ -65,10 +65,8 @@ export const validateId = async (idBase64: string) => {
   }
   const score = tfn.softmax(predictions);
   const scoreArray = score.dataSync();
-  const max = Math.max(...scoreArray);
-  const indexOfMax = scoreArray.indexOf(max);
 
-  if (CLASS_NAMES[indexOfMax] == 'swissid') {
+  if (scoreArray[2] >= 0.70) {
     return true;
   }
   return false;
