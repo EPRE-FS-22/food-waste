@@ -42,7 +42,7 @@
   const description = ref('');
   const descriptionMessage = ref('');
   const dateOfEvent = ref(
-    moment(new Date(Date.now() + 1000 * 60 * 60 * 5)).format('YYYY-MM-DDTHH:MM')
+    moment(new Date(Date.now() + 1000 * 60 * 60 * 5)).format('YYYY-MM-DDTHH:mm')
   );
   const dateOfEventMessage = ref('');
 

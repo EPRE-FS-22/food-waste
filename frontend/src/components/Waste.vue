@@ -121,7 +121,7 @@
           if (!settings.dateStart) {
             settings.dateStart = moment(
               new Date(Date.now() + 1000 * 60 * 60 * 3)
-            ).format('YYYY-MM-DDTHH:MM');
+            ).format('YYYY-MM-DDTHH:mm');
             ignoreNextChange = true;
           }
           const startDate = moment(settings.dateStart).toDate();
@@ -140,7 +140,7 @@
           if (!settings.dateEnd) {
             settings.dateEnd = moment(
               new Date(Date.now() + 1000 * 60 * 60 * 36)
-            ).format('YYYY-MM-DDTHH:MM');
+            ).format('YYYY-MM-DDTHH:mm');
             ignoreNextChange = true;
           }
           const endDate = moment(settings.dateEnd).toDate();
@@ -392,7 +392,7 @@
           {{ data.dish.dish }}
         </div>
         <div class="dish-date">
-          {{ moment(data.dish.date).format('DD. MM. YYYY HH:MM') }}
+          {{ moment(data.dish.date).format('DD. MM. YYYY HH:mm') }}
         </div>
         <div class="dish-city">
           {{ data.dish.locationCity }}

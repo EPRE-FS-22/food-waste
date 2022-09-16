@@ -203,7 +203,7 @@
           At {{ currentDish.dish.exactLocation }}
         </p>
         <p class="info-section">
-          {{ moment(currentDish.dish.date).format('DD. MM. YYYY HH:MM') }}
+          {{ moment(currentDish.dish.date).format('DD. MM. YYYY HH:mm') }}
         </p>
         <p class="info-section">
           Maximum number of people: {{ currentDish.dish.slots }}

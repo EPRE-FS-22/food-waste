@@ -149,9 +149,9 @@
     >
       {{
         (settings.locationCity ? settings.locationCity + ' | ' : '') +
-        moment(settings.dateStart).format('DD. MM. YYYY HH:MM') +
+        moment(settings.dateStart).format('DD. MM. YYYY HH:mm') +
         ' - ' +
-        moment(settings.dateEnd).format('DD. MM. YYYY HH:MM')
+        moment(settings.dateEnd).format('DD. MM. YYYY HH:mm')
       }}
       <span class="icon icon-pencil"></span>
     </button>
